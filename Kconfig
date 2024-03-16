@@ -1,7 +1,7 @@
 menu "Lilygo Display Panel Options"
-
     choice DISPLAY_DRIVER
         prompt "Installed Panel"
+        default DISPLAY_DRIVER_ST7789 if IDF_TARGET_ESP32S3
         default DISPLAY_DRIVER_SSD1680
         config DISPLAY_DRIVER_SSD1680
             bool "SSD1680"
@@ -23,7 +23,9 @@ menu "Lilygo Display Panel Options"
             help 
                 Select to use custom EPD driver
     endchoice
-    
+    config DISPLAY_TASK_STACK_SIZE
+        int "Task stack size in Kb"
+        default 12    
     choice DISPLAY_HAS_SCREEN
         prompt "Screen model"
         default HAS_SCREEN_DEPG0213BN if DISPLAY_DRIVER_SSD1680

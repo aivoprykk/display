@@ -15,6 +15,8 @@ lv_obj_t * ui_SmallDataPanel_create(lv_obj_t * comp_parent)
     cui_SmallDataPanel = lv_obj_create(comp_parent);
     lv_obj_set_width(cui_SmallDataPanel, lv_pct(50));
     lv_obj_set_height(cui_SmallDataPanel, lv_pct(100));
+    lv_obj_set_x(cui_SmallDataPanel, 50);
+    lv_obj_set_y(cui_SmallDataPanel, 0);
     lv_obj_clear_flag(cui_SmallDataPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(cui_SmallDataPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_width(cui_SmallDataPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -31,8 +33,8 @@ lv_obj_t * ui_SmallDataPanel_create(lv_obj_t * comp_parent)
     cui_DataLabel = lv_label_create(cui_SmallDataPanel);
     lv_obj_set_width(cui_DataLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(cui_DataLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(cui_DataLabel, 14);
     lv_obj_set_y(cui_DataLabel, 0);
+    lv_obj_set_x(cui_DataLabel, lv_pct(12));
     lv_obj_set_align(cui_DataLabel, LV_ALIGN_CENTER);
     lv_label_set_text(cui_DataLabel, "129.09");
 

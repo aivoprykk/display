@@ -31,8 +31,8 @@ lv_obj_t * ui_SmallDataPanel_create(lv_obj_t * comp_parent)
     cui_DataLabel = lv_label_create(cui_SmallDataPanel);
     lv_obj_set_width(cui_DataLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(cui_DataLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(cui_DataLabel, 14);
     lv_obj_set_y(cui_DataLabel, 2);
+    lv_obj_set_x(cui_DataLabel, lv_pct(10));
     lv_obj_set_align(cui_DataLabel, LV_ALIGN_CENTER);
     lv_label_set_text(cui_DataLabel, "129.09");
 

@@ -4,11 +4,12 @@
 #ifndef D355F571_B2D5_432B_9A8D_E600648EE4DF
 #define D355F571_B2D5_432B_9A8D_E600648EE4DF
 
-#include "../epd_private.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
+#include <stdint.h>
 
 // Controller: SSD1681 (Acts similar than IL3829)
 #define GDEY0154D67_WIDTH 200

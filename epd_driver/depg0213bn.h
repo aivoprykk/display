@@ -16,8 +16,6 @@
 #ifndef A2119CB4_6967_4101_AE34_48B74C341982
 #define A2119CB4_6967_4101_AE34_48B74C341982
 
-#include "../epd_private.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

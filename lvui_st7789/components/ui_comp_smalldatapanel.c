@@ -15,8 +15,6 @@ lv_obj_t * ui_SmallDataPanel_create(lv_obj_t * comp_parent)
     cui_SmallDataPanel = lv_obj_create(comp_parent);
     lv_obj_set_width(cui_SmallDataPanel, lv_pct(50));
     lv_obj_set_height(cui_SmallDataPanel, lv_pct(100));
-    lv_obj_set_x(cui_SmallDataPanel, 0);
-    lv_obj_set_y(cui_SmallDataPanel, -1);
     lv_obj_clear_flag(cui_SmallDataPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(cui_SmallDataPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_border_color(cui_SmallDataPanel, lv_color_hex(0x44B8D5), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -37,20 +35,16 @@ lv_obj_t * ui_SmallDataPanel_create(lv_obj_t * comp_parent)
     lv_obj_set_y(cui_InfoLabel, -6);
     lv_obj_set_align(cui_InfoLabel, LV_ALIGN_BOTTOM_LEFT);
     lv_label_set_text(cui_InfoLabel, "10sRUN");
-    lv_obj_set_style_text_font(cui_InfoLabel, &ui_font_OswaldRegular12b4, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_color(cui_InfoLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(cui_InfoLabel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(cui_InfoLabel, &ui_font_OswaldRegular12p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t * cui_DataLabel;
     cui_DataLabel = lv_label_create(cui_SmallDataPanel);
     lv_obj_set_width(cui_DataLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(cui_DataLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(cui_DataLabel, 50);
-    lv_obj_set_y(cui_DataLabel, 2);
-    lv_obj_set_align(cui_DataLabel, LV_ALIGN_LEFT_MID);
+    lv_obj_set_y(cui_DataLabel, 1);
+    lv_obj_set_x(cui_DataLabel, lv_pct(10));
+    lv_obj_set_align(cui_DataLabel, LV_ALIGN_CENTER);
     lv_label_set_text(cui_DataLabel, "125.97");
-    lv_obj_set_style_bg_color(cui_DataLabel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(cui_DataLabel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t ** children = lv_mem_alloc(sizeof(lv_obj_t *) * _UI_COMP_SMALLDATAPANEL_NUM);
     children[UI_COMP_SMALLDATAPANEL_SMALLDATAPANEL] = cui_SmallDataPanel;

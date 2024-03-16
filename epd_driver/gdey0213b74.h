@@ -4,11 +4,12 @@
 #ifndef D7C5EC4E_95A3_47B4_A463_5DCC207C8C14
 #define D7C5EC4E_95A3_47B4_A463_5DCC207C8C14
 
-#include "../epd_private.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
+#include <stdint.h>
 
 // All comments below are from J-M Zingg (Ref. EPD)
 // The physical number of pixels (for controller parameter)

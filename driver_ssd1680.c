@@ -12,15 +12,19 @@
 
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_io.h>
+#include <esp_lcd_panel_vendor.h>
 
 #include "logger_common.h"
 #include "driver_vendor.h"
+#include "ui.h"
 
 #include "esp_lcd_panel_ssd1680.h"
 
 #include "ssd1680_waveshare_2in13_lut.h"
 
 static const char *TAG = "display_drv.ssd1680";
+
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
 
 #define LCD_HOST SPI3_HOST  // ssd on HSPI_HOST
 
@@ -315,3 +319,5 @@ void display_ssd1680_del() {
     heap_caps_free(converted_buffer_red);
     vSemaphoreDelete(panel_refreshing_sem);
 }
+
+#endif

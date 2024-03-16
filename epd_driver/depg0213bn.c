@@ -30,6 +30,7 @@
 
 #include "epdg.h"
 #include "epd_driver_spi.h"
+#include <logger_common.h>
 
 // Partial Update Delay, may have an influence on degradation
 #define DEPG0213BN_PU_DELAY 300

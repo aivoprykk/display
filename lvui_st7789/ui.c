@@ -9,13 +9,15 @@
 
 
 // SCREEN: ui_SpeedScreen
+void ui_SpeedScreen_screen_init(void);
+lv_obj_t * ui_SpeedScreen;
 lv_obj_t * ui_SpeedPanel;
-lv_obj_t * ui_SpeedMainPanel;
-lv_obj_t * ui_SpeedStatusPanelWrapper;
-lv_obj_t * ui_SpeedStatusPanel;
 lv_obj_t * ui_SpeedSecondaryPanel;
 lv_obj_t * ui_LeftPanel;
 lv_obj_t * ui_RightPanel;
+lv_obj_t * ui_SpeedMainPanel;
+lv_obj_t * ui_SpeedStatusPanelWrapper;
+lv_obj_t * ui_SpeedStatusPanel;
 lv_obj_t * ui_Speed1Panel;
 lv_obj_t * ui_Speed1MainPanel;
 lv_obj_t * ui_Speed1SecondaryPanel;
@@ -28,6 +30,8 @@ lv_obj_t * ui_MaxLabel;
 
 
 // SCREEN: ui_InfoScreen
+void ui_InfoScreen_screen_init(void);
+lv_obj_t * ui_InfoScreen;
 lv_obj_t * ui_InfoStatusPanelWrapper;
 lv_obj_t * ui_InfoStatusPanel;
 lv_obj_t * ui_InfoMainPanel;
@@ -40,46 +44,47 @@ lv_obj_t * ui_InitLabel;
 
 
 // SCREEN: ui_StatsScreen
+void ui_StatsScreen_screen_init(void);
+lv_obj_t * ui_StatsScreen;
 lv_obj_t * ui_StatsStatusPanelWrapper;
 lv_obj_t * ui_StatStatusPanel;
 lv_obj_t * ui_StatsPanel2Row;
-lv_obj_t * ui_Panel2Row1;
-lv_obj_t * ui_Panel2Row2;
-lv_obj_t * ui_StatsLeftPanel3;
-lv_obj_t * ui_StatsRightPanel3;
+lv_obj_t * ui_Stats2Row1FullPanel;
+lv_obj_t * ui_Stats2Row2Panel;
+lv_obj_t * ui_Stats2Row2LeftPanel;
+lv_obj_t * ui_Stats2Row2RightPanel;
 lv_obj_t * ui_StatsPanel3Row;
-lv_obj_t * ui_Panel3Row1;
-lv_obj_t * ui_StatsLeftPanel;
-lv_obj_t * ui_StatsRightPanel;
-lv_obj_t * ui_Panel3Row2;
-lv_obj_t * ui_StatsLeftPanel1;
-lv_obj_t * ui_StatsRightPanel1;
-lv_obj_t * ui_Panel3Row3;
-lv_obj_t * ui_StatsLeftPanel2;
-lv_obj_t * ui_StatsRightPanel2;
-lv_obj_t * ui_StatsPanel4Row;
-lv_obj_t * ui_Panel4Row1;
-lv_obj_t * ui_StatsLeftPanel4;
-lv_obj_t * ui_StatsRightPanel4;
-lv_obj_t * ui_Panel4Row2;
-lv_obj_t * ui_StatsLeftPanel5;
-lv_obj_t * ui_StatsRightPanel5;
-lv_obj_t * ui_Panel4Row3;
-lv_obj_t * ui_StatsLeftPanel6;
-lv_obj_t * ui_StatsRightPanel6;
-lv_obj_t * ui_Panel4Row4;
-lv_obj_t * ui_StatsLeftPanel7;
-lv_obj_t * ui_StatsRightPanel7;
-const lv_img_dsc_t * ui_imgset_battery_0_bar_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_0_bar_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_battery_horiz_000_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_navigation_fill0_wght400_grad0_opsz[1] = {&ui_img_navigation_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_navigation_fill1_wght400_grad0_opsz[1] = {&ui_img_navigation_fill1_wght400_grad0_opsz24_png};
+lv_obj_t * ui_Stats3Row1Panel;
+lv_obj_t * ui_Stats3Row1LeftPanel;
+lv_obj_t * ui_Stats3Row1RightPanel;
+lv_obj_t * ui_Stats3Row2Panel;
+lv_obj_t * ui_Stats3Row2LeftPanel;
+lv_obj_t * ui_Stats3Row2RightPanel;
+lv_obj_t * ui_Stats3Row3Panel;
+lv_obj_t * ui_Stats3Row3LeftPanel;
+lv_obj_t * ui_Stats3Row3RightPanel;
+lv_obj_t * ui____initial_actions0;
 const lv_img_dsc_t * ui_imgset_radio_button_checked_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_radio_button_partial_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_radio_button_unchecked_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_sd_card_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_sd_card_fill1_wght400_grad0_opsz[1] = {&ui_img_sd_card_fill1_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_sd_card_alert_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_sd_card_alert_fill1_wght400_grad0_opsz[1] = {&ui_img_sd_card_alert_fill1_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_sd_card_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_near_me_fill0_wght400_grad0_opsz[1] = {&ui_img_near_me_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_wifi_fill0_wght400_grad0_opsz[1] = {&ui_img_wifi_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_battery_horiz_000_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png};
 
+///////////////////// ANIMATIONS ////////////////////
+
+///////////////////// FUNCTIONS ////////////////////
+
+///////////////////// SCREENS ////////////////////
+
+void ui_init(void)
+{
+    ui_common_init();
+    ui_SpeedScreen_screen_init();
+    ui_InfoScreen_screen_init();
+    ui_StatsScreen_screen_init();
+    ui____initial_actions0 = lv_obj_create(NULL);
+    lv_disp_load_scr(ui_SpeedScreen);
+}

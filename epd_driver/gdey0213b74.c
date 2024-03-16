@@ -14,6 +14,7 @@
 
 #include "epdg.h"
 #include "epd_driver_spi.h"
+#include <logger_common.h>
 
 // #define DISABLE_DIAGNOSTIC_OUTPUT
 

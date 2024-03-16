@@ -3,12 +3,15 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <esp_lcd_panel_vendor.h>
-#include "ui.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifdef CONFIG_DISPLAY_USE_LVGL
+
+#include "esp_lcd_panel_vendor.h"
+#include "ui.h"
 
 bool _lvgl_lock(int timeout_ms);
 void _lvgl_unlock(void);
@@ -21,6 +24,8 @@ void display_ssd1680_del();
 
 esp_lcd_panel_handle_t display_st7789_new();
 void display_st7789_del();
+
+void driver_st7789_bl_set(uint8_t brightness_percent);
 
 #if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
 #define LCD_H_RES (200)               // horizontal
@@ -49,6 +54,8 @@ void display_st7789_del();
 
 #define L_LVGL_TASK_MAX_DELAY_MS 500
 #define L_LVGL_TASK_MIN_DELAY_MS 1
+
+#endif
 
 #ifdef __cplusplus
 }

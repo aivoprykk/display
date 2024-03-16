@@ -9,6 +9,7 @@ void ui_InfoScreen_screen_init(void)
 {
     ui_InfoScreen = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_InfoScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_text_font(ui_InfoScreen, &ui_font_OswaldRegular24p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_InfoStatusPanelWrapper = lv_obj_create(ui_InfoScreen);
     lv_obj_set_width(ui_InfoStatusPanelWrapper, lv_pct(100));
@@ -40,7 +41,6 @@ void ui_InfoScreen_screen_init(void)
     lv_obj_set_style_pad_right(ui_InfoMainPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui_InfoMainPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui_InfoMainPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_InfoMainPanel, &ui_font_OswaldRegular24p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_MainImage = lv_img_create(ui_InfoMainPanel);
     lv_img_set_src(ui_MainImage, &ui_img_navigation_fill0_wght400_grad0_opsz24_png);
@@ -67,6 +67,7 @@ void ui_InfoScreen_screen_init(void)
     lv_obj_set_x(ui_MainLowerLabel, 98);
     lv_obj_set_y(ui_MainLowerLabel, 19);
     lv_obj_set_align(ui_MainLowerLabel, LV_ALIGN_LEFT_MID);
+    lv_obj_set_style_text_font(ui_MainLowerLabel, &ui_font_OswaldRegular16p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_InfoInitPanel = lv_obj_create(ui_InfoScreen);
     lv_obj_set_width(ui_InfoInitPanel, lv_pct(100));

@@ -13,9 +13,11 @@
 
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_io.h>
+#include <esp_lcd_panel_vendor.h>
 
 #include "logger_common.h"
 #include "driver_vendor.h"
+#include "ui.h"
 
 #include "esp_lcd_panel_ssd1681.h"
 

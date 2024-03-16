@@ -30,7 +30,7 @@ lv_obj_t * ui_StatusPanel_create(lv_obj_t * comp_parent)
     lv_obj_set_style_pad_bottom(cui_StatusPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_color(cui_StatusPanel, lv_color_hex(0xD5D5D5), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(cui_StatusPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(cui_StatusPanel, &ui_font_OswaldRegular24b4, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(cui_StatusPanel, &ui_font_OswaldRegular24p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t * cui_TempLabel;
     cui_TempLabel = lv_label_create(cui_StatusPanel);
@@ -39,9 +39,8 @@ lv_obj_t * ui_StatusPanel_create(lv_obj_t * comp_parent)
     lv_obj_set_x(cui_TempLabel, 0);
     lv_obj_set_y(cui_TempLabel, 1);
     lv_obj_set_align(cui_TempLabel, LV_ALIGN_CENTER);
-    lv_label_set_text(cui_TempLabel, "00:00");
-    lv_obj_set_style_text_color(cui_TempLabel, lv_color_hex(0xD4D3D3), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(cui_TempLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(cui_TempLabel, "0.0C");
+    lv_obj_add_flag(cui_TempLabel, LV_OBJ_FLAG_HIDDEN);     /// Flags
 
     lv_obj_t * cui_BatLabel;
     cui_BatLabel = lv_label_create(cui_StatusPanel);
@@ -51,8 +50,6 @@ lv_obj_t * ui_StatusPanel_create(lv_obj_t * comp_parent)
     lv_obj_set_y(cui_BatLabel, 1);
     lv_obj_set_align(cui_BatLabel, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(cui_BatLabel, "100%");
-    lv_obj_set_style_text_color(cui_BatLabel, lv_color_hex(0xEECE44), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(cui_BatLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t * cui_TimeLabel;
     cui_TimeLabel = lv_label_create(cui_StatusPanel);
@@ -62,48 +59,46 @@ lv_obj_t * ui_StatusPanel_create(lv_obj_t * comp_parent)
     lv_obj_set_y(cui_TimeLabel, 1);
     lv_obj_set_align(cui_TimeLabel, LV_ALIGN_LEFT_MID);
     lv_label_set_text(cui_TimeLabel, "00:00");
-    lv_obj_set_style_text_color(cui_TimeLabel, lv_color_hex(0xD4D3D3), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(cui_TimeLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    lv_obj_t * cui_SDImage;
-    cui_SDImage = lv_img_create(cui_StatusPanel);
-    lv_img_set_src(cui_SDImage, &ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png);
-    lv_obj_set_width(cui_SDImage, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(cui_SDImage, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(cui_SDImage, -60);
-    lv_obj_set_y(cui_SDImage, 1);
-    lv_obj_set_align(cui_SDImage, LV_ALIGN_RIGHT_MID);
-    lv_obj_add_flag(cui_SDImage, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
-    lv_obj_clear_flag(cui_SDImage, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_bg_color(cui_SDImage, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(cui_SDImage, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_img_recolor(cui_SDImage, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_img_recolor_opa(cui_SDImage, 100, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_flag(cui_TimeLabel, LV_OBJ_FLAG_HIDDEN);     /// Flags
 
     lv_obj_t * cui_NavImage;
     cui_NavImage = lv_img_create(cui_StatusPanel);
-    lv_img_set_src(cui_NavImage, &ui_img_navigation_fill0_wght400_grad0_opsz24_png);
-    lv_obj_set_width(cui_NavImage, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(cui_NavImage, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(cui_NavImage, -82);
+    lv_img_set_src(cui_NavImage, &ui_img_near_me_fill0_wght400_grad0_opsz24_png);
+    lv_obj_set_width(cui_NavImage, 24);
+    lv_obj_set_height(cui_NavImage, 22);
     lv_obj_set_y(cui_NavImage, 0);
+    lv_obj_set_x(cui_NavImage, lv_pct(-26));
     lv_obj_set_align(cui_NavImage, LV_ALIGN_RIGHT_MID);
-    lv_obj_add_flag(cui_NavImage, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_add_flag(cui_NavImage, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
     lv_obj_clear_flag(cui_NavImage, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_img_set_angle(cui_NavImage, 450);
-    lv_obj_set_style_bg_color(cui_NavImage, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(cui_NavImage, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_img_set_zoom(cui_NavImage, 255);
     lv_obj_set_style_border_width(cui_NavImage, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_img_recolor(cui_NavImage, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_img_recolor_opa(cui_NavImage, 100, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(cui_NavImage, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_img_recolor(cui_NavImage, lv_color_hex(0xA9B7B9), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_img_recolor_opa(cui_NavImage, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    lv_obj_t * cui_SDImage;
+    cui_SDImage = lv_img_create(cui_StatusPanel);
+    lv_img_set_src(cui_SDImage, &ui_img_sd_card_fill0_wght400_grad0_opsz24_png);
+    lv_obj_set_width(cui_SDImage, 22);
+    lv_obj_set_height(cui_SDImage, 22);
+    lv_obj_set_y(cui_SDImage, 0);
+    lv_obj_set_x(cui_SDImage, lv_pct(-20));
+    lv_obj_set_align(cui_SDImage, LV_ALIGN_RIGHT_MID);
+    lv_obj_add_flag(cui_SDImage, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(cui_SDImage, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_border_width(cui_SDImage, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(cui_SDImage, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_img_recolor(cui_SDImage, lv_color_hex(0xA9B7B9), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_img_recolor_opa(cui_SDImage, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t ** children = lv_mem_alloc(sizeof(lv_obj_t *) * _UI_COMP_STATUSPANEL_NUM);
     children[UI_COMP_STATUSPANEL_STATUSPANEL] = cui_StatusPanel;
     children[UI_COMP_STATUSPANEL_TEMPLABEL] = cui_TempLabel;
     children[UI_COMP_STATUSPANEL_BATLABEL] = cui_BatLabel;
     children[UI_COMP_STATUSPANEL_TIMELABEL] = cui_TimeLabel;
-    children[UI_COMP_STATUSPANEL_SDIMAGE] = cui_SDImage;
     children[UI_COMP_STATUSPANEL_NAVIMAGE] = cui_NavImage;
+    children[UI_COMP_STATUSPANEL_SDIMAGE] = cui_SDImage;
     lv_obj_add_event_cb(cui_StatusPanel, get_component_child_event_cb, LV_EVENT_GET_COMP_CHILD, children);
     lv_obj_add_event_cb(cui_StatusPanel, del_component_child_event_cb, LV_EVENT_DELETE, children);
     ui_comp_StatusPanel_create_hook(cui_StatusPanel);
