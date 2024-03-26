@@ -26,7 +26,7 @@ static const char *TAG = "display_drv.ssd1680";
 
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
 
-#define LCD_HOST SPI3_HOST  // ssd on HSPI_HOST
+#define LCD_HOST SPI3_HOST  // ssd on VSPI_HOST
 
 #define PIN_NUM_SCLK           CONFIG_DISPLAY_SPI_CLK
 #define PIN_NUM_MOSI           CONFIG_DISPLAY_SPI_MOSI

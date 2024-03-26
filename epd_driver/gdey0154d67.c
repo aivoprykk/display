@@ -706,7 +706,7 @@ static bool _has_fast_partial_update() {
     return hasFastPartialUpdate;
 }
 
-const epdg_screen_driver_t screen_driver = SCREEN_GDEY0154D67;
+static epdg_screen_driver_t my_driver = SCREEN_GDEY0154D67;
 
 void gdey0154d67_deinit(void* _me) {
     LOGR if (!_me) return;
@@ -745,7 +745,7 @@ gdey0154d67_t* gdey0154d67_init(gdey0154d67_t* me, epd_g_t* epd, bool debug) {
     TIMER_S
 
     if (!epd) {
-        me->epd = epdg_new(screen_driver, debug);
+        me->epd = epdg_new(my_driver, debug);
         me->epd->init_mode = 2;
         epd = me->epd;
         epd->_diag_enabled = debug;

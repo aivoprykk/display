@@ -84,6 +84,8 @@ static const uint16_t partial_refresh_time = 750;  // ms, e.g. 736721us
 #define pgm_read_byte(addr) (*(const unsigned char*)(addr))
 #endif
 
+
+#define LUT_PARTIAL_TRANSFER_SIZE sizeof(lut_partial)-6
 static uint8_t lut_partial[] =
     {
         /// A                 B                C               D
@@ -564,7 +566,7 @@ static void _Init_Part(void* _me, uint8_t em) {
     xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
     _InitDisplay(_me, em);
     epd->op->writeCommand(_me, SSD168X_WRITE_LUT_REGISTER);
-    epd->op->writeDataArray(epd, &(lut_partial[0]), sizeof(lut_partial));
+    epd->op->writeDataArray(epd, &(lut_partial[0]), LUT_PARTIAL_TRANSFER_SIZE);
     _PowerOn(_me);
     epd->_using_partial_mode = true;
     xSemaphoreGiveRecursive(me->screen_lock);
@@ -616,7 +618,7 @@ static bool _has_fast_partial_update() {
     return hasFastPartialUpdate;
 }
 
-const epdg_screen_driver_t screen_driver = SCREEN_DEPG0213BN;
+static epdg_screen_driver_t my_driver = SCREEN_DEPG0213BN;
 
 void depg0213bn_deinit(void* _me) {
     LOGR
@@ -651,7 +653,7 @@ const screen_op_t depg0213bn_ops = {
 depg0213bn_t* depg0213bn_init(depg0213bn_t* me, epd_g_t* epd, bool debug) {
     TIMER_S
     if (!epd) {
-        me->epd = epdg_new(screen_driver, debug);
+        me->epd = epdg_new(my_driver, debug);
         me->epd->init_mode = 2;
         epd = me->epd;
         epd->_diag_enabled = debug;
