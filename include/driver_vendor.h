@@ -52,6 +52,8 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define display_del display_st7789_del
 #endif
 
+#define EPD_BUFFER_SIZE (LCD_H_RES * LCD_V_RES / 8)
+
 #define L_LVGL_TASK_MAX_DELAY_MS 500
 #define L_LVGL_TASK_MIN_DELAY_MS 1
 

@@ -11,6 +11,7 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_clear_flag(ui_SpeedScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_text_color(ui_SpeedScreen, lv_color_hex(0x323232), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_SpeedScreen, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_SpeedScreen, &ui_font_OswaldRegular36p4, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_SpeedPanel = lv_obj_create(ui_SpeedScreen);
     lv_obj_set_width(ui_SpeedPanel, lv_pct(100));
@@ -22,7 +23,35 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_style_pad_right(ui_SpeedPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui_SpeedPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui_SpeedPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_SpeedPanel, &ui_font_OswaldRegular36p2, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_SpeedMainPanel = ui_BigDataPanel_create(ui_SpeedPanel);
+    lv_obj_set_width(ui_SpeedMainPanel, lv_pct(100));
+    lv_obj_set_height(ui_SpeedMainPanel, lv_pct(60));
+    lv_obj_set_x(ui_SpeedMainPanel, lv_pct(0));
+    lv_obj_set_y(ui_SpeedMainPanel, lv_pct(22));
+
+
+
+    ui_SpeedStatusPanelWrapper = lv_obj_create(ui_SpeedPanel);
+    lv_obj_set_width(ui_SpeedStatusPanelWrapper, lv_pct(100));
+    lv_obj_set_height(ui_SpeedStatusPanelWrapper, lv_pct(15));
+    lv_obj_set_align(ui_SpeedStatusPanelWrapper, LV_ALIGN_BOTTOM_LEFT);
+    lv_obj_clear_flag(ui_SpeedStatusPanelWrapper, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_radius(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_side(ui_SpeedStatusPanelWrapper, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_left(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_right(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_top(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_bottom(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_SpeedStatusPanel = ui_StatusPanel_create(ui_SpeedStatusPanelWrapper);
+    lv_obj_set_x(ui_SpeedStatusPanel, 0);
+    lv_obj_set_y(ui_SpeedStatusPanel, 0);
+
+
+
+
 
     ui_SpeedSecondaryPanel = lv_obj_create(ui_SpeedPanel);
     lv_obj_set_width(ui_SpeedSecondaryPanel, lv_pct(100));
@@ -54,41 +83,6 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_y(ui_comp_get_child(ui_RightPanel, UI_COMP_SMALLDATAPANEL_DATALABEL), 1);
     lv_obj_set_x(ui_comp_get_child(ui_RightPanel, UI_COMP_SMALLDATAPANEL_DATALABEL), lv_pct(10));
 
-    ui_SpeedMainPanel = ui_BigDataPanel_create(ui_SpeedPanel);
-    lv_obj_set_width(ui_SpeedMainPanel, lv_pct(100));
-    lv_obj_set_height(ui_SpeedMainPanel, lv_pct(60));
-    lv_obj_set_x(ui_SpeedMainPanel, 0);
-    lv_obj_set_y(ui_SpeedMainPanel, 39);
-
-
-    lv_obj_set_y(ui_comp_get_child(ui_SpeedMainPanel, UI_COMP_BIGDATAPANEL_DATALABEL), 8);
-    lv_obj_set_x(ui_comp_get_child(ui_SpeedMainPanel, UI_COMP_BIGDATAPANEL_DATALABEL), lv_pct(-12));
-    lv_obj_set_align(ui_comp_get_child(ui_SpeedMainPanel, UI_COMP_BIGDATAPANEL_DATALABEL), LV_ALIGN_RIGHT_MID);
-    lv_label_set_text(ui_comp_get_child(ui_SpeedMainPanel, UI_COMP_BIGDATAPANEL_DATALABEL), "85.98");
-    lv_obj_set_style_text_font(ui_comp_get_child(ui_SpeedMainPanel, UI_COMP_BIGDATAPANEL_DATALABEL),
-                               &ui_font_OswaldRegular120p2, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_SpeedStatusPanelWrapper = lv_obj_create(ui_SpeedPanel);
-    lv_obj_set_width(ui_SpeedStatusPanelWrapper, lv_pct(100));
-    lv_obj_set_height(ui_SpeedStatusPanelWrapper, lv_pct(15));
-    lv_obj_set_align(ui_SpeedStatusPanelWrapper, LV_ALIGN_BOTTOM_LEFT);
-    lv_obj_clear_flag(ui_SpeedStatusPanelWrapper, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_style_radius(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_side(ui_SpeedStatusPanelWrapper, LV_BORDER_SIDE_NONE, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_left(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_right(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_bottom(ui_SpeedStatusPanelWrapper, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    ui_SpeedStatusPanel = ui_StatusPanel_create(ui_SpeedStatusPanelWrapper);
-    lv_obj_set_x(ui_SpeedStatusPanel, 0);
-    lv_obj_set_y(ui_SpeedStatusPanel, 0);
-
-
-
-
-
     ui_Speed1Panel = lv_obj_create(ui_SpeedScreen);
     lv_obj_set_width(ui_Speed1Panel, lv_pct(100));
     lv_obj_set_height(ui_Speed1Panel, lv_pct(100));
@@ -102,16 +96,14 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_style_pad_bottom(ui_Speed1Panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Speed1MainPanel = ui_BigDataPanel_create(ui_Speed1Panel);
-    lv_obj_set_width(ui_Speed1MainPanel, lv_pct(100));
-    lv_obj_set_height(ui_Speed1MainPanel, lv_pct(63));
     lv_obj_set_x(ui_Speed1MainPanel, 0);
-    lv_obj_set_y(ui_Speed1MainPanel, lv_pct(37));
+    lv_obj_set_y(ui_Speed1MainPanel, 62);
 
 
 
     ui_Speed1SecondaryPanel = lv_obj_create(ui_Speed1Panel);
+    lv_obj_set_height(ui_Speed1SecondaryPanel, 64);
     lv_obj_set_width(ui_Speed1SecondaryPanel, lv_pct(100));
-    lv_obj_set_height(ui_Speed1SecondaryPanel, lv_pct(37));
     lv_obj_clear_flag(ui_Speed1SecondaryPanel, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_radius(ui_Speed1SecondaryPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(ui_Speed1SecondaryPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -124,7 +116,6 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_style_pad_right(ui_Speed1SecondaryPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(ui_Speed1SecondaryPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(ui_Speed1SecondaryPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_Speed1SecondaryPanel, &ui_font_OswaldRegular36p2, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_RunBar = lv_bar_create(ui_Speed1SecondaryPanel);
     lv_bar_set_value(ui_RunBar, 25, LV_ANIM_OFF);
@@ -132,7 +123,7 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_width(ui_RunBar, 150);
     lv_obj_set_height(ui_RunBar, 10);
     lv_obj_set_x(ui_RunBar, -13);
-    lv_obj_set_y(ui_RunBar, -14);
+    lv_obj_set_y(ui_RunBar, -9);
     lv_obj_set_align(ui_RunBar, LV_ALIGN_CENTER);
 
     ui_MaxBar = lv_bar_create(ui_Speed1SecondaryPanel);
@@ -157,7 +148,7 @@ void ui_SpeedScreen_screen_init(void)
     lv_obj_set_width(ui_RunInfoLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_RunInfoLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_RunInfoLabel, -132);
-    lv_obj_set_y(ui_RunInfoLabel, -14);
+    lv_obj_set_y(ui_RunInfoLabel, -10);
     lv_obj_set_align(ui_RunInfoLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_RunInfoLabel, "RUN");
     lv_obj_set_style_text_font(ui_RunInfoLabel, &ui_font_OswaldRegular12p4, LV_PART_MAIN | LV_STATE_DEFAULT);

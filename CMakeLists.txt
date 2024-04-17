@@ -1,5 +1,5 @@
 
-#SET (REQ lvgl esp_lcd lvui_common)
+SET (REQ lvgl esp_lcd lvui_common bmx280 esp_lcd_panel_ssd1681)
 SET (PRIVREQ driver logger_common epd)
 
 if(CONFIG_DISPLAY_DRIVER_SSD1680)
@@ -37,19 +37,25 @@ set(REQ lvgl esp_lcd lvui_common)
 set(PRIVREQ driver logger_common)
 endif()
 
+if(CONFIG_BMX_ENABLE)
+list(APPEND PRIVREQ bmx280)
+endif()
+
 if(CONFIG_DISPLAY_USE_LVGL)
 SET(SRCS ${source_file})
 FILE(GLOB SOURCES ${src_dir}/*.c ${src_dir}/components/*.c ${src_dir}/screens/*.c)
-SET(INCLUDES include ${src_dir} ${src_dir}/components)
+SET(INCS include ${src_dir} ${src_dir}/components)
 else()
-SET(SRCS ${source_file})
-SET(INCLUDES include ${src_dir})
+SET(SRCS ${src_dir}/epd_driver_common.c ${source_file})
+SET(INCS include ${src_dir}/include)
+SET(PRIVINCS ${src_dir})
 endif()
 
 MESSAGE(STATUS "REQ: ${REQ}")
 MESSAGE(STATUS "PRIVREQ: ${PRIVREQ}")
 idf_component_register(SRCS ${SRCS} ${SOURCES}
-    INCLUDE_DIRS ${INCLUDES}
+    INCLUDE_DIRS ${INCS}
+    PRIV_INCLUDE_DIRS ${PRIVINCS}
     REQUIRES ${REQ}
     PRIV_REQUIRES ${PRIVREQ}
 )

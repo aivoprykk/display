@@ -197,7 +197,7 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
         .miso_io_num = PIN_NUM_MISO,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = LCD_H_RES * 200 / 8,
+        .max_transfer_sz = EPD_BUFFER_SIZE,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, 2));
 
@@ -218,7 +218,7 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
     // --- Create esp_lcd panel
     esp_lcd_ssd1680_config_t epaper_ssd1680_config = {
         .busy_gpio_num = PIN_NUM_EPD_BUSY,
-        .non_copy_mode = true,
+        .non_copy_mode = false,
     };
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = PIN_NUM_EPD_RST,
@@ -253,7 +253,7 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
     ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, false));
-    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
+    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
     esp_lcd_panel_invert_color(panel_handle, false);
     // NOTE: Calling esp_lcd_panel_disp_on_off(panel_handle, true) will reset the LUT to the panel built-in one,
     // custom LUT will not take effect any more after calling esp_lcd_panel_disp_on_off(panel_handle, true)
@@ -267,17 +267,19 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
+
+    uint32_t fb_size = EPD_BUFFER_SIZE, pix_buf_size = LCD_H_RES * LCD_V_RES / 5;
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    lv_color_t *buf1 = heap_caps_malloc(LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    lv_color_t *buf1 = heap_caps_malloc(pix_buf_size * sizeof(lv_color_t), MALLOC_CAP_DMA);
     assert(buf1);
-    lv_color_t *buf2 = heap_caps_malloc(LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    lv_color_t *buf2 = heap_caps_malloc(pix_buf_size * sizeof(lv_color_t), MALLOC_CAP_DMA);
     assert(buf2);
     // alloc bitmap buffer to draw
-    converted_buffer_black = heap_caps_malloc(LCD_H_RES * LCD_V_RES / 8, MALLOC_CAP_DMA);
-    converted_buffer_red = heap_caps_malloc(LCD_H_RES * LCD_V_RES / 8, MALLOC_CAP_DMA);
+    converted_buffer_black = heap_caps_malloc(fb_size, MALLOC_CAP_DMA);
+    converted_buffer_red = heap_caps_malloc(fb_size, MALLOC_CAP_DMA);
     // initialize LVGL draw buffers
-    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * 200);
+    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, pix_buf_size);
     // initialize LVGL display driver
     lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = LCD_H_RES;

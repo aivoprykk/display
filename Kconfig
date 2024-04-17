@@ -1,10 +1,10 @@
-menu "Lilygo Display Panel Options"
+menu "Logger Display Panel Options"
     config DISPLAY_TASK_STACK_SIZE
         int "Task stack size in bytes"
         default 12288
     choice DISPLAY_DRIVER
         prompt "Installed Panel"
-        default DISPLAY_DRIVER_ST7789 if IDF_TARGET_ESP32S3
+        default DISPLAY_DRIVER_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3
         default DISPLAY_DRIVER_SSD1680
         config DISPLAY_DRIVER_SSD1680
             bool "SSD1680"
@@ -30,7 +30,7 @@ menu "Lilygo Display Panel Options"
         prompt "Screen model"
         default HAS_SCREEN_DEPG0213BN if DISPLAY_DRIVER_SSD1680
         default HAS_SCREEN_GDEY0154D67 if DISPLAY_DRIVER_SSD1681
-        default HAS_SCREEN_ST7789 if DISPLAY_DRIVER_ST7789
+        default HAS_SCREEN_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3
         config HAS_SCREEN_DEPG0213BN
             depends on DISPLAY_DRIVER_SSD1680
             bool "DEPG0213BN 2.13 122x250 Eink"
@@ -49,7 +49,7 @@ menu "Lilygo Display Panel Options"
                 Select if screen model is GDEY0154D67
     
         config HAS_SCREEN_ST7789
-            depends on DISPLAY_DRIVER_ST7789
+            depends on HAS_BOARD_LILYGO_T_DISPLAY_S3
             bool "ST7789 170x320 TFT"
             help 
                 Select if screen model is TFT ST7789
@@ -65,32 +65,32 @@ menu "Lilygo Display Panel Options"
         config DISPLAY_SPI_MOSI
             int "GPIO for MOSI (DIN in epaper)"
             range -1 48
-            default -1 if DISPLAY_DRIVER_ST7789
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 23
         config DISPLAY_SPI_CLK
             int "GPIO for SPI Clock"
             range -1 48
-            default -1 if DISPLAY_DRIVER_ST7789
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 18
         config DISPLAY_BUSY
             int "GPIO for Busy signal"
             range -1 48
-            default -1 if DISPLAY_DRIVER_ST7789
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 4
         config DISPLAY_SPI_CS
             int "GPIO for Chip Select"
             range -1 48
-            default 6 if DISPLAY_DRIVER_ST7789
+            default 6 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 5
         config DISPLAY_DC
             int "GPIO for DC"
             range -1 48
-            default 7 if DISPLAY_DRIVER_ST7789
+            default 7 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 17
         config DISPLAY_RST
             int "GPIO for Reset"
             range -1 48
-            default 5 if DISPLAY_DRIVER_ST7789
+            default 5 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 16
 
         if DISPLAY_DRIVER_ST7789

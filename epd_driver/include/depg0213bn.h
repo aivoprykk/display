@@ -44,7 +44,7 @@ typedef struct depg0213bn_s {
     struct epd_g_s* epd;
     //struct epd_spi_s* IO;
     bool spi_optimized;// = true;
-    SemaphoreHandle_t screen_lock;
+    //SemaphoreHandle_t screen_lock;
     uint8_t bw_buf[DEPG0213BN_BUFFER_SIZE];
     uint8_t red_buf[DEPG0213BN_BUFFER_SIZE];
     bool _initial;  // = true;

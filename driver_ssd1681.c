@@ -43,7 +43,7 @@ static const char *TAG = "display_drv.ssd1681";
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-#define LVGL_TICK_PERIOD_MS    2
+#define LVGL_TICK_PERIOD_MS    4
 
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
@@ -77,9 +77,13 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     int offsetx2 = area->x2;
     int offsety1 = area->y1;
     int offsety2 = area->y2;
+    // int offsetx1 = 0;
+    // int offsetx2 = LCD_H_RES - 1;
+    // int offsety1 = 0;
+    // int offsety2 = LCD_V_RES/8 - 1;
     // Used to vertical traverse lvgl framebuffer
-    // int len_x = abs(offsetx1 - offsetx2) + 1;
-    // int len_y = abs(offsety1 - offsety2) + 1;
+    //int len_x = abs(offsetx1 - offsetx2) + 1;
+    //int len_y = abs(offsety1 - offsety2) + 1;
     // --- Convert buffer from color to monochrome bitmap
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
@@ -93,20 +97,26 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
         converted_buffer_red[i / 8] |= ((((color_map[i].ch.red) > 3) && ((lv_color_brightness(color_map[i])) < 251)) << (7 - (i % 8)));
         // Vertical traverse lvgl framebuffer (by column), needs to uncomment len_x and len_y
         // NOTE: If your screen rotation requires setting the pixels vertically, you could use the code below
-        // converted_buffer[i/8] |= (((lv_color_brightness(color_map[((i*len_x)%len_bits) + i/len_y])) > 250) << (7-(i % 8)));
+        //converted_buffer_black[i/8] |= (((lv_color_brightness(color_map[((i*len_x)%len_bits) + i/len_y])) > 250) << (7-(i % 8)));
     }
+    // ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
+    // // ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
+    // ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
     if(update_count==0)
         ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     else if(update_count==1)
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1681(panel_handle, fast_refresh_lut, 159));
+
     // --- Draw bitmap
     ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1681(panel_handle, SSD1681_EPAPER_BITMAP_BLACK));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
     ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd1681(panel_handle, SSD1681_EPAPER_BITMAP_RED));
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_red));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1681(panel_handle, update_count>0?2:0));
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
     ++update_count;
-    if(update_count==50) update_count=0;
+    if(update_count==50) 
+        update_count=0;
     TIMER_E
 }
 
@@ -197,7 +207,7 @@ esp_lcd_panel_handle_t display_ssd1681_new() {
         .miso_io_num = PIN_NUM_MISO,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = LCD_H_RES * 200 / 8,
+        .max_transfer_sz = EPD_BUFFER_SIZE,
     };
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, 2));
 
@@ -218,7 +228,7 @@ esp_lcd_panel_handle_t display_ssd1681_new() {
     // --- Create esp_lcd panel
     esp_lcd_ssd1681_config_t epaper_ssd1681_config = {
         .busy_gpio_num = PIN_NUM_EPD_BUSY,
-        .non_copy_mode = true,
+        .non_copy_mode = false,
     };
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = PIN_NUM_EPD_RST,
@@ -252,32 +262,34 @@ esp_lcd_panel_handle_t display_ssd1681_new() {
     vTaskDelay(100 / portTICK_PERIOD_MS);
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
-    ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, false));
-    ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
-    esp_lcd_panel_invert_color(panel_handle, false);
+    // ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
+    // // ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
+    // ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+
     // NOTE: Calling esp_lcd_panel_disp_on_off(panel_handle, true) will reset the LUT to the panel built-in one,
     // custom LUT will not take effect any more after calling esp_lcd_panel_disp_on_off(panel_handle, true)
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    //ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     // Set custom lut
     // NOTE: Setting custom LUT is not necessary. Panel built-in LUT is used calling after esp_lcd_panel_disp_on_off()
     // NOTE: Uncomment code below to see difference between full refresh & fast refresh
     // NOTE: epaper_panel_set_custom_lut() must be called AFTER calling esp_lcd_panel_disp_on_off()
-    ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1681(panel_handle, fast_refresh_lut, 159));
+    //ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1681(panel_handle, fast_refresh_lut, 159));
 
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
+    uint32_t pixel_buf_size = EPD_BUFFER_SIZE, fb_size = EPD_BUFFER_SIZE;
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    lv_color_t *buf1 = heap_caps_malloc(LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    lv_color_t *buf1 = heap_caps_malloc(pixel_buf_size * sizeof(lv_color_t), MALLOC_CAP_DMA);
     assert(buf1);
-    lv_color_t *buf2 = heap_caps_malloc(LCD_H_RES * 200 * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    lv_color_t *buf2 = heap_caps_malloc(pixel_buf_size * sizeof(lv_color_t), MALLOC_CAP_DMA);
     assert(buf2);
     // alloc bitmap buffer to draw
-    converted_buffer_black = heap_caps_malloc(LCD_H_RES * LCD_V_RES / 8, MALLOC_CAP_DMA);
-    converted_buffer_red = heap_caps_malloc(LCD_H_RES * LCD_V_RES / 8, MALLOC_CAP_DMA);
+    converted_buffer_black = heap_caps_malloc(fb_size, MALLOC_CAP_DMA);
+    converted_buffer_red = heap_caps_malloc(fb_size, MALLOC_CAP_DMA);
     // initialize LVGL draw buffers
-    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, LCD_H_RES * 200);
+    lv_disp_draw_buf_init(&disp_buf, buf1, buf2, pixel_buf_size);
     // initialize LVGL display driver
     lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = LCD_H_RES;

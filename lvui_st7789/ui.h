@@ -11,18 +11,18 @@ extern "C" {
 #endif
 
 #include "ui_common.h"
-
+#include "ui_themes.h"
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
 extern lv_obj_t * ui_SpeedScreen;
 extern lv_obj_t * ui_SpeedPanel;
-extern lv_obj_t * ui_SpeedSecondaryPanel;
-extern lv_obj_t * ui_LeftPanel;
-extern lv_obj_t * ui_RightPanel;
 extern lv_obj_t * ui_SpeedMainPanel;
 extern lv_obj_t * ui_SpeedStatusPanelWrapper;
 extern lv_obj_t * ui_SpeedStatusPanel;
+extern lv_obj_t * ui_SpeedSecondaryPanel;
+extern lv_obj_t * ui_LeftPanel;
+extern lv_obj_t * ui_RightPanel;
 extern lv_obj_t * ui_Speed1Panel;
 extern lv_obj_t * ui_Speed1MainPanel;
 extern lv_obj_t * ui_Speed1SecondaryPanel;
@@ -48,7 +48,7 @@ extern lv_obj_t * ui_InitLabel;
 void ui_StatsScreen_screen_init(void);
 extern lv_obj_t * ui_StatsScreen;
 extern lv_obj_t * ui_StatsStatusPanelWrapper;
-extern lv_obj_t * ui_StatStatusPanel;
+extern lv_obj_t * ui_StatsStatusPanel;
 extern lv_obj_t * ui_StatsPanel2Row;
 extern lv_obj_t * ui_Stats2Row1FullPanel;
 extern lv_obj_t * ui_Stats2Row2Panel;
@@ -64,49 +64,68 @@ extern lv_obj_t * ui_Stats3Row2RightPanel;
 extern lv_obj_t * ui_Stats3Row3Panel;
 extern lv_obj_t * ui_Stats3Row3LeftPanel;
 extern lv_obj_t * ui_Stats3Row3RightPanel;
+extern lv_obj_t * ui_StatsPanel4Row;
+extern lv_obj_t * ui_Stats4Row1Panel;
+extern lv_obj_t * ui_Stats4Row1LeftPanel;
+extern lv_obj_t * ui_Stats4Row1RightPanel;
+extern lv_obj_t * ui_Stats4Row2Panel;
+extern lv_obj_t * ui_Stats4Row2LeftPanel;
+extern lv_obj_t * ui_Stats4Row2RightPanel;
+extern lv_obj_t * ui_Stats4Row3Panel;
+extern lv_obj_t * ui_Stats4Row3LeftPanel;
+extern lv_obj_t * ui_Stats4Row3RightPanel;
+extern lv_obj_t * ui_Stats4Row4Panel;
+extern lv_obj_t * ui_Stats4Row4LeftPanel;
+extern lv_obj_t * ui_Stats4Row4RightPanel;
+extern lv_obj_t * ui_StatsPanel5Row;
+extern lv_obj_t * ui_Stats5Row1Panel;
+extern lv_obj_t * ui_Stats5Row1LeftPanel;
+extern lv_obj_t * ui_Stats5Row1RightPanel;
+extern lv_obj_t * ui_Stats5Row2Panel;
+extern lv_obj_t * ui_Stats5Row2LeftPanel;
+extern lv_obj_t * ui_Stats5Row2RightPanel;
+extern lv_obj_t * ui_Stats5Row3Panel3;
+extern lv_obj_t * ui_Stats5Row3LeftPanel;
+extern lv_obj_t * ui_Stats5Row3RightPanel;
+extern lv_obj_t * ui_Stats5Row4Panel;
+extern lv_obj_t * ui_Stats5Row4LeftPanel;
+extern lv_obj_t * ui_Stats5Row4RightPanel;
+extern lv_obj_t * ui_Stats5Row5Panel;
+extern lv_obj_t * ui_Stats5Row5LeftPanel;
+extern lv_obj_t * ui_Stats5Row5RightPanel;
 extern lv_obj_t * ui____initial_actions0;
 
-LV_IMG_DECLARE(ui_img_near_me_fill0_wght400_grad0_opsz24_png);    // assets/near_me_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE(ui_img_sd_card_fill0_wght400_grad0_opsz24_png);    // assets/sd_card_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(
+    ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png);    // assets/sd_card_alert_FILL0_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(ui_img_2129950171);    // assets/esp-gps-logo-v2-100px.png
+LV_IMG_DECLARE( ui_img_near_me_fill0_wght400_grad0_opsz24_png);   // assets/near_me_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(
+    ui_img_battery_0_bar_fill0_wght400_grad0_opsz24_png);    // assets/battery_0_bar_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(
+    ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png);    // assets/battery_horiz_000_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(ui_img_navigation_fill1_wght400_grad0_opsz24_png);    // assets/navigation_FILL1_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(
     ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png);    // assets/radio_button_checked_FILL0_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(
     ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png);    // assets/radio_button_partial_FILL0_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(
     ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png);    // assets/radio_button_unchecked_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(ui_img_sd_card_fill0_wght400_grad0_opsz24_png);    // assets/sd_card_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE(ui_img_sd_card_fill1_wght400_grad0_opsz24_png);    // assets/sd_card_FILL1_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(
-    ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png);    // assets/sd_card_alert_FILL0_wght400_GRAD0_opsz24.png
+    ui_img_sd_card_alert_fill1_wght400_grad0_opsz24_png);    // assets/sd_card_alert_FILL1_wght400_GRAD0_opsz24.png
 LV_IMG_DECLARE(ui_img_wifi_fill0_wght400_grad0_opsz24_png);    // assets/wifi_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE(
-    ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png);    // assets/battery_horiz_000_FILL0_wght400_GRAD0_opsz24.png
 
 
 LV_FONT_DECLARE(ui_font_OswaldRegular108p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular120p4);
-LV_FONT_DECLARE(ui_font_OswaldRegular12p2);
 LV_FONT_DECLARE(ui_font_OswaldRegular12p4);
+LV_FONT_DECLARE(ui_font_OswaldRegular12p2);
 LV_FONT_DECLARE(ui_font_OswaldRegular24p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular30p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular36p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular48p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular84p4);
-LV_FONT_DECLARE(ui_font_OswaldRegular108p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular108p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular120p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular120p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular84p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular84p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular48p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular48p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular24p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular24p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular30p2);
-LV_FONT_DECLARE(ui_font_OswaldRegular30p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular36p1);
-LV_FONT_DECLARE(ui_font_OswaldRegular36p2);
-LV_FONT_DECLARE(ui_font_MaterialIsymbolOutlined24p4);
-LV_FONT_DECLARE(ui_font_MaterialIsymbolOutlined14p4);
 
 
 void ui_init(void);

@@ -4,6 +4,7 @@
 // Project name: lilygo_tdisplay_s3_04
 
 #include "ui.h"
+#include "ui_helpers.h"
 
 ///////////////////// VARIABLES ////////////////////
 
@@ -12,12 +13,12 @@
 void ui_SpeedScreen_screen_init(void);
 lv_obj_t * ui_SpeedScreen;
 lv_obj_t * ui_SpeedPanel;
-lv_obj_t * ui_SpeedSecondaryPanel;
-lv_obj_t * ui_LeftPanel;
-lv_obj_t * ui_RightPanel;
 lv_obj_t * ui_SpeedMainPanel;
 lv_obj_t * ui_SpeedStatusPanelWrapper;
 lv_obj_t * ui_SpeedStatusPanel;
+lv_obj_t * ui_SpeedSecondaryPanel;
+lv_obj_t * ui_LeftPanel;
+lv_obj_t * ui_RightPanel;
 lv_obj_t * ui_Speed1Panel;
 lv_obj_t * ui_Speed1MainPanel;
 lv_obj_t * ui_Speed1SecondaryPanel;
@@ -47,7 +48,7 @@ lv_obj_t * ui_InitLabel;
 void ui_StatsScreen_screen_init(void);
 lv_obj_t * ui_StatsScreen;
 lv_obj_t * ui_StatsStatusPanelWrapper;
-lv_obj_t * ui_StatStatusPanel;
+lv_obj_t * ui_StatsStatusPanel;
 lv_obj_t * ui_StatsPanel2Row;
 lv_obj_t * ui_Stats2Row1FullPanel;
 lv_obj_t * ui_Stats2Row2Panel;
@@ -63,17 +64,49 @@ lv_obj_t * ui_Stats3Row2RightPanel;
 lv_obj_t * ui_Stats3Row3Panel;
 lv_obj_t * ui_Stats3Row3LeftPanel;
 lv_obj_t * ui_Stats3Row3RightPanel;
+lv_obj_t * ui_StatsPanel4Row;
+lv_obj_t * ui_Stats4Row1Panel;
+lv_obj_t * ui_Stats4Row1LeftPanel;
+lv_obj_t * ui_Stats4Row1RightPanel;
+lv_obj_t * ui_Stats4Row2Panel;
+lv_obj_t * ui_Stats4Row2LeftPanel;
+lv_obj_t * ui_Stats4Row2RightPanel;
+lv_obj_t * ui_Stats4Row3Panel;
+lv_obj_t * ui_Stats4Row3LeftPanel;
+lv_obj_t * ui_Stats4Row3RightPanel;
+lv_obj_t * ui_Stats4Row4Panel;
+lv_obj_t * ui_Stats4Row4LeftPanel;
+lv_obj_t * ui_Stats4Row4RightPanel;
+lv_obj_t * ui_StatsPanel5Row;
+lv_obj_t * ui_Stats5Row1Panel;
+lv_obj_t * ui_Stats5Row1LeftPanel;
+lv_obj_t * ui_Stats5Row1RightPanel;
+lv_obj_t * ui_Stats5Row2Panel;
+lv_obj_t * ui_Stats5Row2LeftPanel;
+lv_obj_t * ui_Stats5Row2RightPanel;
+lv_obj_t * ui_Stats5Row3Panel3;
+lv_obj_t * ui_Stats5Row3LeftPanel;
+lv_obj_t * ui_Stats5Row3RightPanel;
+lv_obj_t * ui_Stats5Row4Panel;
+lv_obj_t * ui_Stats5Row4LeftPanel;
+lv_obj_t * ui_Stats5Row4RightPanel;
+lv_obj_t * ui_Stats5Row5Panel;
+lv_obj_t * ui_Stats5Row5LeftPanel;
+lv_obj_t * ui_Stats5Row5RightPanel;
 lv_obj_t * ui____initial_actions0;
+const lv_img_dsc_t * ui_imgset_battery_0_bar_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_0_bar_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_battery_horiz_000_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t *ui_imgset_near_me_fill0_wght400_grad0_opsz[1] = {&ui_img_near_me_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_navigation_fill1_wght400_grad0_opsz[1] = {&ui_img_navigation_fill1_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_radio_button_checked_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_radio_button_partial_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_radio_button_unchecked_fill0_wght400_grad0_opsz[1] = {&ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_sd_card_alert_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_sd_card_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_near_me_fill0_wght400_grad0_opsz[1] = {&ui_img_near_me_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_sd_card_fill1_wght400_grad0_opsz[1] = {&ui_img_sd_card_fill1_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_sd_card_alert_fill0_wght400_grad0_opsz[1] = {&ui_img_sd_card_alert_fill0_wght400_grad0_opsz24_png};
+const lv_img_dsc_t * ui_imgset_sd_card_alert_fill1_wght400_grad0_opsz[1] = {&ui_img_sd_card_alert_fill1_wght400_grad0_opsz24_png};
 const lv_img_dsc_t * ui_imgset_wifi_fill0_wght400_grad0_opsz[1] = {&ui_img_wifi_fill0_wght400_grad0_opsz24_png};
-const lv_img_dsc_t * ui_imgset_battery_horiz_000_fill0_wght400_grad0_opsz[1] = {&ui_img_battery_horiz_000_fill0_wght400_grad0_opsz24_png};
 
-///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
 
@@ -81,7 +114,12 @@ const lv_img_dsc_t * ui_imgset_battery_horiz_000_fill0_wght400_grad0_opsz[1] = {
 
 void ui_init(void)
 {
-    ui_common_init();
+    LV_EVENT_GET_COMP_CHILD = lv_event_register_id();
+
+    lv_disp_t * dispp = lv_disp_get_default();
+    lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
+                                               false, LV_FONT_DEFAULT);
+    lv_disp_set_theme(dispp, theme);
     ui_SpeedScreen_screen_init();
     ui_InfoScreen_screen_init();
     ui_StatsScreen_screen_init();
