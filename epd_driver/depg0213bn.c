@@ -96,30 +96,28 @@ static const uint16_t partial_refresh_time = 300;  // ms, e.g. 736721us
 // Partial Update Delay, may have an influence on degradation
 #define GD_UPDATE_DELAY 300
 
-static uint8_t lut_partial[] = {
-    0x0,  0x40, 0x0,  0x0,  0x0,  0x0,  0x0,  //LUT0: BB:     VS 0 ~7
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x80, 0x80, //LUT1: BW:     VS 0 ~7
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  //LUT2: WB:     VS 0 ~7
-    0x0,  0x0,  0x0,  0x40, 0x40, 0x0,  0x0,  //LUT3: WW:     VS 0 ~7
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  //LUT4: VCOM:   VS 0 ~7
-
-    0x0,  0x0,  0x80, 0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0F, 0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x2,  0x1,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  
-    0x0,  0x0,  0x0,  0x0,  0x22, 0x22, 0x22,
-    0x22, 0x22, 0x22, 0x0,  0x0,  0x0
+static uint8_t lut_partial[] = { // from gxepd2
+  0x0, 0x40, 0x0, 0x0, 0x0, 0x0, 0x0, 
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x80, 0x80, 
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 
+  0x0, 0x0, 0x0, 0x40, 0x40, 0x0, 0x0, 
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 
+  0x0, 0x0, 0x80, 0x0, 0x0, 0x0, 0x0, 
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0A, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2,
+  0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x0, 0x0, 0x0,
 };
 
 const uint8_t lut_partial_b[] =
@@ -199,8 +197,13 @@ void update(void* _me) {
         return;
     epd->_using_partial_mode = false;
     Init_Full(epd, 0x03);
+    if(epd->_initial_refresh){
+        // memset(epd->bw_buf, 0, epd->bw_buf_size);
+        // memset(epd->red_buf, 0, epd->red_buf_size);
+        epd->_initial_refresh = false;
+    }
     _write_ram_buf(epd, SSD168X_WRITE_RAM_BW, epd->bw_buf, epd->bw_buf_size);
-    _write_ram_buf(epd, SSD168X_WRITE_RAM_RED, epd->red_buf, epd->red_buf_size);
+    //_write_ram_buf(epd, SSD168X_WRITE_RAM_RED, epd->bw_buf, epd->bw_buf_size);
     Update_Full(epd);
     powerDown(epd);
     TIMER_E
@@ -354,9 +357,9 @@ void Dis_Part(const void* _me, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     const uint8_t ye_d256 = ye / 256;
     const uint8_t ye_m256 = ye % 256;
     _write_ram_part(epd, SSD168X_WRITE_RAM_BW, y, ye, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256, 1, epd->bw_buf, epd->bw_buf_size);
-    delay_ms(GD_UPDATE_DELAY);
-    _write_ram_part(epd, SSD168X_WRITE_RAM_RED, y, ye, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256, 0, epd->red_buf, epd->red_buf_size);
-    delay_ms(GD_UPDATE_DELAY);
+    //delay_ms(GD_UPDATE_DELAY);
+    _write_ram_part(epd, SSD168X_WRITE_RAM_BW, y, ye, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256, 0, epd->bw_buf, epd->bw_buf_size);
+    //delay_ms(GD_UPDATE_DELAY);
     TIMER_E
 }
 
@@ -401,6 +404,7 @@ static void hibernate(void* _me) {
 }
 
 void setRamDataEntryMode(const void* _me, uint8_t em) {
+    LOGR
     const uint16_t xPixelsPar = WIDTH - 1;
     const uint16_t yPixelsPar = HEIGHT - 1;
     const uint8_t x_d8 = xPixelsPar / 8;
@@ -434,6 +438,7 @@ void setRamDataEntryMode(const void* _me, uint8_t em) {
 }
 
 static void SetRamArea(const void* _me, uint8_t Xstart, uint8_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1) {
+    LOGR
     const epd_g_t * epd = _me;
     // depg0213bn_t* me = epd->screen;
     // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
@@ -449,6 +454,7 @@ static void SetRamArea(const void* _me, uint8_t Xstart, uint8_t Xend, uint8_t Ys
 }
 
 static void SetRamPointer(const void* _me, uint8_t addrX, uint8_t addrY, uint8_t addrY1) {
+    LOGR
     const epd_g_t * epd = _me;
     // depg0213bn_t* me = epd->screen;
     // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
@@ -461,6 +467,7 @@ static void SetRamPointer(const void* _me, uint8_t addrX, uint8_t addrY, uint8_t
 }
 
 static void PowerOn(void* _me) {
+    LOGR
     // TIMER_S
     epd_g_t * epd = _me;
     // depg0213bn_t* me = epd->screen;
@@ -477,6 +484,7 @@ static void PowerOn(void* _me) {
 }
 
 static void PowerOff(void* _me) {
+    LOGR
     // TIMER_S
     epd_g_t * epd = _me;
     // depg0213bn_t* me = epd->screen;
@@ -494,6 +502,7 @@ static void PowerOff(void* _me) {
 }
 
 void powerDown(void* _me) {
+    LOGR
     epd_g_t * epd = _me;
     epd->_using_partial_mode = false;
     epd->op->writeCommand(epd, SSD168X_DEEP_SLEEP_MODE);
@@ -558,12 +567,12 @@ static void Init_Part(void* _me, uint8_t em) {
     epd->op->writeCommand(_me, SSD1680_PARAM_DATA_ENTRY_MODE_3);
     epd->op->writeByte(_me, 0x17);
     epd->op->writeCommand(_me, SSD1680_CMD_SET_SRC_DRIVING_VOLTAGE);
-    //epd->op->writeDataArray(epd, SSD1680_PARAM_SRC_DRIVING_VOLTAGE, 3);
-    epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[0]);
-    epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[1]);
-    epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[2]);
+    epd->op->writeDataArray(epd, SSD1680_PARAM_SRC_DRIVING_VOLTAGE, 3);
+    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[0]);
+    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[1]);
+    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[2]);
     epd->op->writeCommand(_me, SSD1680_CMD_SET_VCOM_REG);
-    epd->op->writeByte(_me, 0x32);
+    epd->op->writeByte(_me, 0x34);
 
     epd->op->writeCommand(_me, SSD1680_CMD_SET_WRITE_REGISTER);
     epd->op->writeByte(_me, 0x00);
@@ -615,7 +624,11 @@ static void Update_Part(const void* _me) {
     // depg0213bn_t* me = epd->screen;
     // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
     epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
-    epd->op->writeByte(epd, 0xCF); // 0xcf - enable clk signal enable analog, display width mode 2, disable analog, disable osc
+    // gxepd 0xcc
+    // lilygo 0xcf
+    // ssd1680 0xff
+    // another 0xc7
+    epd->op->writeByte(epd, 0xcc); // 0xcf - enable clk signal enable analog, display width mode 2, disable analog, disable osc
     epd->op->writeCommand(epd, SSD168X_MASTER_ACTIVATION);
     epd->op->waitWhileBusy(epd, __FUNCTION__, partial_refresh_time);
     // xSemaphoreGiveRecursive(me->screen_lock);
@@ -687,8 +700,8 @@ depg0213bn_t* depg0213bn_init(depg0213bn_t* me, epd_g_t* epd, bool debug) {
     epd->RAW_WIDTH = WIDTH;
     epd->bw_buf = me->bw_buf;
     epd->bw_buf_size = sizeof(me->bw_buf);
-    epd->red_buf = me->red_buf;
-    epd->red_buf_size = sizeof(me->red_buf);
+    //epd->red_buf = me->red_buf;
+    //epd->red_buf_size = sizeof(me->red_buf);
     epd->_page_height = HEIGHT/50;
     epd->_pages = (epd->HEIGHT / epd->_page_height) + ((epd->HEIGHT % epd->_page_height) > 0);
     epd->TAG = TAG;
