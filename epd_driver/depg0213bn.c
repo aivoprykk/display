@@ -39,6 +39,7 @@
 #define N DEPG0213BN
 
 static const char* TAG = QUOTE_CMD(N);
+TIMER_INIT
 
 static const uint16_t WIDTH = 128;
 static const uint16_t WIDTH_VISIBLE = 122;
@@ -49,8 +50,8 @@ static const bool hasFastPartialUpdate = true;
 static const bool useFastFullUpdate = true;        // set false for extended (low) temperature range
 static const uint16_t power_on_time = 80;         // ms, e.g. 95868us
 static const uint16_t power_off_time = 80;        // ms, e.g. 140350us
-static const uint16_t full_refresh_time = 1200;    // ms, e.g. 4011934us
-static const uint16_t partial_refresh_time = 300;  // ms, e.g. 736721us
+static const uint16_t full_refresh_time = 12000;    // ms, e.g. 4011934us
+static const uint16_t partial_refresh_time = 3000;  // ms, e.g. 736721us
 
 #define SSD168X_DRIVER_OUTPUT_CONTROL 0x01
 #define SSD1680_PARAM_DATA_ENTRY_MODE_1       0x01
@@ -153,25 +154,6 @@ const uint8_t lut_partial[] = { // gxepd1
     /* --- */ 
     0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x00, 0x00, 0x00,
 };
-
-void update(void* _me) {
-    TIMER_S
-    epd_g_t* epd = _me;
-    if (epd->_current_page != -1)
-        return;
-    epd->_using_partial_mode = false;
-    Init_Full(epd, 0x03);
-    if(epd->_initial_refresh){
-        // memset(epd->bw_buf, 0, epd->bw_buf_size);
-        // memset(epd->red_buf, 0, epd->red_buf_size);
-        epd->_initial_refresh = false;
-    }
-    _write_ram_buf(epd, SSD168X_WRITE_RAM_BW, epd->bw_buf, epd->bw_buf_size);
-    //_write_ram_buf(epd, SSD168X_WRITE_RAM_RED, epd->bw_buf, epd->bw_buf_size);
-    Update_Full(epd);
-    powerDown(epd);
-    TIMER_E
-}
 
 /* static void drawBitmap_b(void* _me, const uint8_t* bitmap, uint32_t size, int16_t mode) {
     epd_g_t* epd = _me;
@@ -295,251 +277,280 @@ void update(void* _me) {
     }
 } */
 
-void _write_ram_part(const epd_g_t * epd, uint8_t em, uint16_t y, uint16_t ye, uint8_t xs_d8, uint8_t xe_d8, uint8_t ys_m256, uint8_t ys_d256, uint8_t ye_m256, uint8_t ye_d256, bool runupdate_part, uint8_t * buf, uint16_t size) {
+static ram_params_t p = {0};
+
+esp_err_t set_ram_params(ram_params_t * p, uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t em) {
+    p->x = min(WIDTH, x);
+    p->y = min(HEIGHT, y);
+    const uint16_t xe = p->x + w, ye = p->y + h;
+    p->xe = min(WIDTH, xe) - 1;   // x+w must be less than WIDTH
+    p->ye = min(HEIGHT, ye) - 1;  // y+h must be less than HEIGHT
+    p->xs_d8 = x / 8;             // startx/8 means (x >> 3)
+    p->xe_d8 = p->xe / 8;         // endx/8 means (xe >> 3)
+    p->ys_d256 = y / 256;         // starty/256 means (y >> 8)
+    p->ys_m256 = y % 256;         // starty%256 means (y & 0xFF)
+    p->ye_d256 = p->ye / 256;     // endy/256 means (ye >> 8)
+    p->ye_m256 = p->ye % 256;     // endy%256 means (ye & 0xFF)
+    p->ram_mode = min(em, 0x03);
+    return ESP_OK;
+}
+
+void _write_ram_part(const epd_g_t * epd, struct ram_params_s * p, uint8_t em, bool runupdate_part, uint8_t * buf, size_t buf_size) {
     TIMER_S
-    // epd->op->writeCommand(epd, SSD168X_DATA_ENTRY_MODE_SETTING);
-    // epd->op->writeByte(epd, 0x03);
-    SetRamArea(epd, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256);  // X-source area,Y-gate area
-    SetRamPointer(epd, xs_d8, ys_m256, ys_d256);                          // set ram
-    epd->op->waitWhileBusy(epd, __FUNCTION__, 100);                        // needed ?
-    _write_ram_y_inc(epd, em, y, ye, xs_d8, xe_d8, WIDTH / 8, buf, size);
+    set_ram(epd, p);                          // set ram
+    //epd->op->waitWhileBusy(epd, __FUNCTION__, 100);                        // needed ?
+    write_ram(epd, p, em, buf, buf_size);
     if(runupdate_part)
         Update_Part(epd);
     TIMER_E
 }
 
-void Dis_Part(const void* _me, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+void Dis_Part(const void* _me, struct ram_params_s * p) {
     TIMER_S
     const epd_g_t* epd = _me;
     /// HEIGHT = 250, WIDTH = 128, LINE_BYTES = 16, BUFFER_SIZE = 4000
-    const uint16_t xe = gx_uint16_min(WIDTH, x + w) - 1;   // x+w must be less than WIDTH
-    const uint16_t ye = gx_uint16_min(HEIGHT, y + h) - 1;  // y+h must be less than HEIGHT
-    const uint8_t xs_d8 = x / 8;                                // start x/8
-    const uint8_t xe_d8 = xe / 8;                               // end x/8
-    const uint8_t ys_d256 = y / 256;
-    const uint8_t ys_m256 = y % 256;
-    const uint8_t ye_d256 = ye / 256;
-    const uint8_t ye_m256 = ye % 256;
-    _write_ram_part(epd, SSD168X_WRITE_RAM_BW, y, ye, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256, 1, epd->bw_buf, epd->bw_buf_size);
-    //delay_ms(PU_DELAY);
-    _write_ram_part(epd, SSD168X_WRITE_RAM_BW, y, ye, xs_d8, xe_d8, ys_m256, ys_d256, ye_m256, ye_d256, 0, epd->bw_buf, epd->bw_buf_size);
-    //delay_ms(PU_DELAY);
+    _write_ram_part(epd, p, SSD168X_WRITE_RAM_BW, 1, epd->bw_buf, epd->bw_buf_size);
+    delay_ms(PU_DELAY);
+    //write_ram(epd, p, SSD168X_WRITE_RAM_BW, epd->bw_buf, epd->bw_buf_size);
+    _write_ram_part(epd, p, SSD168X_WRITE_RAM_BW, 0, epd->bw_buf, epd->bw_buf_size);
+    delay_ms(PU_DELAY);
+    //write_ram(epd, p, SSD168X_WRITE_RAM_RED, 0, 0);
     TIMER_E
 }
 
 void updateWindow(void* _me, uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     TIMER_S
     epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
+    if(epd->_initial_refresh){
+        update(_me);
+        goto done;
+    }
     if (epd->_current_page != -1)
-        return;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
+        goto done;
     if (epd->rotation)
         epd->op->rotate(_me, &x, &y, &w, &h);
     if (x >= WIDTH)
-        return;
+        goto done;
     if (y >= HEIGHT)
-        return;
-    Init_Part(epd, 0x03);
-    Dis_Part(epd, x, y, w, h);
-    //PowerOff(epd);
-    // xSemaphoreGiveRecursive(me->screen_lock);
+        goto done;
+    set_ram_params(&p, x, y, w, h, 0x03);
+    Init_Part(epd, &p);
+    Dis_Part(epd, &p);
+    powerDown(epd);
+    done:
     TIMER_E
+}
+
+void update(void* _me) {
+    TIMER_S
+    epd_g_t* epd = _me;
+    if (epd->_current_page != -1)
+        goto done;
+    //epd->_using_partial_mode = false;
+    set_ram_params(&p, 0, 0, WIDTH, HEIGHT, 0x03);
+    Init_Full(epd, &p);
+    if(epd->_initial_refresh){
+        // memset(epd->bw_buf, 0, epd->bw_buf_size);
+        // memset(epd->red_buf, 0, epd->red_buf_size);
+        epd->_initial_refresh = false;
+    }
+    set_ram(epd, &p); // set ram
+    write_ram(epd, &p, SSD168X_WRITE_RAM_BW, epd->bw_buf, epd->bw_buf_size);
+    write_ram(epd, &p, SSD168X_WRITE_RAM_RED, 0, 0); // fill red buffer with 0
+    //_write_ram_buf(epd, SSD168X_WRITE_RAM_BW, epd->bw_buf, epd->bw_buf_size);
+    //write_ram(epd, &p, SSD168X_WRITE_RAM_RED, epd->bw_buf, epd->bw_buf_size);
+    Update_Full(epd);
+    powerDown(epd);
+    done:
+    TIMER_E
+}
+
+void set_area(const void* _me, const ram_params_t * p) {
+    switch (p->ram_mode) {
+        case 0x00:                                                     // x decrease, y decrease
+            setRamArea(_me, p->xe_d8, 0x00, p->ye_m256, p->ye_d256, 0x00, 0x00);  // X-source area,Y-gate area
+            break;
+        case 0x01:                                                     // x increase, y decrease : as in demo code
+            setRamArea(_me, 0x00, p->xe_d8, p->ye_m256, p->ye_d256, 0x00, 0x00);  // X-source area,Y-gate area
+            break;
+        case 0x02:                                                     // x decrease, y increase
+            setRamArea(_me, p->xe_d8, 0x00, 0x00, 0x00, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
+            break;
+        case 0x03:                                                     // x increase, y increase : normal mode
+            setRamArea(_me, 0x00, p->xe_d8, 0x00, 0x00, p->ye_m256, p->ye_d256);  // X-source area,Y-gate area
+            break;
+    }
+}
+
+void set_ram(const void* _me, const ram_params_t * p) {
+    switch (p->ram_mode) {
+        case 0x00:                                                     // x decrease, y decrease
+            setRamPointer(_me, p->xe_d8, p->ye_m256, p->ye_d256);                 // set ram
+            break;
+        case 0x01:                                                     // x increase, y decrease : as in demo code
+            setRamPointer(_me, 0x00, p->ye_m256, p->ye_d256);                 // set ram
+            break;
+        case 0x02:                                                     // x decrease, y increase
+            setRamPointer(_me, p->xe_d8, 0x00, 0x00);                     // set ram
+            break;
+        case 0x03:                                                     // x increase, y increase : normal mode
+            setRamPointer(_me, 0x00, 0x00, 0x00);                     // set ram
+            break;
+    }
+}
+
+void setRamArea(const struct epd_g_s * epd, uint8_t Xstart, uint8_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1) {
+    LOGR
+    epd->op->writeCommand(epd, SSD168X_SET_RAM_X_ADDRESS_START_END_POSITION);
+    epd->op->writeByte(epd, Xstart+1);
+    epd->op->writeByte(epd, Xend+1);
+    epd->op->writeCommand(epd, SSD168X_SET_RAM_Y_ADDRESS_START_END_POSITION);
+    epd->op->writeByte(epd, Ystart);
+    epd->op->writeByte(epd, Ystart1);
+    epd->op->writeByte(epd, Yend);
+    epd->op->writeByte(epd, Yend1);
+}
+
+void setRamPointer(const struct epd_g_s * epd, uint8_t addrX, uint8_t addrY, uint8_t addrY1) {
+    LOGR
+    epd->op->writeCommand(epd, SSD168X_SET_RAM_X_ADDRESS_COUNTER);
+    epd->op->writeByte(epd, addrX+1);
+    epd->op->writeCommand(epd, SSD168X_SET_RAM_Y_ADDRESS_COUNTER);
+    epd->op->writeByte(epd, addrY);
+    epd->op->writeByte(epd, addrY1);
+}
+
+void setRamDataEntryMode(const void* _me, uint8_t em) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_DATA_ENTRY_MODE_SETTING);
+    epd->op->writeByte(_me, em);
+}
+
+static void setDisplayUpdate22(const void * _me, uint8_t em) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD1680_CMD_SET_DISP_UPDATE_CTRL);  //  Display update control
+    epd->op->writeByte(_me, em);
+}
+
+static void setDisplayUpdate21(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_DISPLAY_UPDATE_CONTROL_1);  //  Display update control
+    epd->op->writeByte(_me, 0x00);
+    epd->op->writeByte(_me, 0x80);
+}
+
+static void setDisplayOn(const void * _me, uint8_t em, uint16_t timeout) {
+    TIMER_S
+    const epd_g_t * epd = _me;
+    if(em > 0) {
+        setDisplayUpdate22(_me, em);
+    }
+    epd->op->writeCommand(_me, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ); // Master Activation
+    epd->op->waitWhileBusy(_me, __FUNCTION__, timeout);
+    TIMER_E
+}
+
+static void PowerOn(void* _me) {
+    LOGR
+    epd_g_t * epd = _me;
+    if (!epd->_power_is_on) {
+        epd->_power_is_on = true;
+    }
+}
+
+static void PowerOff(void* _me) {
+    LOGR
+    epd_g_t * epd = _me;
+    if (epd->_power_is_on) {
+         epd->_power_is_on = false;
+    }
+    //epd->_using_partial_mode = false;
 }
 
 static void powerOff(void* _me) {
     PowerOff(_me);
 }
 
-// turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
-static void hibernate(void* _me) {
-    TIMER_S
-    epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    PowerOff(_me);
-    if (CONFIG_DISPLAY_RST >= 0) {
-        epd->op->writeCommand(epd, SSD168X_DEEP_SLEEP_MODE);  // deep sleep mode
-        epd->op->writeByte(epd, 0x1);      // enter deep sleep
-        epd->_hibernating = true;
-    }
-    // xSemaphoreGiveRecursive(me->screen_lock);
-    TIMER_E
-}
-
-void setRamDataEntryMode(const void* _me, uint8_t em) {
-    LOGR
-    const uint16_t xPixelsPar = WIDTH - 1;
-    const uint16_t yPixelsPar = HEIGHT - 1;
-    const uint8_t x_d8 = xPixelsPar / 8;
-    const uint8_t y_d256 = yPixelsPar / 256;
-    const uint8_t y_m256 = yPixelsPar % 256;
-    em = gx_uint16_min(em, 0x03);
-    const epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    epd->op->writeCommand(_me, SSD168X_DATA_ENTRY_MODE_SETTING);
-    epd->op->writeByte(_me, em);
-    switch (em) {
-        case 0x00:                                                     // x decrease, y decrease
-            SetRamArea(_me, x_d8, 0x00, y_m256, y_d256, 0x00, 0x00);  // X-source area,Y-gate area
-            SetRamPointer(_me, x_d8, y_m256, y_d256);                 // set ram
-            break;
-        case 0x01:                                                     // x increase, y decrease : as in demo code
-            SetRamArea(_me, 0x00, x_d8, y_m256, y_d256, 0x00, 0x00);  // X-source area,Y-gate area
-            SetRamPointer(_me, 0x00, y_m256, y_d256);                 // set ram
-            break;
-        case 0x02:                                                     // x decrease, y increase
-            SetRamArea(_me, x_d8, 0x00, 0x00, 0x00, y_m256, y_d256);  // X-source area,Y-gate area
-            SetRamPointer(_me, x_d8, 0x00, 0x00);                     // set ram
-            break;
-        case 0x03:                                                     // x increase, y increase : normal mode
-            SetRamArea(_me, 0x00, x_d8, 0x00, 0x00, y_m256, y_d256);  // X-source area,Y-gate area
-            SetRamPointer(_me, 0x00, 0x00, 0x00);                     // set ram
-            break;
-    }
-    // xSemaphoreGiveRecursive(me->screen_lock);
-}
-
-static void SetRamArea(const void* _me, uint8_t Xstart, uint8_t Xend, uint8_t Ystart, uint8_t Ystart1, uint8_t Yend, uint8_t Yend1) {
+void setDeepSleep(const void * _me, uint8_t em) {
     LOGR
     const epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    epd->op->writeCommand(_me, SSD168X_SET_RAM_X_ADDRESS_START_END_POSITION);
-    epd->op->writeByte(_me, Xstart+1);
-    epd->op->writeByte(_me, Xend+1);
-    epd->op->writeCommand(_me, SSD168X_SET_RAM_Y_ADDRESS_START_END_POSITION);
-    epd->op->writeByte(_me, Ystart);
-    epd->op->writeByte(_me, Ystart1);
-    epd->op->writeByte(_me, Yend);
-    epd->op->writeByte(_me, Yend1);
-    // xSemaphoreGiveRecursive(me->screen_lock);
-}
-
-static void SetRamPointer(const void* _me, uint8_t addrX, uint8_t addrY, uint8_t addrY1) {
-    LOGR
-    const epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    epd->op->writeCommand(_me, SSD168X_SET_RAM_X_ADDRESS_COUNTER);
-    epd->op->writeByte(_me, addrX+1);
-    epd->op->writeCommand(_me, SSD168X_SET_RAM_Y_ADDRESS_COUNTER);
-    epd->op->writeByte(_me, addrY);
-    epd->op->writeByte(_me, addrY1);
-    // xSemaphoreGiveRecursive(me->screen_lock);
-}
-
-static void PowerOn(void* _me) {
-    LOGR
-    // TIMER_S
-    epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    if (!epd->_power_is_on) {
-    //     // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    //     epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
-    //     epd->op->writeByte(epd, 0xf8);  // 0xc0);
-    //     epd->op->writeCommand(epd, SSD168X_MASTER_ACTIVATION);
-    //     epd->op->waitWhileBusy(epd, "PowerOn", power_on_time);
-        epd->_power_is_on = true;
-    //     // xSemaphoreGiveRecursive(me->screen_lock);
-    }
-    // TIMER_E
-}
-
-static void PowerOff(void* _me) {
-    LOGR
-    // TIMER_S
-    epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    if (epd->_power_is_on) {
-    //     // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    //     epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
-    //     epd->op->writeByte(epd, 0x83);
-    //     epd->op->writeCommand(epd, SSD168X_MASTER_ACTIVATION);
-    //     epd->op->waitWhileBusy(epd, "PowerOff", power_off_time);
-         epd->_power_is_on = false;
-    //     epd->_using_partial_mode = false;
-    //     // xSemaphoreGiveRecursive(me->screen_lock);
-    }
-    // TIMER_E
+    epd->op->writeCommand(epd, SSD168X_DEEP_SLEEP_MODE);  // deep sleep mode
+    epd->op->writeByte(epd, 0x01);      // enter deep sleep
 }
 
 // hibernate
 void powerDown(void* _me) {
     LOGR
-    epd_g_t * epd = _me;
-    epd->_using_partial_mode = false;
-    epd->op->writeCommand(epd, SSD168X_DEEP_SLEEP_MODE);
-    epd->op->writeByte(epd, 0x01);
-    PowerOff(epd);
+    // 6. Power Off
+    hibernate(_me, 0x11); // 0x00 = normal, 0x01 = mode1, 0x11 = mode2
+    // epd_g_t * epd = _me;
+    // epd->_using_partial_mode = false;
+    // PowerOff(epd);
+    // setDeepSleep(_me);
 }
 
-static void InitDisplay(void* _me, uint8_t em) {
+// turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
+void hibernate(void* _me, uint8_t em) {
     TIMER_S
     epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    // if (epd->_hibernating){
-    //     epd->op->reset(epd, 10); // 10ms before and after
-    // }
-    epd->op->writeCommand(_me, SSD168X_SW_RESET);  // SWRESET
-    //epd->op->waitWhileBusy(_me, __FUNCTION__, 1000);
-    delay_ms(10);
-
-    // epd->op->writeCommand(_me, SSD168X_DRIVER_OUTPUT_CONTROL);  // Driver output control
-    // epd->op->writeByte(_me, (HEIGHT - 1) & 0xff);
-    // epd->op->writeByte(_me, ((HEIGHT - 1) >> 8) & 0xff);
-    // epd->op->writeByte(_me, 0x00);
-
-    // epd->op->writeCommand(_me, SSD168X_BORDER_WAVEFORM_CONTROL);  // BorderWavefrom
-    // epd->op->writeByte(_me, 0x05);
-
-    // epd->op->writeCommand(_me, SSD168X_DISPLAY_UPDATE_CONTROL_1);  //  Display update control
-    // epd->op->writeByte(_me, 0x00);
-    // epd->op->writeByte(_me, 0x80);
-
-    // epd->op->writeCommand(_me, SSD168X_TEMPERATURE_SENSOR_READ);  // Read built-in temperature sensor
-    // epd->op->writeByte(_me, 0x80);
-
-    setRamDataEntryMode(_me, em);
-    // xSemaphoreGiveRecursive(me->screen_lock);
+    if (CONFIG_DISPLAY_RST >= 0) {
+        setDeepSleep(_me, em);
+        epd->_hibernating = true;
+    }
+    PowerOff(_me);
     TIMER_E
 }
 
-static void Init_Full(void* _me, uint8_t em) {
-    TIMER_S
-    epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    InitDisplay(_me, em);
-    PowerOn(_me);
-    epd->_using_partial_mode = false;
-    // xSemaphoreGiveRecursive(me->screen_lock);
-    TIMER_E
-}
-
-static void Init_Part(void* _me, uint8_t em) {
-    TIMER_S
-    epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    InitDisplay(_me, em);
-    epd->op->writeCommand(_me, SSD1680_CMD_SET_LUT_REG);
-    epd->op->writeDataArray(epd, &(lut_partial[0]), sizeof(lut_partial));
-    epd->op->writeCommand(_me, SSD1680_CMD_SET_END_OPTION); // Option for LUT end, 0x22=Normal
-    epd->op->writeByte(_me, 0x22);
-
+static void setGateDrivingVoltage(const void *_me, uint8_t em) {
+    LOGR
+    const epd_g_t * epd = _me;
     epd->op->writeCommand(_me, SSD1680_PARAM_DATA_ENTRY_MODE_3); // Gate Driving voltage, 0x17=20V
-    epd->op->writeByte(_me, 0x17);
+    epd->op->writeByte(_me, em); // 0x17);
+}
+
+static void setSourceDrivingVoltage(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
     epd->op->writeCommand(_me, SSD1680_CMD_SET_SRC_DRIVING_VOLTAGE); // Source Driving Voltage, 0x41=VSH1/VSH2=15V
     epd->op->writeDataArray(epd, SSD1680_PARAM_SRC_DRIVING_VOLTAGE, 3);
-    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[0]);
-    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[1]);
-    // epd->op->writeByte(_me, SSD1680_PARAM_SRC_DRIVING_VOLTAGE[2]);
+}
+
+static void setVcomRegister(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
     epd->op->writeCommand(_me, SSD1680_CMD_SET_VCOM_REG); // VCOM register x34= -1.3V, x18=-0.6V
     epd->op->writeByte(_me, 0x34);
+}
 
+static void setDriverOutput(const void* _me) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_DRIVER_OUTPUT_CONTROL);  // Driver output control
+    epd->op->writeByte(_me, (HEIGHT - 1) & 0xff);
+    epd->op->writeByte(_me, ((HEIGHT - 1) >> 8) & 0xff);
+    epd->op->writeByte(_me, 0x00);
+}
+
+static void setBorderWaveform(const void* _me, uint8_t em) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_BORDER_WAVEFORM_CONTROL);  // BorderWavefrom
+    epd->op->writeByte(_me, em); // 0x05);
+}
+
+static void readTempSensor(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_TEMPERATURE_SENSOR_READ);  // Read built-in temperature sensor
+    epd->op->writeByte(_me, 0x80); // 0x64 fast full update?
+}
+
+static void setWriteRegister(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
     epd->op->writeCommand(_me, SSD1680_CMD_SET_WRITE_REGISTER); // Write Register for Display option
     epd->op->writeByte(_me, 0x00);
     epd->op->writeByte(_me, 0x00);
@@ -551,54 +562,117 @@ static void Init_Part(void* _me, uint8_t em) {
     epd->op->writeByte(_me, 0x00);
     epd->op->writeByte(_me, 0x00);
     epd->op->writeByte(_me, 0x00);
+}
 
-    epd->op->writeCommand(_me, SSD1680_CMD_SET_BORDER_WAVEFORM); // Border Wafeform control
-    epd->op->writeByte(_me, SSD1680_PARAM_BORDER_WAVEFORM);
-    epd->op->writeCommand(_me, SSD1680_CMD_SET_DISP_UPDATE_CTRL); // Display update control 2
-    epd->op->writeByte(_me, 0xC0); // Enable Analog
-    epd->op->writeCommand(_me, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ); // Master Activation
-    epd->op->waitWhileBusy(_me, __FUNCTION__, 10000);
+static void setLut(const void * _me, const uint8_t * lut, size_t lut_size) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD1680_CMD_SET_LUT_REG);
+    epd->op->writeDataArray(epd, lut, lut_size);
+    epd->op->writeCommand(_me, SSD1680_CMD_SET_END_OPTION); // Option for LUT end, 0x22=Normal
+    epd->op->writeByte(_me, 0x22);
+}
+
+static void setSwReset(const void * _me) {
+    LOGR
+    const epd_g_t * epd = _me;
+    epd->op->writeCommand(_me, SSD168X_SW_RESET);  // SWRESET 0x12
+    //epd->op->waitWhileBusy(_me, __FUNCTION__, 1000);
+    delay_ms(10);
+}
+
+// Stages implemented according to doc:
+static void InitDisplay(void* _me, struct ram_params_s * p) {
+    TIMER_S
+    epd_g_t * epd = _me;
+
+    // 2. Set Initial Configuration
+    if (epd->_hibernating){
+         epd->op->reset(epd, 10); // 10ms after
+    }
+    setSwReset(_me);
+
+    // 3: Send Initialization code
+    setDriverOutput(_me); // stage 2 by spec
+    setRamDataEntryMode(_me, p->ram_mode);
+    set_area(epd, p);  // X-source area,Y-gate area
+    //setRamArea(_me, em);
+    //setBorderWaveform(_me, SSD1680_PARAM_BORDER_WAVEFORM); // 0x80 == follow vcom, 0x05 == a2 follow lut, a0-1 lut1
+    
+    // setDisplayControl(_me);
+   TIMER_E
+}
+
+static void Init_Full(void* _me, struct ram_params_s * p) {
+    TIMER_S
+    epd_g_t * epd = _me;
+
+    // 2-3 here
+    InitDisplay(_me, p);
+    setBorderWaveform(_me, 0x05); // 0x80 == follow vcom, 0x05 == a2 follow lut, a0-1 lut1
+
+    // 4. Load Waveform LUT -- > full init uses defaults.
+    readTempSensor(_me);
+    setDisplayOn(_me, 0xf7, 10000U);
     PowerOn(_me);
+
+    // 5. Write Image and Drive Display Panel
+    //set_ram(_me, p);
+    
+    epd->_using_partial_mode = false;
+    TIMER_E
+}
+
+static void Init_Part(void* _me, struct ram_params_s * p) {
+    TIMER_S
+    epd_g_t * epd = _me;
+    
+    // 2-3 here
+    InitDisplay(_me, p);
+    setBorderWaveform(_me, 0xc0); // 0x80 == follow vcom, 0x05 == a2 follow lut, a0-1 lut1
+
+    // 4. Load Waveform LUT
+    readTempSensor(_me);
+    setLut(_me, &(lut_partial[0]), sizeof(lut_partial));
+    setGateDrivingVoltage(_me, 0x17);
+    setSourceDrivingVoltage(_me);
+    setVcomRegister(_me);
+    setWriteRegister(_me);
+    setDisplayOn(_me, 0xc0, 10000U);
+    PowerOn(_me);
+
+    // 5. Write Image and Drive Display Panel
+    //set_ram(_me, p);
+    
     epd->_using_partial_mode = true;
-    // xSemaphoreGiveRecursive(me->screen_lock);
     TIMER_E
 }
 
 static void Update_Full(const void* _me) {
     TIMER_S
     const epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
     // if (useFastFullUpdate) {
-    //     epd->op->writeCommand(epd, 0x1A);
+    //     epd->op->writeCommand(epd, SSD168X_TEMPERATURE_SENSOR_CONTROL);
     //     epd->op->writeByte(epd, 0x64);
-    //     epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
-    //     epd->op->writeByte(epd, 0xd4);
-    // } else {
-    //     epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
-    //     epd->op->writeByte(epd, 0xf4);
     // }
-    epd->op->writeCommand(epd, SSD1680_CMD_ACTIVE_DISP_UPDATE_SEQ);
-    epd->op->waitWhileBusy(epd, __FUNCTION__, full_refresh_time);
-    // xSemaphoreGiveRecursive(me->screen_lock);
+    epd->op->writeCommand(epd, SSD168X_BOOSTER_SOFT_START_CONTROL);
+    epd->op->writeDataArray(epd, (const uint8_t[]){0x8b, 0x9c, 0x96, 0x0f}, 4);
+    //setDisplayOn(_me, useFastFullUpdate ? 0xd4 : 0xf4, full_refresh_time);
+    setDisplayOn(_me, 0xff, full_refresh_time);
     TIMER_E
 }
 
 static void Update_Part(const void* _me) {
     TIMER_S
     const epd_g_t * epd = _me;
-    // depg0213bn_t* me = epd->screen;
-    // xSemaphoreTakeRecursive(me->screen_lock, portMAX_DELAY);
-    epd->op->writeCommand(epd, SSD168X_DISPLAY_UPDATE_CONTROL_2);
+    epd->op->writeCommand(epd, SSD168X_BOOSTER_SOFT_START_CONTROL);
+    epd->op->writeDataArray(epd, (const uint8_t[]){0x8b, 0x9c, 0x96, 0x0f}, 4);
     // gxepd 0xcc
     // lilygo 0xcf
     // ssd1680 0xff
     // another 0xc7
     // xx 0xc0
-    epd->op->writeByte(epd, 0xcf); // 0xcf - enable clk signal enable analog, display width mode 2, disable analog, disable osc
-    epd->op->writeCommand(epd, SSD168X_MASTER_ACTIVATION);
-    epd->op->waitWhileBusy(epd, __FUNCTION__, partial_refresh_time);
-    // xSemaphoreGiveRecursive(me->screen_lock);
+    setDisplayOn(_me, 0xcf, partial_refresh_time);
     TIMER_E
 }
 
@@ -634,9 +708,7 @@ void depg0213bn_free(void* _me) {
 }
 
 const screen_op_t depg0213bn_ops = {
-    .powerOff = powerOff,
     .powerDown = powerDown,
-    .hibernate = hibernate,
     .update = update,
     .updateWindow = updateWindow,
     .get_height = _get_height,

@@ -69,3 +69,18 @@ void _write_ram_y_inc_array(const epd_g_t * epd, uint8_t em, uint16_t ys, uint16
         epd->op->writeDataArray(epd, x1buf, sizeof(x1buf));
     }
 }
+
+void write_ram(const epd_g_t * epd, const struct ram_params_s * p, uint8_t em, uint8_t * buf, uint16_t size) {
+    switch (p->ram_mode) {
+        case 0x00:                                                     // x decrease, y decrease
+            break;
+        case 0x01:                                                     // x increase, y decrease : as in demo code
+            _write_ram_y_dec(epd, em, p->y, p->ye, p->xs_d8, p->xe_d8, epd->RAW_WIDTH / 8, buf, size);
+            break;
+        case 0x02:                                                     // x decrease, y increase
+            break;
+        case 0x03:                                                     // x increase, y increase : normal mode
+            _write_ram_y_inc(epd, em, p->y, p->ye, p->xs_d8, p->xe_d8, epd->RAW_WIDTH / 8, buf, size);
+            break;
+    }
+}

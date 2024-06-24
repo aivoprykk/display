@@ -45,8 +45,6 @@ static const char *TAG = "display_drv.st7789";
 
 #define L_LVGL_TICK_PERIOD_MS 2
 
-#define LCD_BUF_SIZE (LCD_H_RES * LCD_V_RES)
-#define LCD_BUF_SIZE_DIV_10 LCD_BUF_SIZE / 10
 #define PSRAM_DATA_ALIGNMENT 64
 
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
@@ -167,11 +165,22 @@ void _lvgl_unlock(void) {
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 }
 
+void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
+    LOGR
+    // Set the callback functions
+    disp_drv->action = LCD_H_RES;
+    disp_drv->actionver_res = LCD_V_RES;
+    disp_drv->actionflush_cb = lvgl_flush_cb;
+    // disp_drv->actionwait_cb = lvgl_wait_cb;
+    // disp_drv->actiondrv_update_cb = epaper_lvgl_port_update_callback;
+    disp_drv->user_data = panel_handle;
+}
+
 /**
  * @brief Initialize the screen
  * 
  */
-static void init_screen() {
+static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     LOGR
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
@@ -179,7 +188,7 @@ static void init_screen() {
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
     ESP_LOGI(TAG, "Allocate memory");
-    size_t bufsz = LCD_BUF_SIZE_DIV_10;
+    size_t bufsz = LCD_BUF_SIZE;
     //memset(lv_disp_buf, 0, sizeof(lv_disp_buf));
     //memset(lv_disp_buf2, 0, sizeof(lv_disp_buf2));
     lv_color_t *buf1 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
@@ -191,12 +200,10 @@ static void init_screen() {
     //lv_disp_draw_buf_init(&disp_buf, &(lv_disp_buf[0]), &(lv_disp_buf2[0]), bufsz);
     // initialize LVGL display driver
     lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res = LCD_H_RES;
-    disp_drv.ver_res = LCD_V_RES;
-    disp_drv.flush_cb = lvgl_flush_cb;
-    //disp_drv.wait_cb = lvgl_wait_cb;
     disp_drv.draw_buf = &disp_buf;
-    disp_drv.user_data = panel_handle;
+
+    cb(&disp_drv);
+
     ESP_LOGI(TAG, "Register display driver to LVGL");
     //lv_disp_t *disp = 
     lv_disp_drv_register(&disp_drv);
@@ -239,7 +246,7 @@ esp_lcd_panel_handle_t display_st7789_new() {
             CONFIG_DISPLAY_D7,
         },
         .bus_width = 8,
-        .max_transfer_bytes = LCD_BUF_SIZE * sizeof(uint16_t), // LVGL_LCD_BUF_SIZE * sizeof(uint16_t),
+        .max_transfer_bytes = LCD_PIXELS * sizeof(uint16_t), // LVGL_LCD_BUF_SIZE * sizeof(uint16_t),
         .psram_trans_align = PSRAM_DATA_ALIGNMENT, // PSRAM_DATA_ALIGNMENT,
         .sram_trans_align = 4,
     };
@@ -315,12 +322,11 @@ esp_lcd_panel_handle_t display_st7789_new() {
     esp_lcd_panel_io_tx_param(io_handle, 0x29, NULL, 0);
      
     //delay_ms(100);
-    init_screen();
+    init_screen(display_init_cb);
 
     ESP_LOGI(TAG, "Create LVGL task");
-    // xTaskCreatePinnedToCore(tick_thread, "tick_thread", 2048, NULL, 1, NULL, 1);
 
-    ui_init();
+    //ui_init();
     
     TIMER_E
     return panel_handle;
@@ -332,8 +338,6 @@ void display_st7789_del() {
     lv_deinit();
     esp_lcd_panel_del(panel_handle);
     esp_lcd_panel_io_del(io_handle);
-    //heap_caps_free(converted_buffer_black);
-    //heap_caps_free(converted_buffer_red);
     vSemaphoreDelete(panel_refreshing_sem);
 }
 

@@ -34,14 +34,17 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_V_GAP (0)
 #define display_new display_ssd1681_new
 #define display_del display_ssd1681_del
+#define display_init_cb display_ssd1681_init_cb
 #endif
 #if defined(CONFIG_DISPLAY_DRIVER_SSD1680)
 #define LCD_H_RES (128)               // horizontal
+#define LCD_H_VISIBLE (122)           // vertical
 #define LCD_V_RES (250)               // vertical
-#define LCD_H_GAP (6)
+#define LCD_H_GAP (0)
 #define LCD_V_GAP (0)
 #define display_new display_ssd1680_new
 #define display_del display_ssd1680_del
+#define display_init_cb display_ssd1680_init_cb
 #endif
 #if defined(CONFIG_DISPLAY_DRIVER_ST7789)
 #define LCD_H_RES (320)               // horizontal
@@ -50,11 +53,26 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_V_GAP (35)
 #define display_new display_st7789_new
 #define display_del display_st7789_del
+#define display_init_cb display_st7789_init_cb
 #endif
 
-#define EPD_BUFFER_SIZE (LCD_H_RES * LCD_V_RES / 8)
+#define LCD_RESOLUTION  (LCD_H_RES * LCD_V_RES)
+#define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
+#define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
 
-#define L_LVGL_TASK_MAX_DELAY_MS 500
+#define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u) // Align to nearest 8 bits
+#define LCD_PIXELS_MEM_ALIGNED (LCD_H_RES * BYTE_PADDING(LCD_V_RES) / 8)
+
+#define H_NORM_PX_VISIBLE(h_scr_percent) ((int16_t)((LCD_H_VISIBLE / 100.0) * (h_scr_percent)))
+#define V_NORM_PX(v_scr_percent) ((int16_t)((LCD_V_RES / 100.0) * (v_scr_percent)))
+
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+#define LCD_BUF_SIZE (LCD_PIXELS/10)
+#else
+#define LCD_BUF_SIZE (LCD_PIXELS)
+#endif
+
+#define L_LVGL_TASK_MAX_DELAY_MS 200
 #define L_LVGL_TASK_MIN_DELAY_MS 1
 
 #endif
