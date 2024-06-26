@@ -3,6 +3,7 @@
 #include "driver_vendor.h"
 #include "logger_common.h"
 #include "ui_common.h"
+#include "esp_log.h"
 
 #include "lv_comp_info_panel.h"
 #include "lv_comp_main_screen.h"

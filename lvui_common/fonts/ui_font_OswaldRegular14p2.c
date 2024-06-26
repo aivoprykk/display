@@ -4,7 +4,7 @@
  * Opts: --bpp 2 --size 14 --font /Users/aivo/Dropbox/gt31/squareline_proj_2_13_01/assets/Oswald-Regular.ttf -o /Users/aivo/Dropbox/gt31/squareline_proj_2_13_01/assets/ui_font_OswaldRegular14p2.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "../ui.h"
+#include "ui_common.h"
 
 #ifndef UI_FONT_OSWALDREGULAR14P2
 #define UI_FONT_OSWALDREGULAR14P2 1

@@ -4,7 +4,7 @@
  * Opts: --bpp 4 --size 30 --font /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/OpenSans-Bold.ttf -o /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/ui_font_OpenSansBold30p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "../ui.h"
+#include "ui_common.h"
 
 #ifndef UI_FONT_OPENSANSBOLD30P4
 #define UI_FONT_OPENSANSBOLD30P4 1

@@ -3,6 +3,7 @@
 #include "driver_vendor.h"
 #include "logger_common.h"
 #include "ui_common.h"
+#include "esp_log.h"
 
 #define MY_CLASS &lv_cell_class
 static const char TAG[] = "lv_cell";

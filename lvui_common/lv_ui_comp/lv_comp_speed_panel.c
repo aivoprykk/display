@@ -4,6 +4,7 @@
 #include "lv_comp_cell.h"
 #include "lv_comp_two_col_panel.h"
 #include "logger_common.h"
+#include "esp_log.h"
 
 //LV_FONT_DECLARE(ui_font_OswaldRegular120p2);
 

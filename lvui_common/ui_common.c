@@ -7,7 +7,7 @@
 
 
 static const char *TAG = "ui_common";
-TIMER_INIT
+// TIMER_INIT
 
 // const lv_style_const_prop_t style_plain_panel_props[] = {
 //     LV_STYLE_CONST_PAD_BOTTOM(0),
@@ -129,29 +129,27 @@ void ui_create_styles(void) {
     // lv_style_set_text_font(s, &ui_font_OswaldRegular16p4);
 }
 
-lv_obj_t* ui_StatusPanel = 0;
+//lv_obj_t* ui_StatusPanel = 0;
 
 #if defined(STATUS_PANEL_V1)
 ui_status_panel_t ui_status_panel = {0};
-void ui_StatusPanel_load(ui_screen_t* parent, int8_t viewmode) {
+void ui_status_panel_load(ui_screen_t* parent) {
     LOGR
     if(!parent->has_status_cnt)
         return;
-    if(ui_StatusPanel != NULL && 
-    (viewmode != ui_status_panel.viewmode)) {
-        ui_StatusPanel_unload();
+    if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
+        ui_status_panel_delete();
     }
-    if((void *) ui_status_panel.parent != (void*) &ui_info_screen.screen && ui_StatusPanel != NULL)
-        return;
-    ui_status_panel.viewmode = viewmode;
-    if (ui_StatusPanel == NULL)
-        ui_StatusPanel_init(parent);
-    else
-        lv_obj_set_parent(ui_StatusPanel, parent->status_cnt);
+    ui_status_panel.viewmode = parent->status_viewmode;
+    if (ui_status_panel.self == NULL)
+        ui_status_panel_init(parent);
+    else {
+        lv_obj_set_parent(ui_status_panel.self, parent->status_cnt);
+    }
     ui_status_panel.parent = parent;
 }
 
-lv_obj_t* ui_StatusPanel_create_B(lv_obj_t* parent) {
+lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
     LOGR
     lv_obj_t *panel, *l, *right;
     panel = ui_common_panel_init(parent, 100, 100);
@@ -164,6 +162,7 @@ lv_obj_t* ui_StatusPanel_create_B(lv_obj_t* parent) {
     lv_obj_set_style_pad_right(panel, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_status_panel.self = panel;
 
     l = lv_label_create(panel);
     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
@@ -236,177 +235,49 @@ lv_obj_t* ui_StatusPanel_create_B(lv_obj_t* parent) {
     return panel;
 }
 
-void ui_StatusPanel_unload(void) {
+void ui_status_panel_delete(void) {
     LOGR
-    if (ui_StatusPanel != NULL) {
-        lv_obj_clean(ui_StatusPanel);
-        lv_obj_del(ui_StatusPanel);
-        ui_StatusPanel = NULL;
-        //ui_status_panel.parent->status_cnt = 0;
-        //uint8_t vmc = ui_status_panel.viewmode;
+    if (ui_status_panel.self != NULL) {
+        lv_obj_clean(ui_status_panel.self);
+        lv_obj_del(ui_status_panel.self);
+        // ui_status_panel.self = NULL;
+        // ui_status_panel.parent->status_cnt = 0;
+        // uint8_t vmc = ui_status_panel.viewmode;
         memset(&ui_status_panel, 0, sizeof(ui_status_panel));
-        //ui_status_panel.viewmode = vmc;
+        // ui_status_panel.viewmode = vmc;
     }
 }
+
 #else
 
-void ui_StatusPanel_load(ui_screen_t* parent, int8_t viewmode) {
+void ui_status_panel_create(ui_screen_t* parent, int8_t viewmode) {
     LOGR
     if(!parent->has_status_cnt)
         return;
-    if (ui_StatusPanel == NULL)
-        ui_StatusPanel_init(parent);
+    if (ui_status_panel.self == NULL)
+        ui_status_panel_init(parent);
     else{
-        lv_obj_set_parent(ui_StatusPanel, parent->status_cnt);
+        lv_obj_set_parent(ui_status_panel.self, parent->status_cnt);
     }
     const lv_font_t *font = parent->status_font ? parent->status_font : ui_status_font_default;
-    if(lv_obj_get_style_text_font(ui_StatusPanel, LV_PART_MAIN | LV_STATE_DEFAULT) != font)
-        lv_obj_set_style_text_font(ui_StatusPanel, font, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_statusbar_set_mode(ui_StatusPanel, viewmode);
+    if(lv_obj_get_style_text_font(ui_status_panel.self, LV_PART_MAIN | LV_STATE_DEFAULT) != font)
+        lv_obj_set_style_text_font(ui_status_panel.self, font, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_statusbar_set_mode(ui_status_panel, viewmode);
 }
 
-void ui_StatusPanel_unload(void) {
+void ui_status_panel_delete(void) {
     LOGR
-    if (ui_StatusPanel != NULL) {
-        lv_obj_clean(ui_StatusPanel);
-        lv_obj_del(ui_StatusPanel);
-        ui_StatusPanel = NULL;
+    if (ui_status_panel.self != NULL) {
+        lv_obj_clean(ui_status_panel.self);
+        lv_obj_del(ui_status_panel.self);
+        ui_status_panel.self = NULL;
     }
 }
 
 #endif
 
-void showSleepScreen() {
-    TIMER_S
-    loadSleepScreen();
-    TIMER_E
-}
-
-
-void showLowBatScreen() {
-    LOGR
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &battery_horiz_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_style_img_recolor(img, lv_color_hex(0xEECE44), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_img_recolor_opa(img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_y(img, lv_pct(-5));
-        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-    }
-}
-
-void showPushScreen(int push) {
-    LOGR
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = push==1 ? &ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png : push==2 ? &ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png : &ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-5));
-        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-    }
-}
-
-void showGpsTroubleScreen() {
-    LOGR
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &near_me_disabled_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-10));
-        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_label_set_text(ui_init_screen.init_lbl, "GPS Failure");
-    }
-}
-
-void showBootScreen(const char* title) {
-    LOGR
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-    }
-    if (title){
-        if(lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
-            lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_y(img, lv_pct(-10));
-    } else {
-        if(!lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
-            lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_y(img, lv_pct(-5));
-    }
-    const char *lbl_txt = lv_label_get_text(ui_init_screen.init_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_init_screen.init_lbl, title);
-}
-
-void showWifiScreen(const char * title, const char * info) {
-    LOGR
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &wifi_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != 0)
-            lv_img_set_angle(img, 0);
-    }
-    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_lbl, title);
-    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
-}
-
-void showGpsScreen(const char* title, const char* info, int angle) {
-    LOGR
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &near_me_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-    }
-    if(lv_img_get_angle(img) != angle)
-        lv_img_set_angle(img, angle);
-    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_lbl, title);
-    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
-}
-
-void showSpeedScreen() {
-    LOGR
-    loadSpeedScreen();
-}
-
-void showStatsScreen12() {
-    LOGR
-    loadStatsScreen(2,102);
-    //ui_StatusPanel_load(ui_StatusPanel);
-}
-
-void showStatsScreen22() {
-    LOGR
-    loadStatsScreen(2,2);
-    //ui_StatusPanel_load(ui_StatusPanel);
-}
-
-void showStatsScreen32() {
-    LOGR
-    loadStatsScreen(3,2);
-    //ui_StatusPanel_load(ui_StatusPanel);
-}
-
 void ui_common_init(void) {
     LOGR
-    LV_EVENT_GET_COMP_CHILD = lv_event_register_id();
-
     lv_disp_t* dispp = lv_disp_get_default();
 #ifdef CONFIG_DISPLAY_DRIVER_ST7789
     lv_theme_t* theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
@@ -419,7 +290,7 @@ void ui_common_init(void) {
 
 void ui_common_deinit() {
     LOGR
-    ui_StatusPanel_unload();
+    ui_status_panel_delete();
 }
 
 lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h) {
@@ -435,13 +306,58 @@ lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h) {
 
 lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
     LOGR
-    lv_obj_t * scr = lv_obj_create(NULL);
-    lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
+    lv_obj_t * scr = screen->self;
+    if(!scr) {
+        scr = lv_obj_create(NULL);
+        lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
+        screen->self = scr;
+    }
     if(screen->has_status_cnt) {
-        lv_obj_t *panel = ui_common_panel_init(scr, 100, 18);
-        lv_obj_set_y(panel, -4); // for DEPG0213BN, visible height is 128-6=122
-        lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
-        screen->status_cnt = panel;
+        if(!screen->status_cnt) {
+            lv_obj_t *panel = ui_common_panel_init(scr, 100, 18);
+            lv_obj_set_y(panel, -4); // for SSD1680, visible height is 128-6=122
+            lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
+            screen->status_cnt = panel;
+        }
+        else {
+            lv_obj_set_parent(screen->status_cnt, scr);
+        }
     }
     return scr;
+}
+
+void ui_common_screen_uninit(ui_screen_t * screen) {
+    LOGR
+    if(screen->self) {
+        lv_obj_clean(screen->self);
+        lv_obj_del(screen->self);
+        screen->self = NULL;
+    }
+    if(screen->status_cnt) {
+        screen->status_cnt = NULL;
+    }
+}
+
+void ui_flush_screens(ui_screen_t * screen) {
+    LOGR
+    ui_screen_t * scr = &ui_init_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
+    scr = &ui_info_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
+    scr = &ui_speed_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
+    scr = &ui_stats_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
+    scr = &ui_sleep_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
 }

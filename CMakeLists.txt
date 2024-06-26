@@ -45,7 +45,7 @@ if(CONFIG_DISPLAY_USE_LVGL)
 
 ## lvui_common
 SET(lvcommon_dir lvui_common)
-FILE(GLOB LSRCS  ${lvcommon_dir}/*.c ${lvcommon_dir}/components/ui_*.c ${lvcommon_dir}/lv_ui_comp/*.c)
+FILE(GLOB LSRCS  ${lvcommon_dir}/*.c ${lvcommon_dir}/lv_ui_comp/*.c)
 FILE(GLOB FONTS ${lvcommon_dir}/fonts/ui_font*.c)
 if(CONFIG_DISPLAY_DRIVER_ST7789)
     FILE(GLOB IMAGES ${lvcommon_dir}/img16b/*.c)
@@ -54,8 +54,8 @@ else()
 endif()
 
 SET(SRCS ${source_file})
-FILE(GLOB SOURCES ${src_dir}/*.c ${src_dir}/components/*.c ${src_dir}/screens/*.c)
-SET(INCS include ${src_dir} ${src_dir}/components ${lvcommon_dir}/include ${lvcommon_dir}/lv_ui_comp)
+FILE(GLOB SOURCES ${src_dir}/*.c ${src_dir}/screens/*.c)
+SET(INCS include ${src_dir} ${lvcommon_dir}/include ${lvcommon_dir}/lv_ui_comp)
 
 else(CONFIG_DISPLAY_USE_LVGL)
 

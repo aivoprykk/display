@@ -4,7 +4,7 @@
  * Opts: --bpp 4 --size 78 --font /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/Oswald-Regular.ttf -o /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/ui_font_OswaldRegular78p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "../ui.h"
+#include "ui_common.h"
 
 #ifndef UI_FONT_OSWALDREGULAR78P4
 #define UI_FONT_OSWALDREGULAR78P4 1

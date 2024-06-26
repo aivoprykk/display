@@ -3,8 +3,8 @@
 // LVGL version: 8.3.6
 // Project name: squareline_proj_2_13_01
 
-#ifndef _SQUARELINE_PROJ_2_13_01_UI_H
-#define _SQUARELINE_PROJ_2_13_01_UI_H
+#ifndef A657D16B_6490_49B7_9AB8_3CE81FA306DF
+#define A657D16B_6490_49B7_9AB8_3CE81FA306DF
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,13 +14,6 @@ extern "C" {
 
 extern lv_obj_t *ui____initial_actions0;
 
-// LV_IMG_DECLARE( ui_img_sd_card_fill0_wght400_grad0_opsz24_png);   // assets/sd_card_FILL0_wght400_GRAD0_opsz24.png
-// LV_IMG_DECLARE( ui_img_navigation_fill0_wght400_grad0_opsz24_png);   // assets/navigation_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_checked_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_partial_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_unchecked_FILL0_wght400_GRAD0_opsz24.png
-
-
 void ui_init(void);
 void ui_deinit();
 
@@ -28,4 +21,4 @@ void ui_deinit();
 } /*extern "C"*/
 #endif
 
-#endif
+#endif /* A657D16B_6490_49B7_9AB8_3CE81FA306DF */

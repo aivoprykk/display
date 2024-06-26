@@ -1,7 +1,9 @@
 
 #include "../ui.h"
+#include "logger_common.h"
 
 ui_stats_screen_t ui_stats_screen = {0};
+static const char *TAG = "ui_stats_screen";
 
 static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) {
 
@@ -45,9 +47,8 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(panel, ui_stats_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_t *rows[7] = {0}, *cols[2] = {0}, *obj = 0;
+    lv_obj_t *rows[7] = {0}, *cols[2] = {0};
     int numrows = rowlen, h = 100 / numrows, numcols = collen, fh=h;
-    int j;
     if (numcols > 100){
         if (numcols > 200)
             numcols -= 200;
@@ -93,10 +94,12 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
 }
 
 static lv_obj_t * load(lv_obj_t * parent) {
+    LOGR
     return uiStatsPanelLoad(parent, ui_stats_screen.rows , ui_stats_screen.cols);
 }
 
 static void unload(void) {
+    LOGR
     if (ui_stats_screen.screen.main_cnt == 0) return;
     lv_obj_clean(ui_stats_screen.screen.main_cnt);
     lv_obj_del(ui_stats_screen.screen.main_cnt);
@@ -109,18 +112,21 @@ static void unload(void) {
 }
 
 void ui_StatsScreen_screen_init(int rows, int cols) {
-    if (!ui_StatsScreen){
+    if (!ui_stats_screen.screen.self){
         ui_stats_screen.screen.has_status_cnt = 1;
+        ui_stats_screen.screen.status_viewmode = 0;
         ui_stats_screen.screen.load = load;
         ui_stats_screen.screen.unload = unload;
-        ui_StatsScreen = ui_common_screen_init(&ui_stats_screen.screen);
+        ui_common_screen_init(&ui_stats_screen.screen);
     }
+    ui_flush_screens(&ui_stats_screen.screen);
     if(cols!=ui_stats_screen.cols || rows!=ui_stats_screen.rows) {
         unload();
     }
     if (ui_stats_screen.screen.main_cnt == 0) {
         ui_stats_screen.rows = rows;
         ui_stats_screen.cols = cols;
-        ui_stats_screen.screen.main_cnt = load(ui_StatsScreen);
+        ui_stats_screen.screen.main_cnt = load(ui_stats_screen.screen.self);
     }
+    ui_status_panel_load(&ui_stats_screen.screen);
 }

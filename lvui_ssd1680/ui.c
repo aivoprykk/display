@@ -5,31 +5,34 @@
 
 #include "ui.h"
 #include "ui_helpers.h"
+#include "logger_common.h"
 
 ///////////////////// VARIABLES ////////////////////
 
+static const char *TAG = "ui_ssd1680";
+TIMER_INIT
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
-lv_obj_t *ui_SpeedScreen = 0;
+//lv_obj_t *ui_SpeedScreen = 0;
 
 
 // SCREEN: ui_InfoScreen
 void ui_InfoScreen_screen_init(void);
-lv_obj_t *ui_InfoScreen = 0;
+//lv_obj_t *ui_InfoScreen = 0;
 
 // SCREEN: ui_InitScreen
 void ui_InitScreen_screen_init(void);
-lv_obj_t *ui_InitScreen = 0;
+//lv_obj_t *ui_InitScreen = 0;
 
 
 // SCREEN: ui_StatsScreen
 void ui_StatsScreen_screen_init(int rows, int cols);
-lv_obj_t *ui_StatsScreen = 0;
+//lv_obj_t *ui_StatsScreen = 0;
 
 // SCREEN: ui_SleepScreen
 void ui_SleepScreen_screen_init(void);
-lv_obj_t *ui_SleepScreen = 0;
+//lv_obj_t *ui_SleepScreen = 0;
 
 lv_obj_t *ui____initial_actions0;
 
@@ -52,27 +55,28 @@ const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p2;
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
 
-void ui_StatusPanel_init(ui_screen_t *parent) {
-    if (ui_StatusPanel != NULL)
+void ui_status_panel_init(ui_screen_t *parent) {
+    if ( ui_status_panel.self != NULL)
         return;
 #if defined(STATUS_PANEL_V1)
-    ui_StatusPanel = ui_StatusPanel_create_B(parent->status_cnt);
+    ui_status_panel_create(parent->status_cnt);
 #else
-    ui_StatusPanel = lv_statusbar_create(parent->status_cnt);
+    ui_status_panel.self = lv_statusbar_create(parent->status_cnt);
 #endif
-    lv_obj_set_x(ui_StatusPanel, 0);
-    lv_obj_set_y(ui_StatusPanel, 0);
-    lv_obj_set_style_bg_color(ui_StatusPanel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui_StatusPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_color(ui_StatusPanel, lv_color_hex(0x0D0D0D), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_opa(ui_StatusPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_color(ui_StatusPanel, lv_color_hex(0x0D0D0D), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_StatusPanel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_StatusPanel, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_t * obj = ui_status_panel.self;
+    lv_obj_set_x(obj, 0);
+    lv_obj_set_y(obj, 0);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(obj, lv_color_hex(0x0D0D0D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(obj, lv_color_hex(0x0D0D0D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
 void loadSleepScreen() {
-    if (ui_SleepScreen == 0) {
+    if (ui_sleep_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p2;
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p2;
@@ -84,18 +88,13 @@ void loadSleepScreen() {
 #endif
     }
     ui_SleepScreen_screen_init();
-    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_SleepScreen){
-        #if defined(STATUS_PANEL_V1)
-        ui_StatusPanel_load(&ui_sleep_screen.screen, 1);
-        #else
-        ui_StatusPanel_load(&ui_sleep_screen.screen, 1);
-        #endif
-        lv_scr_load(ui_SleepScreen);
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
+        lv_scr_load(ui_sleep_screen.screen.self);
     }
 }
 
 void loadInfoScreen() {
-    if (ui_InfoScreen == 0) {
+    if (ui_info_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_info_screen.font.title = &ui_font_OswaldRegular24p2;
         ui_info_screen.font.info = &ui_font_OswaldRegular16p2;
@@ -105,18 +104,13 @@ void loadInfoScreen() {
 #endif
     }
     ui_InfoScreen_screen_init();
-    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_InfoScreen){
-        #if defined(STATUS_PANEL_V1)
-        ui_StatusPanel_load(&ui_info_screen.screen, 0);
-        #else
-        ui_StatusPanel_load(&ui_info_screen.screen, 0);
-        #endif
-        lv_scr_load(ui_InfoScreen);
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
+        lv_scr_load(ui_info_screen.screen.self);
     }
 }
 
 void loadInitScreen() {
-    if (ui_InitScreen == 0) {
+    if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_init_screen.font.title = &ui_font_OswaldRegular24p2;
 #else
@@ -124,13 +118,13 @@ void loadInitScreen() {
 #endif
     }
     ui_InitScreen_screen_init();
-    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_InitScreen){
-        lv_scr_load(ui_InitScreen);
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_init_screen.screen.self){
+        lv_scr_load(ui_init_screen.screen.self);
     }
 }
 
 void loadSpeedScreen() {
-    if (ui_SpeedScreen == 0) {
+    if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p2;
@@ -144,18 +138,13 @@ void loadSpeedScreen() {
 #endif
     }
     ui_SpeedScreen_screen_init();
-    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_SpeedScreen){
-        #if defined(STATUS_PANEL_V1)
-        ui_StatusPanel_load(&ui_speed_screen.screen, 2);
-        #else
-        ui_StatusPanel_load(&ui_speed_screen.screen, 2);
-        #endif
-        lv_scr_load(ui_SpeedScreen);
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
+        lv_scr_load(ui_speed_screen.screen.self);
     }
 }
 
 void loadStatsScreen(int rows, int cols) {
-    if (ui_StatsScreen == 0) {
+    if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_stats_screen.font.title = &ui_font_OpenSansBold28p2;
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p2;
@@ -167,13 +156,132 @@ void loadStatsScreen(int rows, int cols) {
 #endif
     }
     ui_StatsScreen_screen_init(rows, cols);
-    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_StatsScreen){
-        #if defined(STATUS_PANEL_V1)
-        ui_StatusPanel_load(&ui_stats_screen.screen, 0);
-        #else
-        ui_StatusPanel_load(&ui_stats_screen.screen, 0);
-
-        #endif
-        lv_scr_load(ui_StatsScreen);
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
+        lv_scr_load(ui_stats_screen.screen.self);
     }
+}
+
+void showSleepScreen() {
+    TIMER_S
+    loadSleepScreen();
+    TIMER_E
+}
+
+
+void showLowBatScreen() {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = &battery_horiz_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        lv_obj_set_style_img_recolor(img, lv_color_hex(0xEECE44), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_img_recolor_opa(img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_y(img, lv_pct(-5));
+        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void showPushScreen(int push) {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = push==1 ? &ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png : push==2 ? &ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png : &ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        lv_obj_set_y(img, lv_pct(-5));
+        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void showGpsTroubleScreen() {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = &near_me_disabled_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        lv_obj_set_y(img, lv_pct(-10));
+        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_init_screen.init_lbl, "GPS Failure");
+    }
+}
+
+void showBootScreen(const char* title) {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+    }
+    if (title){
+        if(lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_y(img, lv_pct(-10));
+    } else {
+        if(!lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_y(img, lv_pct(-5));
+    }
+    const char *lbl_txt = lv_label_get_text(ui_init_screen.init_lbl);
+    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
+        lv_label_set_text(ui_init_screen.init_lbl, title);
+}
+
+void showWifiScreen(const char * title, const char * info) {
+    LOGR
+    loadInfoScreen();
+    lv_obj_t* img = ui_info_screen.info_img;
+    const lv_img_dsc_t *img_src = &wifi_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        if(lv_img_get_angle(img) != 0)
+            lv_img_set_angle(img, 0);
+    }
+    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
+    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
+        lv_label_set_text(ui_info_screen.info_lbl, title);
+    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
+    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
+}
+
+void showGpsScreen(const char* title, const char* info, const lv_img_dsc_t *img_src, int angle) {
+    LOGR
+    loadInfoScreen();
+    lv_obj_t* img = ui_info_screen.info_img;
+    if(!img_src)
+        img_src = &near_me_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+    }
+    if(lv_img_get_angle(img) != angle)
+        lv_img_set_angle(img, angle);
+    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
+    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
+        lv_label_set_text(ui_info_screen.info_lbl, title);
+    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
+    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
+}
+
+void showSpeedScreen() {
+    LOGR
+    loadSpeedScreen();
+}
+
+void showStatsScreen12() {
+    LOGR
+    loadStatsScreen(2,102);
+}
+
+void showStatsScreen22() {
+    LOGR
+    loadStatsScreen(2,2);
+}
+
+void showStatsScreen32() {
+    LOGR
+    loadStatsScreen(3,2);
 }

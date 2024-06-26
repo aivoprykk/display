@@ -3,7 +3,7 @@
 // LVGL version: 8.3.6
 // Project name: squareline_proj_1_54_02
 
-#include "../ui.h"
+#include "ui_common.h"
 
 
 // COMPONENT BigDataPanel

@@ -13,7 +13,7 @@ static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_set_x(ui_MainLabel, lv_pct(35));
     lv_obj_set_y(ui_MainLabel, lv_pct(-10));
     lv_obj_set_align(ui_MainLabel, LV_ALIGN_LEFT_MID);
-    lv_obj_set_style_text_font(ui_InfoScreen, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_info_screen.screen.self, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_info_screen.info_lbl = ui_MainLabel;
 
     lv_obj_t *ui_MainLowerLabel = lv_label_create(panel);
@@ -50,12 +50,15 @@ static void unload(void) {
 }
 
 void ui_InfoScreen_screen_init(void) {
-    if(!ui_InfoScreen){
+    if(!ui_info_screen.screen.self){
         ui_info_screen.screen.has_status_cnt = 1;
+        ui_info_screen.screen.status_viewmode = 0;
         ui_info_screen.screen.load = load;
         ui_info_screen.screen.unload = unload;
-        ui_InfoScreen = ui_common_screen_init(&ui_info_screen.screen);
+        ui_info_screen.screen.self = ui_common_screen_init(&ui_info_screen.screen);
     }
+    ui_flush_screens(&ui_info_screen.screen);
     if(ui_info_screen.screen.main_cnt == 0)
-        ui_info_screen.screen.main_cnt = load(ui_InfoScreen);
+        ui_info_screen.screen.main_cnt = load(ui_info_screen.screen.self);
+    ui_status_panel_load(&ui_info_screen.screen);
 }

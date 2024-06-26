@@ -2,6 +2,7 @@
 #include <core/lv_obj_class.h>
 #include "logger_common.h"
 #include "ui_common.h"
+#include "esp_log.h"
 
 static const char TAG[] = "lv_info_panel";
 
@@ -16,7 +17,7 @@ static void lv_info_panel_constructor(const lv_obj_class_t *class_p, lv_obj_t *o
 }
 
 void lv_info_panel_setup_mode(lv_obj_t *obj, uint8_t mode) {
-    ESP_LOGD(TAG, "lv_info_panel_setup_mode %d", mode);
+    LOGR
     lv_info_panel_t *panel = (lv_info_panel_t *)obj;
     lv_obj_t *image = panel->title_image;
     switch (mode) {

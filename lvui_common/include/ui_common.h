@@ -4,10 +4,7 @@
 #include "lvgl.h"
 #include "sdkconfig.h"
 
-#include "ui_comp.h"
-#include "ui_comp_hook.h"
 #include "ui_events.h"
-#include "lv_comp_statusbar.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,6 +14,7 @@ extern "C" {
 #if defined(STATUS_PANEL_V1)
 typedef struct ui_status_panel_s {
     struct ui_screen_s *parent;
+    lv_obj_t *self;
     lv_obj_t *time_label;
     lv_obj_t *temp_label;
     lv_obj_t *gps_image;
@@ -27,6 +25,8 @@ typedef struct ui_status_panel_s {
     lv_obj_t *right_panel;
     uint8_t viewmode;
 } ui_status_panel_t;
+#else
+#include "lv_comp_statusbar.h"
 #endif
 
 typedef struct ui_cell_s {
@@ -35,10 +35,12 @@ typedef struct ui_cell_s {
 } ui_cell_t;
 
 typedef struct ui_screen_s {
+    lv_obj_t *self;
     lv_obj_t *main_cnt;
     lv_obj_t *status_cnt;
     bool has_status_cnt;
     const lv_font_t *status_font;
+    uint8_t status_viewmode;
     void (*init)(struct ui_screen_s*);
     void (*show)(struct ui_screen_s*);
     void (*unload)(void);
@@ -123,13 +125,18 @@ LV_IMG_DECLARE( near_me_bold_48px);
 LV_IMG_DECLARE( near_me_disabled_bold_48px);
 LV_IMG_DECLARE( wifi_bold_48px);
 LV_IMG_DECLARE( save_bold_48px);
-LV_IMG_DECLARE( battery_horiz_48px);
+// LV_IMG_DECLARE( battery_horiz_48px);
 LV_IMG_DECLARE( battery_horiz_bold_48px);
 LV_IMG_DECLARE( espidf_logo_v2_48px);
 // LV_IMG_DECLARE( espidf_logo_v2_96px);
 LV_IMG_DECLARE( gunsails_48px);
-LV_IMG_DECLARE( jp_48px);
+// LV_IMG_DECLARE( jp_48px);
 LV_IMG_DECLARE( sb_48px);
+// LV_IMG_DECLARE( ui_img_sd_card_fill0_wght400_grad0_opsz24_png);   // assets/sd_card_FILL0_wght400_GRAD0_opsz24.png
+// LV_IMG_DECLARE( ui_img_navigation_fill0_wght400_grad0_opsz24_png);   // assets/navigation_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE( ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_checked_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE( ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_partial_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE( ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_unchecked_FILL0_wght400_GRAD0_opsz24.png
 
 #define USE_2BPP_FONT 1
 
@@ -205,26 +212,26 @@ typedef lv_style_t* lv_style_ptr_t;
 // extern lv_style_t style_statusbar;
 // extern lv_style_t style_speed_big_panel;
 
-extern lv_obj_t * ui_StatusPanel;
+// extern lv_obj_t * ui_StatusPanel;
 extern const lv_font_t * ui_status_font_default;
 
 void ui_common_deinit();
 void ui_common_init(void);
 lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h);
 
-lv_obj_t * ui_StatusPanel_create_B(lv_obj_t *parent);
-void ui_StatusPanel_init(ui_screen_t * parent);
-void ui_StatusPanel_load(ui_screen_t *parent, int8_t mode);
-void ui_StatusPanel_unload(void);
-void ui_StatusPanel_update();
+lv_obj_t * ui_status_panel_create(lv_obj_t *parent);
+void ui_status_panel_init(ui_screen_t * parent);
+void ui_status_panel_load(ui_screen_t *parent);
+void ui_status_panel_delete(void);
+void ui_status_panel_update();
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
-extern lv_obj_t *ui_SpeedScreen;
+//extern lv_obj_t *ui_SpeedScreen;
 
 // SCREEN: ui_InfoScreen
 void ui_InfoScreen_screen_init(void);
-extern lv_obj_t *ui_InfoScreen;
+//extern lv_obj_t *ui_InfoScreen;
 
 // SCREEN: ui_InitScreen
 void ui_InitScreen_screen_init(void);
@@ -232,11 +239,11 @@ extern lv_obj_t *ui_InitScreen;
 
 // SCREEN: ui_StatsScreen
 void ui_StatsScreen_screen_init(int rows, int cols);
-extern lv_obj_t * ui_StatsScreen;
+//extern lv_obj_t * ui_StatsScreen;
 
 // SCREEN: ui_SleepScreen
 void ui_SleepScreen_screen_init(void);
-extern lv_obj_t *ui_SleepScreen;
+//extern lv_obj_t *ui_SleepScreen;
 
 void loadSleepScreen();
 void loadInfoScreen();
@@ -248,7 +255,7 @@ void showSleepScreen();
 void showLowBatScreen();
 void showWifiScreen(const char * title, const char * info);
 void showBootScreen(const char * title);
-void showGpsScreen(const char * title, const char * info, int angle);
+void showGpsScreen(const char * title, const char * info, const lv_img_dsc_t *img_src, int angle);
 void showGpsTroubleScreen();
 void showSpeedScreen();
 void showStatsScreen();
@@ -256,6 +263,7 @@ void showStatsScreen12();
 void showStatsScreen22();
 void showStatsScreen32();
 void showPushScreen(int push);
+void ui_flush_screens(ui_screen_t * screen);
 
 #ifdef __cplusplus
 } /*extern "C"*/

@@ -140,5 +140,30 @@ menu "Logger Display Panel Options"
             default 38
         endif    
     endmenu
-
+    choice
+        bool "Default log verbosity"
+        default DISPLAY_LOG_LEVEL_WARN
+        help
+            Specify how important log should be added.
+        config DISPLAY_LOG_LEVEL_TRACE
+            bool "A lot of logs to give detailed information"
+        config DISPLAY_LOG_LEVEL_INFO
+            bool "Log important events"
+        config DISPLAY_LOG_LEVEL_WARN
+            bool "Log if something unwanted happened but didn't cause a problem"
+        config DISPLAY_LOG_LEVEL_ERROR
+            bool "Only critical issues, when the system may fail"
+        config DISPLAY_LOG_LEVEL_USER
+            bool "Only logs added by the user"
+        config DISPLAY_LOG_LEVEL_NONE
+            bool "Do not log anything"
+    endchoice
+    config DISPLAY_LOG_LEVEL
+        int "Log level"
+        default 0 if DISPLAY_LOG_LEVEL_TRACE
+        default 1 if DISPLAY_LOG_LEVEL_INFO
+        default 2 if DISPLAY_LOG_LEVEL_WARN
+        default 3 if DISPLAY_LOG_LEVEL_ERROR
+        default 4 if DISPLAY_LOG_LEVEL_USER
+        default 5 if DISPLAY_LOG_LEVEL_NONE
 endmenu

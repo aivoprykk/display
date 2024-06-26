@@ -3,7 +3,7 @@
 // LVGL version: 8.3.6
 // Project name: lilygo_tdisplay_s3_04
 
-#include "../ui.h"
+#include "ui_common.h"
 
 
 // COMPONENT BigDataPanel

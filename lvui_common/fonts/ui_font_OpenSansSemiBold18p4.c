@@ -4,7 +4,7 @@
  * Opts: --bpp 4 --size 18 --font /Users/aivo/Downloads/squareline/squareline_proj_2_13_01_s/assets/OpenSans_SemiCondensed-SemiBold.ttf -o /Users/aivo/Downloads/squareline/squareline_proj_2_13_01_s/assets/ui_font_OpenSansSemiBold18p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "../ui.h"
+#include "ui_common.h"
 
 #ifndef UI_FONT_OPENSANSSEMIBOLD18P4
 #define UI_FONT_OPENSANSSEMIBOLD18P4 1

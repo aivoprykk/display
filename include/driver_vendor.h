@@ -60,7 +60,7 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
 #define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
 
-#define BYTE_PADDING(w) (((w + 7u) >> 3u) << 3u) // Align to nearest 8 bits
+#define BYTE_PADDING(w) (((w + 7u) / 8 ) * 8) // Align to nearest 8 bits
 #define LCD_PIXELS_MEM_ALIGNED (LCD_H_RES * BYTE_PADDING(LCD_V_RES) / 8)
 
 #define H_NORM_PX_VISIBLE(h_scr_percent) ((int16_t)((LCD_H_VISIBLE / 100.0) * (h_scr_percent)))

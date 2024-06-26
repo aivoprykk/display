@@ -53,7 +53,9 @@ static SemaphoreHandle_t panel_refreshing_sem = NULL;
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv;      // contains callback functions
 
-static uint8_t *converted_buffer_black;
+static uint8_t converted_buffer_black[LCD_PIXELS_MEM_ALIGNED] = {0};
+lv_color_t buf1[LCD_RESOLUTION] = {0};
+
 //static uint8_t *converted_buffer_red;
 
 esp_lcd_panel_handle_t panel_handle = NULL;
@@ -61,6 +63,8 @@ esp_lcd_panel_io_handle_t io_handle = NULL;
 static uint32_t update_count = 0;
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
 static bool is_initialized_lvgl = false;
+// const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
+
 TIMER_INIT
 
 IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
@@ -90,7 +94,9 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
     if(update_count==0 || update_count==1000){
+#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN)
         ESP_LOGI(TAG, "Resetting e-Paper display...");
+#endif
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(100);
         ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
@@ -98,7 +104,9 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
+#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN)
         ESP_LOGI(TAG, "Refreshing e-Paper display...");
+#endif
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
     }
 
@@ -190,7 +198,7 @@ void display_ssd1680_init_cb(lv_disp_drv_t *disp_drv) {
     // so full_refresh is MANDATORY because we cannot set position to bitmap at pixel level
     disp_drv->full_refresh = true;
     // alloc bitmap buffer to draw
-    converted_buffer_black = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
+    //converted_buffer_black = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
     //converted_buffer_red = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
     disp_drv->flush_cb = epaper_lvgl_flush_cb;
     disp_drv->wait_cb = epaper_lvgl_wait_cb;
@@ -211,8 +219,8 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
     size_t bufsz = LCD_RESOLUTION;
     ESP_LOGI(TAG, "Allocate %dkb memory for LVGL buffers" , (bufsz/1024));
-    lv_color_t *buf1 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    assert(buf1);
+    // lv_color_t *buf1 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    // assert(buf1);
     // lv_color_t *buf2 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
     // assert(buf2);
     // initialize LVGL draw buffers
@@ -296,7 +304,8 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
         .non_copy_mode = true,
         .height = LCD_V_RES,
         .width = LCD_H_RES,
-        .buffer_size = LCD_PIXELS_MEM_ALIGNED
+        .buffer_size = LCD_PIXELS_MEM_ALIGNED,
+        // .clear_img = clear_img,
     };
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = PIN_NUM_EPD_RST,
@@ -337,9 +346,9 @@ void display_ssd1680_del() {
     panel_handle = NULL;
     esp_lcd_panel_io_del(io_handle);
     io_handle = NULL;
-    heap_caps_free(converted_buffer_black);
-    converted_buffer_black = NULL;
-    //heap_caps_free(converted_buffer_red);
+    // heap_caps_free(converted_buffer_black);
+    // converted_buffer_black = NULL;
+    // heap_caps_free(converted_buffer_red);
     vSemaphoreDelete(panel_refreshing_sem);
     panel_refreshing_sem = NULL;
 }

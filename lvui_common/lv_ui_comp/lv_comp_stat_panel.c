@@ -4,6 +4,7 @@
 #include "lv_comp_cell.h"
 #include "lv_comp_two_col_panel.h"
 #include "ui_common.h"
+#include "esp_log.h"
 
 static const char TAG[] = "lv_stat_panel";
 #define MY_CLASS &lv_stat_panel_class

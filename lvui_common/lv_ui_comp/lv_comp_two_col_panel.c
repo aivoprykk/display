@@ -3,6 +3,7 @@
 #include <core/lv_obj_class.h>
 #include "logger_common.h"
 #include "driver_vendor.h"
+#include "esp_log.h"
 
 #define MY_CLASS &lv_two_col_panel_class
 static const char TAG[] = "lv_two_col_panel";
