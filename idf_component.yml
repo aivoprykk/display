@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: '>=5.0'
+description: ESP GPS Logger display component for ESP-IDF
+url: https://github.com/aivoprykk/display.git
+version: 0.1.0
