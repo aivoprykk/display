@@ -123,6 +123,22 @@ void loadInitScreen() {
     }
 }
 
+void loadRecordScreen() {
+    if (ui_record_screen.screen.self == 0) {
+#if defined(USE_2BPP_FONT)
+        ui_record_screen.font.info = &ui_font_OswaldRegular20p2;
+        ui_record_screen.font.title = &ui_font_OpenSansBold28p2;
+#else
+        ui_record_screen.font.info = &ui_font_OswaldRegular20p4;
+        ui_record_screen.font.title = &ui_font_OpenSansBold28p4;
+#endif
+    }
+    ui_RecordScreen_screen_init();
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_record_screen.screen.self){
+        lv_scr_load(ui_record_screen.screen.self);
+    }
+}
+
 void loadSpeedScreen() {
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
@@ -166,6 +182,12 @@ void loadStatsScreen(int rows, int cols) {
 void showSleepScreen() {
     TIMER_S
     loadSleepScreen();
+    TIMER_E
+}
+
+void showRecordScreen() {
+    TIMER_S
+    loadRecordScreen();
     TIMER_E
 }
 

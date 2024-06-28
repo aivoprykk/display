@@ -31,7 +31,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) 
     lv_obj_set_width(title_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(title_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_align(title_lbl, LV_ALIGN_CENTER);
-    lv_label_set_text(title_lbl, "109.09");
+    lv_label_set_text(title_lbl, "99.09");
     cell->title = title_lbl;
 
     return panel;
@@ -76,8 +76,10 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
 
         if ((collen > 200 && i < 2) || (collen > 100 && i < 1) || collen==1) {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-            if(collen == 1 )
-                cols[0] = ui_Cell(rows[i], 50, 35, 75, &ui_stats_screen.cells[i][0]);
+            if(collen == 1 ) {
+                cols[0] = ui_Cell(rows[i], 60, 35, 75, &ui_stats_screen.cells[i][0]);
+                lv_obj_set_x(cols[0], lv_pct(-10));
+            }
             else
                 cols[0] = ui_Cell(rows[i], 100, 20, 85, &ui_stats_screen.cells[i][0]);
             cols[1] = 0;
@@ -87,7 +89,7 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
         } else {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             for (int j = 0; j < numcols; ++j) {
-                cols[j] = ui_Cell(rows[i], 50, 30, 75, &ui_stats_screen.cells[i][j]);
+                cols[j] = ui_Cell(rows[i], 50, 35, 65, &ui_stats_screen.cells[i][j]);
                 if (j > 0) {
                     lv_obj_set_style_border_width(cols[j], 1, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_border_side(cols[j], LV_BORDER_SIDE_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);

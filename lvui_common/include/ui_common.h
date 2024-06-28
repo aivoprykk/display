@@ -107,7 +107,13 @@ typedef struct ui_stats_screen_s {
 
 typedef struct ui_record_screen_s {
     ui_screen_t screen;
-    ui_cell_t fields[1];
+    lv_obj_t *info_lbl;
+    lv_obj_t *cur_lbl;
+    lv_obj_t *prev_lbl;
+    struct {
+        const lv_font_t *info;
+        const lv_font_t *title;
+    } font;
 } ui_record_screen_t;
 
 #if defined(STATUS_PANEL_V1)
@@ -230,26 +236,25 @@ void ui_status_panel_update();
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
-//extern lv_obj_t *ui_SpeedScreen;
 
 // SCREEN: ui_InfoScreen
 void ui_InfoScreen_screen_init(void);
-//extern lv_obj_t *ui_InfoScreen;
 
 // SCREEN: ui_InitScreen
 void ui_InitScreen_screen_init(void);
-extern lv_obj_t *ui_InitScreen;
+
+// SCREEN: ui_RecordScreen
+void ui_RecordScreen_screen_init(void);
 
 // SCREEN: ui_StatsScreen
 void ui_StatsScreen_screen_init(int rows, int cols);
-//extern lv_obj_t * ui_StatsScreen;
 
 // SCREEN: ui_SleepScreen
 void ui_SleepScreen_screen_init(void);
-//extern lv_obj_t *ui_SleepScreen;
 
 void loadSleepScreen();
 void loadInfoScreen();
+void loadRecordScreen();
 void loadInitScreen();
 void loadSpeedScreen();
 void loadStatsScreen(int rows, int cols);
@@ -266,6 +271,7 @@ void showStatsScreen12();
 void showStatsScreen22();
 void showStatsScreen32();
 void showPushScreen(int push);
+void showRecordScreen();
 void ui_flush_screens(ui_screen_t * screen);
 
 #ifdef __cplusplus

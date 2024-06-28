@@ -5,7 +5,7 @@
 ui_sleep_screen_t ui_sleep_screen = {0};
 static const char * TAG = "ui_sleep_screen";
 
-static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) {
+static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int col, ui_cell_t *cell) {
     lv_obj_t * panel = ui_common_panel_init(cnt, w, 100);
 
     // lv_obj_t *info_cnt =  ui_common_panel_init(panel, wi, 100);
@@ -16,6 +16,8 @@ static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell)
     lv_obj_set_height(info_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_align(info_lbl, LV_ALIGN_LEFT_MID);
     lv_label_set_text(info_lbl, "R5:");
+    if(col>0)
+        lv_obj_set_style_pad_left(info_lbl, 10, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->info = info_lbl;
 
     // lv_obj_t *title_cnt = ui_common_panel_init(panel, wt, 100);
@@ -26,7 +28,6 @@ static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell)
     lv_obj_set_height(title_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_align(title_lbl, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(title_lbl, "109.09");
-    lv_obj_set_style_pad_left(title_lbl, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->title = title_lbl;
 
     return panel;
@@ -101,7 +102,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
 
         for (int j = 0; j < 2; ++j) {
             // cols[j] = 
-            ui_Cell(rows[i], j==0 ? 40 : 52,  j == 0 ? 30 : 45, j == 0 ? 65 : 50, &ui_sleep_screen.cells[i][j]);
+            ui_Cell(rows[i], j==0 ? 40 : 46, j, &ui_sleep_screen.cells[i][j]);
         }
     }
 
