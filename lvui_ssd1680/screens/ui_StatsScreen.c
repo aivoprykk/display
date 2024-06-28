@@ -21,7 +21,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) 
     lv_obj_set_width(info_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(info_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_align(info_lbl, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(info_lbl, "R5:");
+    lv_label_set_text(info_lbl, "250mAVG");
     cell->info = info_lbl;
 
     lv_obj_t *title_cnt = ui_common_panel_init(panel, wt, 100);
@@ -45,7 +45,10 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
     lv_obj_set_style_pad_right(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    if(rowlen<4)
     lv_obj_set_style_text_font(panel, ui_stats_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+    else
+    lv_obj_set_style_text_font(panel, ui_stats_screen.font.title_small, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t *rows[7] = {0}, *cols[2] = {0};
     int numrows = rowlen, h = 100 / numrows, numcols = collen, fh=h;
@@ -71,17 +74,20 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
             lv_obj_set_style_border_side(rows[i], LV_BORDER_SIDE_TOP, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
 
-        if ((collen > 200 && i < 2) || (collen > 100 && i < 1)) {
+        if ((collen > 200 && i < 2) || (collen > 100 && i < 1) || collen==1) {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-            cols[0] = ui_Cell(rows[i], 100, 20, 85, &ui_stats_screen.cells[i][0]);
+            if(collen == 1 )
+                cols[0] = ui_Cell(rows[i], 50, 35, 75, &ui_stats_screen.cells[i][0]);
+            else
+                cols[0] = ui_Cell(rows[i], 100, 20, 85, &ui_stats_screen.cells[i][0]);
             cols[1] = 0;
-            if(fh!=h && i==0) {
+            if(collen!=1 && fh!=h && i==0) {
                 lv_obj_set_style_text_font(ui_stats_screen.cells[i][0].title, ui_stats_screen.font.title_big, LV_PART_MAIN | LV_STATE_DEFAULT);
             }
         } else {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             for (int j = 0; j < numcols; ++j) {
-                cols[j] = ui_Cell(rows[i], 50, 19, 80, &ui_stats_screen.cells[i][j]);
+                cols[j] = ui_Cell(rows[i], 50, 30, 75, &ui_stats_screen.cells[i][j]);
                 if (j > 0) {
                     lv_obj_set_style_border_width(cols[j], 1, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_border_side(cols[j], LV_BORDER_SIDE_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);

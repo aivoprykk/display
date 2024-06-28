@@ -8,24 +8,25 @@ static const char * TAG = "ui_sleep_screen";
 static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) {
     lv_obj_t * panel = ui_common_panel_init(cnt, w, 100);
 
-    lv_obj_t *info_cnt =  ui_common_panel_init(panel, wi, 100);
-    lv_obj_set_align(info_cnt, LV_ALIGN_LEFT_MID);
+    // lv_obj_t *info_cnt =  ui_common_panel_init(panel, wi, 100);
+    // lv_obj_set_align(info_cnt, LV_ALIGN_LEFT_MID);
     
-    lv_obj_t *info_lbl = lv_label_create(info_cnt);
+    lv_obj_t *info_lbl = lv_label_create(panel);
     lv_obj_set_width(info_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(info_lbl, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_align(info_lbl, LV_ALIGN_RIGHT_MID);
+    lv_obj_set_align(info_lbl, LV_ALIGN_LEFT_MID);
     lv_label_set_text(info_lbl, "R5:");
     cell->info = info_lbl;
 
-    lv_obj_t *title_cnt = ui_common_panel_init(panel, wt, 100);
-    lv_obj_set_align(title_cnt, LV_ALIGN_RIGHT_MID);
+    // lv_obj_t *title_cnt = ui_common_panel_init(panel, wt, 100);
+    // lv_obj_set_align(title_cnt, LV_ALIGN_RIGHT_MID);
     
-    lv_obj_t *title_lbl = lv_label_create(title_cnt);
+    lv_obj_t *title_lbl = lv_label_create(panel);
     lv_obj_set_width(title_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(title_lbl, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_align(title_lbl, LV_ALIGN_LEFT_MID);
+    lv_obj_set_align(title_lbl, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(title_lbl, "109.09");
+    lv_obj_set_style_pad_left(title_lbl, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->title = title_lbl;
 
     return panel;
@@ -50,7 +51,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_set_x(up_img, 0);
     lv_obj_set_y(up_img, -24);
     lv_obj_set_align(up_img, LV_ALIGN_CENTER);
-    lv_obj_add_flag(up_img, LV_OBJ_FLAG_ADV_HITTEST);   /// Flags
+    // lv_obj_add_flag(up_img, LV_OBJ_FLAG_ADV_HITTEST);   /// Flags
     lv_obj_clear_flag(up_img, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
     ui_sleep_screen.up_img = up_img;
 
@@ -61,7 +62,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_set_x(bottom_img, 0);
     lv_obj_set_y(bottom_img, 27);
     lv_obj_set_align(bottom_img, LV_ALIGN_CENTER);
-    lv_obj_add_flag(bottom_img, LV_OBJ_FLAG_ADV_HITTEST);   /// Flags
+    // lv_obj_add_flag(bottom_img, LV_OBJ_FLAG_ADV_HITTEST);   /// Flags
     lv_obj_clear_flag(bottom_img, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
     ui_sleep_screen.bottom_img = bottom_img;
 

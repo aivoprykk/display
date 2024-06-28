@@ -146,10 +146,12 @@ void loadSpeedScreen() {
 void loadStatsScreen(int rows, int cols) {
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;
         ui_stats_screen.font.title = &ui_font_OpenSansBold28p2;
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p2;
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p2;
 #else
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p4;
         ui_stats_screen.font.title = &ui_font_OpenSansBold28p4;
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p4;
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p4;

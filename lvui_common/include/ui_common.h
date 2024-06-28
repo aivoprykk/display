@@ -99,6 +99,7 @@ typedef struct ui_stats_screen_s {
     uint8_t cols;
     struct {
         const lv_font_t *info;
+        const lv_font_t *title_small;
         const lv_font_t *title;
         const lv_font_t *title_big;
     } font;
@@ -155,6 +156,7 @@ LV_FONT_DECLARE(ui_font_OswaldRegular24p2);
 
 // #else
 
+LV_FONT_DECLARE(ui_font_OpenSansBold24p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold28p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold36p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold60p2);
@@ -174,6 +176,7 @@ LV_FONT_DECLARE(ui_font_OswaldRegular16p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular20p4);
 LV_FONT_DECLARE(ui_font_OswaldRegular24p4);
 
+LV_FONT_DECLARE(ui_font_OpenSansBold24p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold28p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold36p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold60p4);
