@@ -49,7 +49,7 @@ typedef struct ui_screen_s {
 
 typedef struct ui_sleep_screen_s {
     ui_screen_t screen;
-    ui_cell_t cells[7][2]; // rows x cols
+    ui_cell_t cells[6][2]; // rows x cols
     lv_obj_t *myid;
     lv_obj_t *up_img;
     lv_obj_t *bottom_img;
@@ -132,10 +132,9 @@ LV_IMG_DECLARE( near_me_bold_48px);
 LV_IMG_DECLARE( near_me_disabled_bold_48px);
 LV_IMG_DECLARE( wifi_bold_48px);
 LV_IMG_DECLARE( save_bold_48px);
-// LV_IMG_DECLARE( battery_horiz_48px);
+LV_IMG_DECLARE( sd_trouble_bold_48px);
 LV_IMG_DECLARE( battery_horiz_bold_48px);
 LV_IMG_DECLARE( espidf_logo_v2_48px);
-// LV_IMG_DECLARE( espidf_logo_v2_96px);
 LV_IMG_DECLARE( gunsails_48px);
 // LV_IMG_DECLARE( jp_48px);
 LV_IMG_DECLARE( sb_48px);
@@ -265,6 +264,8 @@ void showWifiScreen(const char * title, const char * info);
 void showBootScreen(const char * title);
 void showGpsScreen(const char * title, const char * info, const lv_img_dsc_t *img_src, int angle);
 void showGpsTroubleScreen();
+void showSdTroubleScreen();
+void showSaveSessionScreen();
 void showSpeedScreen();
 void showStatsScreen();
 void showStatsScreen12();

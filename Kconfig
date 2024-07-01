@@ -1,7 +1,4 @@
 menu "Logger Display Panel Options"
-    config DISPLAY_TASK_STACK_SIZE
-        int "Task stack size in bytes"
-        default 12288
     choice DISPLAY_DRIVER
         prompt "Installed Panel"
         default DISPLAY_DRIVER_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3

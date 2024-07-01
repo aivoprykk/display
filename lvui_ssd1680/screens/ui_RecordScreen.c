@@ -6,7 +6,7 @@ ui_record_screen_t ui_record_screen = {0};
 static const char * TAG = "ui_record_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
-    
+    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 100);
     
     lv_obj_set_style_text_font(panel, ui_record_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -43,6 +43,7 @@ static void unload(void) {
 }
 
 void ui_RecordScreen_screen_init(void) {
+    LOGR
     if(!ui_record_screen.screen.self){
         ui_record_screen.screen.load = load;
         ui_record_screen.screen.unload = unload;

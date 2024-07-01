@@ -17,6 +17,7 @@
 
 #include "logger_common.h"
 #include "driver_vendor.h"
+#include "ui_events.h"
 // #include "ui.h"
 
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
@@ -47,7 +48,7 @@ static const char *TAG = "display_drv.ssd1680";
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-#define LVGL_TICK_PERIOD_MS    2
+#define LVGL_TICK_PERIOD_MS    100
 
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
@@ -94,17 +95,20 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
     if(update_count==0 || update_count==1000){
-#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN)
+#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
         ESP_LOGI(TAG, "Resetting e-Paper display...");
 #endif
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-        delay_ms(100);
+        delay_ms(50);
+#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
+        ESP_LOGI(TAG, "Initializing e-Paper display...");
+#endif
         ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-        delay_ms(100);
+        delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
-#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN)
+#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
         ESP_LOGI(TAG, "Refreshing e-Paper display...");
 #endif
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
@@ -144,6 +148,7 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
         update_count=0;
 
     //lv_disp_flush_ready(drv);
+    esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
     TIMER_E
 }
 
@@ -315,18 +320,18 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
     gpio_install_isr_service(0);
     ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1680(io_handle, &panel_config, &panel_handle));
 
-    // --- Reset the display
-    ESP_LOGI(TAG, "Resetting e-Paper display...");
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-    delay_ms(100);
-    // --- Initialize panel
-    ESP_LOGI(TAG, "Initializing e-Paper display...");
-    ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    // // --- Reset the display
+    // ESP_LOGI(TAG, "Resetting e-Paper display...");
+    // ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+    // delay_ms(100);
+    // // --- Initialize panel
+    // ESP_LOGI(TAG, "Initializing e-Paper display...");
+    // ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif
     delay_ms(100);
-    update_count++;
+    // update_count++;
     // --- Register the e-Paper refresh done callback
     epaper_panel_callbacks_t cbs = {
         .on_epaper_refresh_done = epaper_flush_ready_callback

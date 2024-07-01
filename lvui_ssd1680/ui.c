@@ -56,6 +56,7 @@ const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
 
 void ui_status_panel_init(ui_screen_t *parent) {
+    LOGR
     if ( ui_status_panel.self != NULL)
         return;
 #if defined(STATUS_PANEL_V1)
@@ -75,7 +76,21 @@ void ui_status_panel_init(ui_screen_t *parent) {
     lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
+#if (DISPLAY_LOG_LEVEL<=DISPLAY_LOG_LEVEL_INFO || defined(DEBUG))
+static void print_lv_mem_mon() {
+    lv_mem_monitor_t mon;
+    lv_mem_monitor(&mon);
+    printf("used: %6lu (%3hhu %%), frag: %3hhu %%, biggest free: %6d\n", mon.total_size - mon.free_size,
+            mon.used_pct,
+            mon.frag_pct,
+            (int)mon.free_biggest_size);
+}
+#else
+#define print_lv_mem_mon()
+#endif
+
 void loadSleepScreen() {
+    LOGR
     if (ui_sleep_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p2;
@@ -91,9 +106,11 @@ void loadSleepScreen() {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
         lv_scr_load(ui_sleep_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void loadInfoScreen() {
+    LOGR
     if (ui_info_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_info_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -107,9 +124,11 @@ void loadInfoScreen() {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
         lv_scr_load(ui_info_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void loadInitScreen() {
+    LOGR
     if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_init_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -121,9 +140,11 @@ void loadInitScreen() {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_init_screen.screen.self){
         lv_scr_load(ui_init_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void loadRecordScreen() {
+    LOGR
     if (ui_record_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_record_screen.font.info = &ui_font_OswaldRegular20p2;
@@ -137,9 +158,11 @@ void loadRecordScreen() {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_record_screen.screen.self){
         lv_scr_load(ui_record_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void loadSpeedScreen() {
+    LOGR
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
@@ -157,9 +180,11 @@ void loadSpeedScreen() {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
         lv_scr_load(ui_speed_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void loadStatsScreen(int rows, int cols) {
+    LOGR
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;
@@ -177,18 +202,17 @@ void loadStatsScreen(int rows, int cols) {
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
         lv_scr_load(ui_stats_screen.screen.self);
     }
+    print_lv_mem_mon();
 }
 
 void showSleepScreen() {
-    TIMER_S
+    LOGR
     loadSleepScreen();
-    TIMER_E
 }
 
 void showRecordScreen() {
-    TIMER_S
+    LOGR
     loadRecordScreen();
-    TIMER_E
 }
 
 
@@ -228,6 +252,32 @@ void showGpsTroubleScreen() {
         lv_obj_set_y(img, lv_pct(-10));
         lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
         lv_label_set_text(ui_init_screen.init_lbl, "GPS Failure");
+    }
+}
+
+void showSdTroubleScreen() {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = &sd_trouble_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        lv_obj_set_y(img, lv_pct(-10));
+        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_init_screen.init_lbl, "SD Failure");
+    }
+}
+
+void showSaveSessionScreen() {
+    LOGR
+    loadInitScreen();
+    lv_obj_t* img = ui_init_screen.init_img;
+    const lv_img_dsc_t *img_src = &save_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        lv_obj_set_y(img, lv_pct(-10));
+        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(ui_init_screen.init_lbl, "Save Session");
     }
 }
 

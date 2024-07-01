@@ -38,7 +38,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) 
 }
 
 static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
-    
+    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
     
     lv_obj_set_style_pad_left(panel, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -120,6 +120,7 @@ static void unload(void) {
 }
 
 void ui_StatsScreen_screen_init(int rows, int cols) {
+    LOGR
     if (!ui_stats_screen.screen.self){
         ui_stats_screen.screen.has_status_cnt = 1;
         ui_stats_screen.screen.status_viewmode = 0;

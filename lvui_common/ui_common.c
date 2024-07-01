@@ -5,6 +5,12 @@
 #include "ui_helpers.h"
 #include "logger_common.h"
 
+ESP_EVENT_DEFINE_BASE(UI_EVENT);
+
+const char * ui_event_strings[] = {
+    "UI_EVENT_FLUSH_START",
+    "UI_EVENT_FLUSH_END",
+};
 
 static const char *TAG = "ui_common";
 // TIMER_INIT
@@ -357,6 +363,10 @@ void ui_flush_screens(ui_screen_t * screen) {
             scr->unload();
     }
     scr = &ui_sleep_screen.screen;
+    if(scr->main_cnt != screen->main_cnt && scr->unload) {
+            scr->unload();
+    }
+    scr = &ui_record_screen.screen;
     if(scr->main_cnt != screen->main_cnt && scr->unload) {
             scr->unload();
     }

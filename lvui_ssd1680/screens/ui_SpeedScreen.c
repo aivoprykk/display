@@ -106,6 +106,7 @@ void unload(void) {
 }
 
 void ui_SpeedScreen_screen_init(void) {
+    LOGR
     if(!ui_speed_screen.screen.self){
         ui_speed_screen.screen.has_status_cnt = 1;
         ui_speed_screen.screen.status_viewmode = 2;
