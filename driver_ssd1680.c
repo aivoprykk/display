@@ -103,7 +103,7 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
 #if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
         ESP_LOGI(TAG, "Initializing e-Paper display...");
 #endif
-        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
         delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
