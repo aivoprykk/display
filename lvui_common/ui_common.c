@@ -193,48 +193,48 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-35), 0);
-        if(ui_status_panel.viewmode==0){
-            lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
-            lv_label_set_text(l, LV_SYMBOL_GPS);
-            // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+        // if(ui_status_panel.viewmode==0){
+        //     lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
+        //     lv_label_set_text(l, LV_SYMBOL_GPS);
+        //     // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+        // }
+        // lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
         ui_status_panel.gps_image = l;
     }
+
+    // if (ui_status_panel.viewmode==0) {
+    //     l = lv_label_create(panel);
+    //     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
+    //     lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
+    //     lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-28), 0);
+    //     lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
+    //     lv_label_set_text(l, LV_SYMBOL_SD_CARD);
+    //     lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+    //     // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+    //     ui_status_panel.sdcard_image = l;
+    // }
+
+    // right = ui_common_panel_init(panel, 30, 100);
+    // lv_obj_set_align(right, LV_ALIGN_RIGHT_MID);
+    // lv_obj_set_flex_flow(right, LV_FLEX_FLOW_ROW);
+    // lv_obj_set_flex_align(right, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
 
     if (ui_status_panel.viewmode==0) {
         l = lv_label_create(panel);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-28), 0);
-        lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
-        lv_label_set_text(l, LV_SYMBOL_SD_CARD);
-        lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
-        // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
-        ui_status_panel.sdcard_image = l;
-    }
-
-    right = ui_common_panel_init(panel, 30, 100);
-    lv_obj_set_align(right, LV_ALIGN_RIGHT_MID);
-    lv_obj_set_flex_flow(right, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(right, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-
-    if (ui_status_panel.viewmode==0) {
-        l = lv_label_create(right);
-        lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
-        lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-20), 0);
         lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
         lv_label_set_text(l, LV_SYMBOL_BATTERY_FULL);
         // lv_obj_set_style_transform_angle(l, 900, 0);
-        lv_obj_set_style_pad_right(l, 3, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+        // lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
+        // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
         ui_status_panel.bat_image = l;
     }
-    l = lv_label_create(right);
+    l = lv_label_create(panel);
     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+    lv_obj_align(l, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_label_set_text(l, "100%");
     ui_status_panel.bat_label = l;
 

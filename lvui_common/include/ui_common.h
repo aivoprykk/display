@@ -18,11 +18,11 @@ typedef struct ui_status_panel_s {
     lv_obj_t *time_label;
     lv_obj_t *temp_label;
     lv_obj_t *gps_image;
-    lv_obj_t *sdcard_image;
+    // lv_obj_t *sdcard_image;
     lv_obj_t *bat_image;
     lv_obj_t *bat_label;
-    lv_obj_t *left_panel;
-    lv_obj_t *right_panel;
+    // lv_obj_t *left_panel;
+    // lv_obj_t *right_panel;
     uint8_t viewmode;
 } ui_status_panel_t;
 #else

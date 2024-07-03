@@ -10,14 +10,14 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, ui_cell_t *cell) {
     lv_obj_t *panel = ui_common_panel_init(parent, w, 100), *cnt, *lbl;
 
     cnt =  ui_common_panel_init(panel, 22, 100);
-    lv_obj_set_align(cnt, LV_ALIGN_LEFT_MID);
+    lv_obj_align(cnt, LV_ALIGN_LEFT_MID, 0, 0);
     lv_obj_set_style_pad_left(cnt, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(cnt, 6, LV_PART_MAIN | LV_STATE_DEFAULT);
     
     lbl = lv_label_create(cnt);
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
-    lv_obj_set_align(lbl, LV_ALIGN_BOTTOM_LEFT);
+    lv_obj_align(lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(lbl, "10S");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->info = lbl;
@@ -28,7 +28,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, ui_cell_t *cell) {
     lbl = lv_label_create(cnt);
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
-    lv_obj_set_align(lbl, LV_ALIGN_CENTER);
+    lv_obj_align(lbl, LV_ALIGN_CENTER, 0, 0);
     lv_label_set_text(lbl, "109.09");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->title = lbl;
@@ -41,17 +41,17 @@ lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 100);
     
     // main speed indicator container
-    lv_obj_t *bottom_cnt = lv_obj_create(panel);
-    lv_obj_remove_style_all(bottom_cnt);
-    lv_obj_set_width(bottom_cnt, lv_pct(100));
-    lv_obj_set_height(bottom_cnt, lv_pct(65));
-    lv_obj_set_align(bottom_cnt, LV_ALIGN_BOTTOM_LEFT);
-    lv_obj_clear_flag(bottom_cnt, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
+    // lv_obj_t *bottom_cnt = lv_obj_create(panel);
+    // lv_obj_remove_style_all(bottom_cnt);
+    // lv_obj_set_width(bottom_cnt, lv_pct(100));
+    // lv_obj_set_height(bottom_cnt, lv_pct(65));
+    // lv_obj_align(bottom_cnt, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    // lv_obj_clear_flag(bottom_cnt, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
 
-    lv_obj_t *main_lbl = lv_label_create(bottom_cnt);
+    lv_obj_t *main_lbl = lv_label_create(panel);
     lv_obj_set_width(main_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(main_lbl, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_align(main_lbl, LV_ALIGN_CENTER);
+    lv_obj_align(main_lbl, LV_ALIGN_CENTER, 0, lv_pct(15));
     lv_label_set_text(main_lbl, "134.90");
     lv_obj_set_style_text_font(main_lbl, ui_speed_screen.font.main, LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_speed_screen.speed = main_lbl;
@@ -61,6 +61,7 @@ lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_remove_style_all(top_cnt);
     lv_obj_set_width(top_cnt, lv_pct(100));
     lv_obj_set_height(top_cnt, lv_pct(32));
+    lv_obj_align(top_cnt, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_flex_flow(top_cnt, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(top_cnt, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
     lv_obj_clear_flag(top_cnt, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags

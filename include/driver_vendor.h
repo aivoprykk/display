@@ -72,7 +72,7 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_BUF_SIZE (LCD_PIXELS)
 #endif
 
-#define L_LVGL_TASK_MAX_DELAY_MS 200
+#define L_LVGL_TASK_MAX_DELAY_MS 50
 #define L_LVGL_TASK_MIN_DELAY_MS 1
 
 #endif
