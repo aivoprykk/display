@@ -5,12 +5,11 @@
 
 #include "ui.h"
 #include "ui_helpers.h"
-#include "logger_common.h"
+#include "../display_private.h"
 
 ///////////////////// VARIABLES ////////////////////
 
 static const char *TAG = "ui_ssd1680";
-TIMER_INIT
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
@@ -56,7 +55,7 @@ const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
 
 void ui_status_panel_init(ui_screen_t *parent) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if ( ui_status_panel.self != NULL)
         return;
 #if defined(STATUS_PANEL_V1)
@@ -86,11 +85,11 @@ static void print_lv_mem_mon() {
             (int)mon.free_biggest_size);
 }
 #else
-#define print_lv_mem_mon()
+#define print_lv_mem_mon() do{}while(0)
 #endif
 
 void loadSleepScreen() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_sleep_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p2;
@@ -110,7 +109,7 @@ void loadSleepScreen() {
 }
 
 void loadInfoScreen() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_info_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_info_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -128,7 +127,7 @@ void loadInfoScreen() {
 }
 
 void loadInitScreen() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_init_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -144,7 +143,7 @@ void loadInitScreen() {
 }
 
 void loadRecordScreen() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_record_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_record_screen.font.info = &ui_font_OswaldRegular20p2;
@@ -162,7 +161,7 @@ void loadRecordScreen() {
 }
 
 void loadSpeedScreen() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
@@ -184,7 +183,7 @@ void loadSpeedScreen() {
 }
 
 void loadStatsScreen(int rows, int cols) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;
@@ -206,18 +205,15 @@ void loadStatsScreen(int rows, int cols) {
 }
 
 void showSleepScreen() {
-    LOGR
     loadSleepScreen();
 }
 
 void showRecordScreen() {
-    LOGR
     loadRecordScreen();
 }
 
 
 void showLowBatScreen() {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &battery_horiz_bold_48px;
@@ -231,7 +227,6 @@ void showLowBatScreen() {
 }
 
 void showPushScreen(int push) {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = push==1 ? &ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png : push==2 ? &ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png : &ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png;
@@ -243,7 +238,6 @@ void showPushScreen(int push) {
 }
 
 void showGpsTroubleScreen() {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &near_me_disabled_bold_48px;
@@ -256,7 +250,6 @@ void showGpsTroubleScreen() {
 }
 
 void showSdTroubleScreen() {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &sd_trouble_bold_48px;
@@ -269,7 +262,6 @@ void showSdTroubleScreen() {
 }
 
 void showSaveSessionScreen() {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &save_bold_48px;
@@ -282,7 +274,6 @@ void showSaveSessionScreen() {
 }
 
 void showBootScreen(const char* title) {
-    LOGR
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
@@ -304,7 +295,6 @@ void showBootScreen(const char* title) {
 }
 
 void showWifiScreen(const char * title, const char * info) {
-    LOGR
     loadInfoScreen();
     lv_obj_t* img = ui_info_screen.info_img;
     const lv_img_dsc_t *img_src = &wifi_bold_48px;
@@ -322,7 +312,6 @@ void showWifiScreen(const char * title, const char * info) {
 }
 
 void showGpsScreen(const char* title, const char* info, const lv_img_dsc_t *img_src, int angle) {
-    LOGR
     loadInfoScreen();
     lv_obj_t* img = ui_info_screen.info_img;
     if(!img_src)
@@ -341,21 +330,17 @@ void showGpsScreen(const char* title, const char* info, const lv_img_dsc_t *img_
 }
 
 void showSpeedScreen() {
-    LOGR
     loadSpeedScreen();
 }
 
 void showStatsScreen12() {
-    LOGR
     loadStatsScreen(2,102);
 }
 
 void showStatsScreen22() {
-    LOGR
     loadStatsScreen(2,2);
 }
 
 void showStatsScreen32() {
-    LOGR
     loadStatsScreen(3,2);
 }

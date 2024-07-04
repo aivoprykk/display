@@ -61,7 +61,7 @@ else(CONFIG_DISPLAY_USE_LVGL)
 
 SET(SRCS ${src_dir}/epd_driver_common.c ${source_file})
 SET(INCS include ${src_dir}/include)
-SET(PRIVINCS ${src_dir})
+SET(PRIVINCS . ${src_dir})
 
 endif(CONFIG_DISPLAY_USE_LVGL)
 

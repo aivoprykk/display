@@ -15,13 +15,12 @@
 // #include <esp_lcd_panel_io.h>
 // #include <esp_lcd_panel_vendor.h>
 
-#include "logger_common.h"
-#include "driver_vendor.h"
-#include "ui_events.h"
-// #include "ui.h"
-
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
 
+#include "driver_vendor.h"
+#include "ui_events.h"
+#include "display_private.h"
+#include "logger_common.h"
 #include "esp_lcd_panel_ssd1680.h"
 
 #include "ssd1680_waveshare_2in13_lut.h"
@@ -66,8 +65,6 @@ static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_
 static bool is_initialized_lvgl = false;
 // const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
 
-TIMER_INIT
-
 IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
     lv_disp_drv_t *disp_driver = (lv_disp_drv_t *) user_data;
@@ -82,7 +79,7 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
 
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
-    TIMER_S
+    DEBUG_MEAS_START();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
@@ -94,23 +91,18 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     // --- Convert buffer from color to monochrome bitmap
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
+    const char *x = "e-Paper display...";
     if(update_count==0 || update_count==1000){
-#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
-        ESP_LOGI(TAG, "Resetting e-Paper display...");
-#endif
+        DEBUG_LOG(TAG, "%s %s", "Resetting", x);
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(50);
-#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
-        ESP_LOGI(TAG, "Initializing e-Paper display...");
-#endif
+        DEBUG_LOG(TAG, "%s %s", "Initializing", x);
         ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
         delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
-#if (CONFIG_DISPLAY_LOG_LEVEL<CONFIG_DISPLAY_LOG_LEVEL_WARN || defined(DEBUG))
-        ESP_LOGI(TAG, "Refreshing e-Paper display...");
-#endif
+        DEBUG_LOG(TAG, "%s %s", "Refreshing", x);
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
     }
 
@@ -148,13 +140,12 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
         update_count=0;
 
     //lv_disp_flush_ready(drv);
+    DEBUG_MEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
-    TIMER_E
 }
 
 static void epaper_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
 {
-    // LOGR
     if(panel_refreshing_sem)
         xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
 }
@@ -193,7 +184,7 @@ void _lvgl_unlock(void) {
 }
 
 void display_ssd1680_init_cb(lv_disp_drv_t *disp_drv) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     // Set the callback functions
     disp_drv->hor_res = LCD_H_RES;
     disp_drv->ver_res = LCD_V_RES;
@@ -215,7 +206,7 @@ void display_ssd1680_init_cb(lv_disp_drv_t *disp_drv) {
  * 
  */
 static void init_screen(void (*cb)(lv_disp_drv_t *)) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
@@ -254,7 +245,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
 }
 
 esp_lcd_panel_handle_t display_ssd1680_new() {
-    TIMER_S
+    DEBUG_LOG(TAG, "[%s]", __func__);
     panel_refreshing_sem = xSemaphoreCreateBinary();
     xSemaphoreGive(panel_refreshing_sem);
 
@@ -340,12 +331,11 @@ esp_lcd_panel_handle_t display_ssd1680_new() {
     init_screen(display_init_cb);
     
     //ui_init();
-    TIMER_E
     return panel_handle;
 }
 
 void display_ssd1680_del() {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     lv_deinit();
     esp_lcd_panel_del(panel_handle);
     panel_handle = NULL;
@@ -359,3 +349,4 @@ void display_ssd1680_del() {
 }
 
 #endif
+

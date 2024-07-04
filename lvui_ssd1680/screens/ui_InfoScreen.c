@@ -1,12 +1,10 @@
 
 #include "../ui.h"
-#include "logger_common.h"
 
 ui_info_screen_t ui_info_screen = {0};
 static const char * TAG = "ui_info_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
-    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
     
     lv_obj_t *ui_MainLabel = lv_label_create(panel);
@@ -42,7 +40,6 @@ static lv_obj_t * load(lv_obj_t *parent) {
 }
 
 static void unload(void) {
-    LOGR
     if(ui_info_screen.screen.main_cnt == 0) return;
     lv_obj_clean(ui_info_screen.screen.main_cnt);
     lv_obj_del(ui_info_screen.screen.main_cnt);
@@ -53,7 +50,6 @@ static void unload(void) {
 }
 
 void ui_InfoScreen_screen_init(void) {
-    LOGR
     if(!ui_info_screen.screen.self){
         ui_info_screen.screen.has_status_cnt = 1;
         ui_info_screen.screen.status_viewmode = 0;

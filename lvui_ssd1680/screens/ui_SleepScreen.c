@@ -1,6 +1,5 @@
 
 #include "../ui.h"
-#include "logger_common.h"
 
 ui_sleep_screen_t ui_sleep_screen = {0};
 static const char * TAG = "ui_sleep_screen";
@@ -34,7 +33,6 @@ static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int col, ui_cell_t *cell) {
 }
 
 static lv_obj_t *load(lv_obj_t *parent) {
-    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 83);
 
     lv_obj_set_style_pad_left(panel, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -101,7 +99,6 @@ static lv_obj_t *load(lv_obj_t *parent) {
 }
 
 static void unload() {
-    LOGR
     if(ui_sleep_screen.screen.main_cnt == NULL) return;
     lv_obj_clean(ui_sleep_screen.screen.main_cnt);
     lv_obj_del(ui_sleep_screen.screen.main_cnt);
@@ -117,7 +114,6 @@ static void unload() {
 }
 
 void ui_SleepScreen_screen_init(void) {
-    LOGR
     if(!ui_sleep_screen.screen.self) {
         ui_sleep_screen.screen.has_status_cnt = 1;
         ui_sleep_screen.screen.status_viewmode = 1;

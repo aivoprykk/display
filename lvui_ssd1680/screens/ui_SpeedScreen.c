@@ -1,6 +1,5 @@
 
 #include "../ui.h"
-#include "logger_common.h"
 
 ui_speed_screen_t ui_speed_screen = {0};
 static const char *TAG = "ui_speed_screen";
@@ -37,7 +36,6 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, ui_cell_t *cell) {
 }
 
 lv_obj_t * load(lv_obj_t *parent) {
-    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 100);
     
     // main speed indicator container
@@ -92,7 +90,6 @@ lv_obj_t * load(lv_obj_t *parent) {
 }
 
 void unload(void) {
-    LOGR
     if(ui_speed_screen.screen.main_cnt == 0) return;
     lv_obj_clean(ui_speed_screen.screen.main_cnt);
     lv_obj_del(ui_speed_screen.screen.main_cnt);
@@ -107,7 +104,6 @@ void unload(void) {
 }
 
 void ui_SpeedScreen_screen_init(void) {
-    LOGR
     if(!ui_speed_screen.screen.self){
         ui_speed_screen.screen.has_status_cnt = 1;
         ui_speed_screen.screen.status_viewmode = 2;

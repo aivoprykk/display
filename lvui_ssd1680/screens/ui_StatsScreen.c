@@ -1,6 +1,5 @@
 
 #include "../ui.h"
-#include "logger_common.h"
 
 ui_stats_screen_t ui_stats_screen = {0};
 static const char *TAG = "ui_stats_screen";
@@ -38,7 +37,6 @@ static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) 
 }
 
 static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
-    LOGR
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
     
     lv_obj_set_style_pad_left(panel, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -102,12 +100,10 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
 }
 
 static lv_obj_t * load(lv_obj_t * parent) {
-    LOGR
     return uiStatsPanelLoad(parent, ui_stats_screen.rows , ui_stats_screen.cols);
 }
 
 static void unload(void) {
-    LOGR
     if (ui_stats_screen.screen.main_cnt == 0) return;
     lv_obj_clean(ui_stats_screen.screen.main_cnt);
     lv_obj_del(ui_stats_screen.screen.main_cnt);
@@ -120,7 +116,6 @@ static void unload(void) {
 }
 
 void ui_StatsScreen_screen_init(int rows, int cols) {
-    LOGR
     if (!ui_stats_screen.screen.self){
         ui_stats_screen.screen.has_status_cnt = 1;
         ui_stats_screen.screen.status_viewmode = 0;

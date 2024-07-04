@@ -3,7 +3,7 @@
 
 #include "ui_common.h"
 #include "ui_helpers.h"
-#include "logger_common.h"
+#include "../display_private.h"
 
 ESP_EVENT_DEFINE_BASE(UI_EVENT);
 
@@ -140,7 +140,7 @@ void ui_create_styles(void) {
 #if defined(STATUS_PANEL_V1)
 ui_status_panel_t ui_status_panel = {0};
 void ui_status_panel_load(ui_screen_t* parent) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if(!parent->has_status_cnt)
         return;
     if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
@@ -156,7 +156,6 @@ void ui_status_panel_load(ui_screen_t* parent) {
 }
 
 lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
-    LOGR
     lv_obj_t *panel, *l, *right;
     panel = ui_common_panel_init(parent, 100, 100);
     lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
@@ -242,7 +241,7 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
 }
 
 void ui_status_panel_delete(void) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     if (ui_status_panel.self != NULL) {
         lv_obj_clean(ui_status_panel.self);
         lv_obj_del(ui_status_panel.self);
@@ -257,7 +256,6 @@ void ui_status_panel_delete(void) {
 #else
 
 void ui_status_panel_create(ui_screen_t* parent, int8_t viewmode) {
-    LOGR
     if(!parent->has_status_cnt)
         return;
     if (ui_status_panel.self == NULL)
@@ -272,7 +270,6 @@ void ui_status_panel_create(ui_screen_t* parent, int8_t viewmode) {
 }
 
 void ui_status_panel_delete(void) {
-    LOGR
     if (ui_status_panel.self != NULL) {
         lv_obj_clean(ui_status_panel.self);
         lv_obj_del(ui_status_panel.self);
@@ -283,7 +280,7 @@ void ui_status_panel_delete(void) {
 #endif
 
 void ui_common_init(void) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     lv_disp_t* dispp = lv_disp_get_default();
 #ifdef CONFIG_DISPLAY_DRIVER_ST7789
     lv_theme_t* theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
@@ -295,7 +292,6 @@ void ui_common_init(void) {
 }
 
 void ui_common_deinit() {
-    LOGR
     ui_status_panel_delete();
 }
 
@@ -311,7 +307,6 @@ lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h) {
 }
 
 lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
-    LOGR
     lv_obj_t * scr = screen->self;
     if(!scr) {
         scr = lv_obj_create(NULL);
@@ -333,7 +328,6 @@ lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
 }
 
 void ui_common_screen_uninit(ui_screen_t * screen) {
-    LOGR
     if(screen->self) {
         lv_obj_clean(screen->self);
         lv_obj_del(screen->self);
@@ -345,7 +339,7 @@ void ui_common_screen_uninit(ui_screen_t * screen) {
 }
 
 void ui_flush_screens(ui_screen_t * screen) {
-    LOGR
+    DEBUG_LOG(TAG, "[%s]", __func__);
     ui_screen_t * scr = &ui_init_screen.screen;
     if(scr->main_cnt != screen->main_cnt && scr->unload) {
             scr->unload();
