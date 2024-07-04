@@ -75,7 +75,7 @@ void ui_status_panel_init(ui_screen_t *parent) {
     lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
-#if (DISPLAY_LOG_LEVEL<=DISPLAY_LOG_LEVEL_INFO || defined(DEBUG))
+#if (CONFIG_DISPLAY_LOG_LEVEL<=CONFIG_DISPLAY_LOG_LEVEL_INFO || defined(DEBUG))
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
