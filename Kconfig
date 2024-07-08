@@ -156,7 +156,7 @@ menu "Logger Display Panel Options"
             bool "Do not log anything"
     endchoice
     config DISPLAY_LOG_LEVEL
-        int "Log level"
+        int
         default 0 if DISPLAY_LOG_LEVEL_TRACE
         default 1 if DISPLAY_LOG_LEVEL_INFO
         default 2 if DISPLAY_LOG_LEVEL_WARN

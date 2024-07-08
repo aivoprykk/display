@@ -8,6 +8,7 @@ extern "C" {
 // Your code here
 #if (CONFIG_DISPLAY_LOG_LEVEL<=CONFIG_DISPLAY_LOG_LEVEL_INFO)
 #include "esp_timer.h"
+#include "esp_log.h"
 #define DEBUG_LOG(a, b, ...) ESP_LOGI(a, b, __VA_ARGS__)
 #define DEBUG_MEAS_START() uint64_t _start = (esp_timer_get_time()), _end = 0
 #define DEBUG_MEAS_END(a, b, ...) \
