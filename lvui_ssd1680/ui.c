@@ -55,7 +55,7 @@ const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
 
 void ui_status_panel_init(ui_screen_t *parent) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if ( ui_status_panel.self != NULL)
         return;
 #if defined(STATUS_PANEL_V1)
@@ -89,7 +89,7 @@ static void print_lv_mem_mon() {
 #endif
 
 void loadSleepScreen() {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_sleep_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p2;
@@ -109,7 +109,7 @@ void loadSleepScreen() {
 }
 
 void loadInfoScreen() {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_info_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_info_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -127,7 +127,7 @@ void loadInfoScreen() {
 }
 
 void loadInitScreen() {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_init_screen.font.title = &ui_font_OswaldRegular24p2;
@@ -143,7 +143,7 @@ void loadInitScreen() {
 }
 
 void loadRecordScreen() {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_record_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_record_screen.font.info = &ui_font_OswaldRegular20p2;
@@ -161,7 +161,7 @@ void loadRecordScreen() {
 }
 
 void loadSpeedScreen() {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
@@ -183,7 +183,7 @@ void loadSpeedScreen() {
 }
 
 void loadStatsScreen(int rows, int cols) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;

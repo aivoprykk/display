@@ -140,7 +140,7 @@ void ui_create_styles(void) {
 #if defined(STATUS_PANEL_V1)
 ui_status_panel_t ui_status_panel = {0};
 void ui_status_panel_load(ui_screen_t* parent) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if(!parent->has_status_cnt)
         return;
     if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
@@ -241,7 +241,7 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
 }
 
 void ui_status_panel_delete(void) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     if (ui_status_panel.self != NULL) {
         lv_obj_clean(ui_status_panel.self);
         lv_obj_del(ui_status_panel.self);
@@ -280,7 +280,7 @@ void ui_status_panel_delete(void) {
 #endif
 
 void ui_common_init(void) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     lv_disp_t* dispp = lv_disp_get_default();
 #ifdef CONFIG_DISPLAY_DRIVER_ST7789
     lv_theme_t* theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
@@ -339,7 +339,7 @@ void ui_common_screen_uninit(ui_screen_t * screen) {
 }
 
 void ui_flush_screens(ui_screen_t * screen) {
-    DEBUG_LOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s]", __func__);
     ui_screen_t * scr = &ui_init_screen.screen;
     if(scr->main_cnt != screen->main_cnt && scr->unload) {
             scr->unload();
