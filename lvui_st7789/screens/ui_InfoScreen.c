@@ -2,9 +2,9 @@
 #include "../ui.h"
 
 ui_info_screen_t ui_info_screen = {0};
+static const char * TAG = "ui_info_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
-    
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
     
     lv_obj_t *ui_MainLabel = lv_label_create(panel);

@@ -93,16 +93,16 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
 
     const char *x = "e-Paper display...";
     if(update_count==0 || update_count==1000){
-        ILOG(TAG, "%s %s", "Resetting", x);
+        ILOG(TAG, "[%s] %s %s", "Resetting", __func__, x);
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(50);
-        ILOG(TAG, "%s %s", "Initializing", x);
+        ILOG(TAG, "[%s] %s %s", "Initializing", __func__, x);
         ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
         delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
-        ILOG(TAG, "%s %s", "Refreshing", x);
+        ILOG(TAG, "[%s] %s %s", "Refreshing", __func__, x);
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
     }
 

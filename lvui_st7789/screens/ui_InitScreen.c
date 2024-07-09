@@ -1,6 +1,6 @@
 
 #include "../ui.h"
-#include "logger_common.h"
+//#include "logger_common.h"
 
 ui_init_screen_t ui_init_screen = {0};
 static const char * TAG = "ui_init_screen";
@@ -33,7 +33,6 @@ static lv_obj_t * load(lv_obj_t *parent) {
 }
 
 static void unload(void) {
-    LOGR
     if(ui_init_screen.screen.main_cnt == 0) return;
     lv_obj_clean(ui_init_screen.screen.main_cnt);
     lv_obj_del(ui_init_screen.screen.main_cnt);

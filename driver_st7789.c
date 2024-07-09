@@ -20,9 +20,9 @@
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 
+#include "display_private.h"
 #include <logger_common.h>
 #include "driver_vendor.h"
-#include "ui.h"
 
 static const char *TAG = "display_drv.st7789";
 
@@ -115,8 +115,7 @@ static void bl_init() {
  * @param brightness_percent The brightness of the backlight, expressed as a percentage (0-100)
  */
 void driver_st7789_bl_set(uint8_t brightness_percent) {
-    LOGR
-    ESP_LOGI(TAG, "[%s] Set backlight brightness to %"PRIu8"%%", __FUNCTION__, brightness_percent);
+    ILOG(TAG, "[%s] backlight brightness to %hhu", __func__, brightness_percent);
     uint32_t duty_cycle = (254 * brightness_percent) / 100;
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_cycle);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
@@ -181,7 +180,7 @@ void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
  * 
  */
 static void init_screen(void (*cb)(lv_disp_drv_t *)) {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
     lv_init();
@@ -221,7 +220,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
 }
 
 esp_lcd_panel_handle_t display_st7789_new() {
-    TIMER_S
+    ILOG(TAG, "[%s]", __func__);
 
     panel_refreshing_sem = xSemaphoreCreateRecursiveMutex();
     xSemaphoreGiveRecursive(panel_refreshing_sem);
@@ -327,13 +326,12 @@ esp_lcd_panel_handle_t display_st7789_new() {
     ESP_LOGI(TAG, "Create LVGL task");
 
     //ui_init();
-    
-    TIMER_E
+
     return panel_handle;
 }
 
 void display_st7789_del() {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
 
     lv_deinit();
     esp_lcd_panel_del(panel_handle);

@@ -1,4 +1,4 @@
-menu "Logger Display Panel Options"
+menu "Logger Display Module Options"
     choice DISPLAY_DRIVER
         prompt "Installed Panel"
         default DISPLAY_DRIVER_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3

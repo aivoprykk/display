@@ -15,6 +15,7 @@
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_vendor.h>
 
+#include "display_private.h"
 #include "logger_common.h"
 #include "driver_vendor.h"
 // #include "ui.h"
@@ -77,7 +78,7 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
 
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
-    TIMER_S
+    DMEAS_START();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
@@ -89,18 +90,21 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     // --- Convert buffer from color to monochrome bitmap
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
+    const char *x = "e-Paper display...";
     if(update_count==0 || update_count==1000){
-        ESP_LOGI(TAG, "Resetting e-Paper display...");
+        ILOG(TAG, "[%s] %s %s", "Resetting", __func__, x);
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-        delay_ms(100);
-        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-        delay_ms(100);
+        delay_ms(50);
+        ILOG(TAG, "[%s] %s %s", "Initializing", __func__, x);
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1681(panel_handle, INIT_MODE_FULL_2, 0));
+        delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
     if(update_count!=0 && update_count!=1000) {
-        ESP_LOGI(TAG, "Refreshing e-Paper display...");
-        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
+        ILOG(TAG, "[%s] %s %s", "Refreshing", __func__, x);
+        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1681(panel_handle, fast_refresh_lut, 159));
     }
+
 
     memset(converted_buffer_black, 0x00, len_bits / 8);
     //memset(converted_buffer_red, 0x00, len_bits / 8);
@@ -133,43 +137,13 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
     if(update_count++>=50) 
         update_count=0;
-    TIMER_E
+    DMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
 }
 
 static void epaper_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
 {
-    LOGR
-    xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
-}
-
-/* Rotate display and touch, when rotated screen in LVGL. Called when driver parameters are updated. */
-static void epaper_lvgl_port_update_callback(lv_disp_drv_t *drv)
-{
-    LOGR
-    /* esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
-
-    switch (drv->rotated) {
-    case LV_DISP_ROT_NONE:
-        // Rotate LCD display
-        esp_lcd_panel_swap_xy(panel_handle, false);
-        esp_lcd_panel_mirror(panel_handle, false, false);
-        break;
-    case LV_DISP_ROT_90:
-        // Rotate LCD display
-        esp_lcd_panel_swap_xy(panel_handle, true);
-        esp_lcd_panel_mirror(panel_handle, false, true);
-        break;
-    case LV_DISP_ROT_180:
-        // Rotate LCD display
-        esp_lcd_panel_swap_xy(panel_handle, false);
-        esp_lcd_panel_mirror(panel_handle, true, true);
-        break;
-    case LV_DISP_ROT_270:
-        // Rotate LCD display
-        esp_lcd_panel_swap_xy(panel_handle, true);
-        esp_lcd_panel_mirror(panel_handle, true, false);
-        break;
-    } */
+    if(panel_refreshing_sem)
+        xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
 }
 
 static void increase_lvgl_tick(void *arg)
@@ -179,7 +153,6 @@ static void increase_lvgl_tick(void *arg)
 }
 
 bool _lvgl_lock(int timeout_ms) {
-    LOGR
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
@@ -187,12 +160,11 @@ bool _lvgl_lock(int timeout_ms) {
 }
 
 void _lvgl_unlock(void) {
-    LOGR
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 }
 
 void display_ssd1681_init_cb(lv_disp_drv_t *disp_drv) {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
     disp_drv->hor_res = LCD_H_RES;
     disp_drv->ver_res = LCD_V_RES;
@@ -214,7 +186,7 @@ void display_ssd1681_init_cb(lv_disp_drv_t *disp_drv) {
  * 
  */
 static void init_screen(void (*cb)(lv_disp_drv_t *)) {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     // --- Initialize LVGL
     // --- Initialize LVGL
     ESP_LOGI(TAG, "Initialize LVGL library");
@@ -260,7 +232,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
 }
 
 esp_lcd_panel_handle_t display_ssd1681_new() {
-    TIMER_S
+    ILOG(TAG, "[%s]", __func__);
     panel_refreshing_sem = xSemaphoreCreateBinary();
     xSemaphoreGive(panel_refreshing_sem);
 
@@ -363,13 +335,12 @@ esp_lcd_panel_handle_t display_ssd1681_new() {
     // NOTE: epaper_panel_set_custom_lut() must be called AFTER calling esp_lcd_panel_disp_on_off()
     //ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1681(panel_handle, fast_refresh_lut, 159));
 
-    
-    TIMER_E
+
     return panel_handle;
 }
 
 void display_ssd1681_del() {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     lv_deinit();
     esp_lcd_panel_del(panel_handle);
     esp_lcd_panel_io_del(io_handle);
