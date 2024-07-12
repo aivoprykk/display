@@ -37,12 +37,14 @@ lv_obj_t *ui____initial_actions0;
 
 void ui_init( void )
 {
+    ILOG(TAG, "[%s]", __func__);
     ui_common_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     // lv_disp_load_scr( ui_SpeedScreen);
 }
 
 void ui_deinit() {
+    ILOG(TAG, "[%s]", __func__);
     if(ui____initial_actions0)
         lv_obj_del(ui____initial_actions0);
     ui_common_deinit();
@@ -103,6 +105,7 @@ void loadSleepScreen() {
     }
     ui_SleepScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_sleep_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -121,6 +124,7 @@ void loadInfoScreen() {
     }
     ui_InfoScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_info_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -137,6 +141,7 @@ void loadInitScreen() {
     }
     ui_InitScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_init_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_init_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -146,15 +151,16 @@ void loadRecordScreen() {
     ILOG(TAG, "[%s]", __func__);
     if (ui_record_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
-        ui_record_screen.font.info = &ui_font_OswaldRegular20p2;
-        ui_record_screen.font.title = &ui_font_OpenSansBold28p2;
+        ui_record_screen.font.info = &ui_font_OswaldRegular24p2;
+        ui_record_screen.font.title = &ui_font_OpenSansBold36p2;
 #else
-        ui_record_screen.font.info = &ui_font_OswaldRegular20p4;
-        ui_record_screen.font.title = &ui_font_OpenSansBold28p4;
+        ui_record_screen.font.info = &ui_font_OswaldRegular24p4;
+        ui_record_screen.font.title = &ui_font_OpenSansBold36p4;
 #endif
     }
     ui_RecordScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_record_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_record_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -177,6 +183,7 @@ void loadSpeedScreen() {
     }
     ui_SpeedScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_speed_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -199,21 +206,36 @@ void loadStatsScreen(int rows, int cols) {
     }
     ui_StatsScreen_screen_init(rows, cols);
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_stats_screen.screen.self);
     }
     print_lv_mem_mon();
 }
 
 void showSleepScreen() {
+    ILOG(TAG, "[%s]", __func__);
     loadSleepScreen();
 }
 
-void showRecordScreen() {
+void showRecordScreen(bool invert_colors) {
+    ILOG(TAG, "[%s]", __func__);
     loadRecordScreen();
+    lv_obj_t* panel = ui_record_screen.screen.main_cnt;
+    if(panel == 0)
+        return;
+    if(invert_colors) {
+        lv_obj_set_style_bg_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    else {
+        lv_obj_set_style_bg_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
 }
 
 
 void showLowBatScreen() {
+    ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &battery_horiz_bold_48px;
@@ -227,6 +249,7 @@ void showLowBatScreen() {
 }
 
 void showPushScreen(int push) {
+    ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = push==1 ? &ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png : push==2 ? &ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png : &ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png;
@@ -238,6 +261,7 @@ void showPushScreen(int push) {
 }
 
 void showGpsTroubleScreen() {
+    ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &near_me_disabled_bold_48px;
@@ -250,6 +274,7 @@ void showGpsTroubleScreen() {
 }
 
 void showSdTroubleScreen() {
+    ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &sd_trouble_bold_48px;
@@ -261,19 +286,8 @@ void showSdTroubleScreen() {
     }
 }
 
-void showSaveSessionScreen() {
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &save_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-10));
-        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_label_set_text(ui_init_screen.init_lbl, "Save Session");
-    }
-}
-
 void showBootScreen(const char* title) {
+    ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
@@ -290,11 +304,53 @@ void showBootScreen(const char* title) {
         lv_obj_set_y(img, lv_pct(-5));
     }
     const char *lbl_txt = lv_label_get_text(ui_init_screen.init_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_init_screen.init_lbl, title);
+    const char *new_txt = title;
+    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
+    {
+        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
+        lv_label_set_text(ui_init_screen.init_lbl, new_txt);
+    }
 }
 
-void showWifiScreen(const char * title, const char * info) {
+static void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc) {
+    const char *lbl_txt = lv_label_get_text(scr->info_lbl);
+    const char *new_txt = title;
+    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
+    {
+        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
+        lv_label_set_text(scr->info_lbl, new_txt);
+    }
+    lbl_txt = lv_label_get_text(scr->info_secondary_lbl);
+    new_txt = info;
+    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
+    {
+        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
+        lv_label_set_text(scr->info_secondary_lbl, new_txt);   
+    }
+    lbl_txt = lv_label_get_text(scr->info_third_lbl);
+    new_txt = desc;
+    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
+    {
+         ILOG(TAG,"[%s] set desc label text old:%s new:%s", __func__, lbl_txt, new_txt);
+        lv_label_set_text(scr->info_third_lbl, new_txt);
+    }
+}
+
+void showSaveSessionScreen(const char * title, const char * info, const char * desc) {
+    ILOG(TAG, "[%s]", __func__);
+    loadInfoScreen();
+    lv_obj_t* img = ui_info_screen.info_img;
+    const lv_img_dsc_t *img_src = &save_bold_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        if(lv_img_get_angle(img) != 0)
+            lv_img_set_angle(img, 0);
+    }
+    set_info_screen_fields(&ui_info_screen, title, info, desc);
+}
+
+void showWifiScreen(const char * title, const char * info, const char * desc) {
+    ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
     loadInfoScreen();
     lv_obj_t* img = ui_info_screen.info_img;
     const lv_img_dsc_t *img_src = &wifi_bold_48px;
@@ -303,44 +359,39 @@ void showWifiScreen(const char * title, const char * info) {
         if(lv_img_get_angle(img) != 0)
             lv_img_set_angle(img, 0);
     }
-    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_lbl, title);
-    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
+    set_info_screen_fields(&ui_info_screen, title, info, desc);
 }
 
-void showGpsScreen(const char* title, const char* info, const lv_img_dsc_t *img_src, int angle) {
+void showGpsScreen(const char* title, const char* info, const char * desc, const lv_img_dsc_t *img_src, int angle) {
+    ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
     loadInfoScreen();
     lv_obj_t* img = ui_info_screen.info_img;
     if(!img_src)
         img_src = &near_me_bold_48px;
     if(lv_img_get_src(img) != img_src) {
         lv_img_set_src(img, img_src);
+        if(lv_img_get_angle(img) != angle)
+            lv_img_set_angle(img, angle);
     }
-    if(lv_img_get_angle(img) != angle)
-        lv_img_set_angle(img, angle);
-    const char *lbl_txt = lv_label_get_text(ui_info_screen.info_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_lbl, title);
-    lbl_txt = lv_label_get_text(ui_info_screen.info_secondary_lbl);
-    if(title && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, title) != 0)))
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, info);
+    set_info_screen_fields(&ui_info_screen, title, info, desc);
 }
 
 void showSpeedScreen() {
+    ILOG(TAG, "[%s]", __func__);
     loadSpeedScreen();
 }
 
 void showStatsScreen12() {
+    ILOG(TAG, "[%s]", __func__);
     loadStatsScreen(2,102);
 }
 
 void showStatsScreen22() {
+    ILOG(TAG, "[%s]", __func__);
     loadStatsScreen(2,2);
 }
 
 void showStatsScreen32() {
+    ILOG(TAG, "[%s]", __func__);
     loadStatsScreen(3,2);
 }

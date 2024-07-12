@@ -12,18 +12,18 @@ static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *label;
     label = lv_label_create(panel);
     lv_label_set_text(label, "10sec");
-    lv_obj_align(label, LV_ALIGN_CENTER, lv_pct(-30), lv_pct(-2));
+    lv_obj_align(label, LV_ALIGN_CENTER, lv_pct(-35), lv_pct(-2));
     lv_obj_set_style_text_font(label, ui_record_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_record_screen.info_lbl = label;
     
     label = lv_label_create(panel);
     lv_label_set_text(label, "109.05");
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(-12));
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(-14));
     ui_record_screen.cur_lbl = label;
 
     label = lv_label_create(panel);
     lv_label_set_text(label, "105.72");
-    lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(12));
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, lv_pct(14));
     ui_record_screen.prev_lbl = label;
 
     return panel;

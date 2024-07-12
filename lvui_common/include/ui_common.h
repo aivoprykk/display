@@ -76,6 +76,7 @@ typedef struct ui_info_screen_s {
     ui_screen_t screen;
     lv_obj_t *info_lbl;
     lv_obj_t *info_secondary_lbl;
+    lv_obj_t *info_third_lbl;
     lv_obj_t *info_img;
     struct {
         const lv_font_t *info;
@@ -260,19 +261,19 @@ void loadStatsScreen(int rows, int cols);
 
 void showSleepScreen();
 void showLowBatScreen();
-void showWifiScreen(const char * title, const char * info);
+void showWifiScreen(const char * title, const char * info, const char * desc);
 void showBootScreen(const char * title);
-void showGpsScreen(const char * title, const char * info, const lv_img_dsc_t *img_src, int angle);
+void showGpsScreen(const char * title, const char * info, const char * desc, const lv_img_dsc_t *img_src, int angle);
 void showGpsTroubleScreen();
 void showSdTroubleScreen();
-void showSaveSessionScreen();
+void showSaveSessionScreen(const char * title, const char * info, const char * desc);
 void showSpeedScreen();
 void showStatsScreen();
 void showStatsScreen12();
 void showStatsScreen22();
 void showStatsScreen32();
 void showPushScreen(int push);
-void showRecordScreen();
+void showRecordScreen(bool invert_colors);
 void ui_flush_screens(ui_screen_t * screen);
 
 #ifdef __cplusplus

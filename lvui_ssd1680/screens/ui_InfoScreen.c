@@ -7,23 +7,35 @@ static const char * TAG = "ui_info_screen";
 static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
     
-    lv_obj_t *ui_MainLabel = lv_label_create(panel);
-    lv_obj_set_width(ui_MainLabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_MainLabel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_x(ui_MainLabel, lv_pct(35));
-    lv_obj_set_y(ui_MainLabel, lv_pct(-10));
-    lv_obj_set_align(ui_MainLabel, LV_ALIGN_LEFT_MID);
-    lv_obj_set_style_text_font(ui_info_screen.screen.self, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
-    ui_info_screen.info_lbl = ui_MainLabel;
+    lv_obj_t *label;
+    label = lv_label_create(panel);
+    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_x(label, lv_pct(33));
+    lv_obj_set_y(label, lv_pct(-10));
+    lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
+    lv_obj_set_style_text_font(label, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_info_screen.info_lbl = label;
 
-    lv_obj_t *ui_MainLowerLabel = lv_label_create(panel);
-    lv_obj_set_width(ui_MainLowerLabel, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_MainLowerLabel, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_x(ui_MainLowerLabel, lv_pct(35));
-    lv_obj_set_y(ui_MainLowerLabel, lv_pct(19));
-    lv_obj_set_align(ui_MainLowerLabel, LV_ALIGN_LEFT_MID);
-    lv_obj_set_style_text_font(ui_MainLowerLabel, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
-    ui_info_screen.info_secondary_lbl = ui_MainLowerLabel;
+    label = lv_label_create(panel);
+    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_x(label, lv_pct(33));
+    lv_obj_set_y(label, lv_pct(13));
+    lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
+    lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(label, "");
+    ui_info_screen.info_secondary_lbl = label;
+
+    label = lv_label_create(panel);
+    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
+    lv_obj_set_x(label, lv_pct(33));
+    lv_obj_set_y(label, lv_pct(31));
+    lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
+    lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text(label, "");
+    ui_info_screen.info_third_lbl = label;
 
     lv_obj_t *ui_MainImage = lv_img_create(panel);
     lv_img_set_src(ui_MainImage, &near_me_bold_48px);
