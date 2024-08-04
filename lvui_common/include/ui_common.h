@@ -135,6 +135,7 @@ LV_IMG_DECLARE( wifi_bold_48px);
 LV_IMG_DECLARE( save_bold_48px);
 LV_IMG_DECLARE( sd_trouble_bold_48px);
 LV_IMG_DECLARE( battery_horiz_bold_48px);
+LV_IMG_DECLARE( settings_48px);
 LV_IMG_DECLARE( espidf_logo_v2_48px);
 LV_IMG_DECLARE( gunsails_48px);
 // LV_IMG_DECLARE( jp_48px);
@@ -254,6 +255,7 @@ void ui_SleepScreen_screen_init(void);
 
 void loadSleepScreen();
 void loadInfoScreen();
+void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc);
 void loadRecordScreen();
 void loadInitScreen();
 void loadSpeedScreen();
@@ -272,8 +274,9 @@ void showStatsScreen();
 void showStatsScreen12();
 void showStatsScreen22();
 void showStatsScreen32();
-void showPushScreen(int push);
+void showPushScreen(int push, const char * title);
 void showRecordScreen(bool invert_colors);
+void showSettingsScreen(const char * title, const char * info, const char * desc);
 void ui_flush_screens(ui_screen_t * screen);
 
 #ifdef __cplusplus

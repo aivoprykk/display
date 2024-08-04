@@ -63,6 +63,8 @@ esp_lcd_panel_io_handle_t io_handle = NULL;
 static uint32_t update_count = 0;
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
 static bool is_initialized_lvgl = false;
+static bool init_requested = true;
+static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
 // const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
 
 IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
@@ -77,9 +79,25 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
     return false;
 }
 
+esp_err_t display_epd_ssd1680_request_full_update()
+{
+    ILOG(TAG, "[%s]", __func__);
+    init_mode = INIT_MODE_FULL_1;
+    init_requested = true;
+    return ESP_OK;
+}
+
+esp_err_t display_epd_ssd1680_request_fast_update()
+{
+    ILOG(TAG, "[%s]", __func__);
+    init_mode = INIT_MODE_FULL_2;
+    init_requested = true;
+    return ESP_OK;
+}
+
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
-    DMEAS_START();
+    IMEAS_START();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
     int offsetx1 = area->x1;
     int offsetx2 = area->x2;
@@ -92,17 +110,18 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     int len_bits = (abs(offsetx1 - offsetx2) + 1) * (abs(offsety1 - offsety2) + 1);
 
     const char *x = "e-Paper display...";
-    if(update_count==0 || update_count==1000){
-        ILOG(TAG, "[%s] %s %s", "Resetting", __func__, x);
+    if(init_requested) {
+        ILOG(TAG, "[%s] %s %s with init mode 0x%02x", "Reset/Init", __func__, x, init_mode);
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(50);
-        ILOG(TAG, "[%s] %s %s", "Initializing", __func__, x);
-        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, INIT_MODE_FULL_2, 0));
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1680(panel_handle, init_mode, 0));
+        init_mode = INIT_MODE_FULL_2;
+        if(init_requested) init_requested = false;
         delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
-    if(update_count!=0 && update_count!=1000) {
-        ILOG(TAG, "[%s] %s %s", "Refreshing", __func__, x);
+    if(!init_requested) {
+        ILOG(TAG, "[%s] %s %s", "Refresh", __func__, x);
         ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd1680(panel_handle, fast_refresh_lut, 159));
     }
 
@@ -136,11 +155,7 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, offsetx1, offsety1, offsetx2 + 1, offsety2 + 1, converted_buffer_black));
     ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd1680(panel_handle, 0));
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
-    if(update_count++>=50) 
-        update_count=0;
-
-    //lv_disp_flush_ready(drv);
-    DMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
+    IMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
 }
 
@@ -197,6 +212,7 @@ void display_ssd1680_init_cb(lv_disp_drv_t *disp_drv) {
     disp_drv->flush_cb = epaper_lvgl_flush_cb;
     disp_drv->wait_cb = epaper_lvgl_wait_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
+    disp_drv->direct_mode = 1;
 }
 
 /**

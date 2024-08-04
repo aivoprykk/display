@@ -287,7 +287,7 @@ void showSdTroubleScreen() {
 }
 
 void showBootScreen(const char* title) {
-    ILOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s] title: %s", __func__, title);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;

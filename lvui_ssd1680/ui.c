@@ -233,6 +233,18 @@ void showRecordScreen(bool invert_colors) {
     }
 }
 
+void showSettingsScreen(const char * title, const char * info, const char * desc) {
+    ILOG(TAG, "[%s]", __func__);
+    loadInfoScreen();
+    lv_obj_t* img = ui_info_screen.info_img;
+    const lv_img_dsc_t *img_src = &settings_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        if(lv_img_get_angle(img) != 0)
+            lv_img_set_angle(img, 0);
+    }
+    set_info_screen_fields(&ui_info_screen, title, info, desc);
+}
 
 void showLowBatScreen() {
     ILOG(TAG, "[%s]", __func__);
@@ -248,7 +260,7 @@ void showLowBatScreen() {
     }
 }
 
-void showPushScreen(int push) {
+void showPushScreen(int push, const char * title) {
     ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
@@ -256,6 +268,11 @@ void showPushScreen(int push) {
     if(lv_img_get_src(img) != img_src) {
         lv_img_set_src(img, img_src);
         lv_obj_set_y(img, lv_pct(-5));
+    }
+    if(title){
+        lv_label_set_text(ui_init_screen.init_lbl, title);
+        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+    } else {
         lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
     }
 }
@@ -287,7 +304,7 @@ void showSdTroubleScreen() {
 }
 
 void showBootScreen(const char* title) {
-    ILOG(TAG, "[%s]", __func__);
+    ILOG(TAG, "[%s] title: %s", __func__, title);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
     const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
@@ -312,7 +329,7 @@ void showBootScreen(const char* title) {
     }
 }
 
-static void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc) {
+void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc) {
     const char *lbl_txt = lv_label_get_text(scr->info_lbl);
     const char *new_txt = title;
     if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))

@@ -62,7 +62,8 @@ esp_lcd_panel_io_handle_t io_handle = NULL;
 static uint32_t update_count = 0;
 static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
 static bool is_initialized_lvgl = false;
-TIMER_INIT
+static bool init_requested = false;
+static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
 
 IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
@@ -74,6 +75,22 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
         return true;
     }
     return false;
+}
+
+esp_err_t display_epd_ssd1681_request_full_update()
+{
+    ILOG(TAG, "[%s]", __func__);
+    init_mode = INIT_MODE_FULL_1;
+    init_requested = true;
+    return ESP_OK;
+}
+
+esp_err_t display_epd_ssd1681_request_fast_update()
+{
+    ILOG(TAG, "[%s]", __func__);
+    init_mode = INIT_MODE_FULL_2;
+    init_requested = true;
+    return ESP_OK;
 }
 
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
@@ -96,7 +113,8 @@ static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_c
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
         delay_ms(50);
         ILOG(TAG, "[%s] %s %s", "Initializing", __func__, x);
-        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1681(panel_handle, INIT_MODE_FULL_2, 0));
+        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd1681(panel_handle, init_mode, 0));
+        init_mode = INIT_MODE_FULL_2;
         delay_ms(50);
     }
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));

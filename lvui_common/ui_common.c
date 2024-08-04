@@ -9,7 +9,7 @@ ESP_EVENT_DEFINE_BASE(UI_EVENT);
 
 const char * ui_event_strings[] = {
     "UI_EVENT_FLUSH_START",
-    "UI_EVENT_FLUSH_END",
+    "UI_EVENT_FLUSH_DONE",
 };
 
 static const char *TAG = "ui_common";
