@@ -9,7 +9,15 @@
 
 ///////////////////// VARIABLES ////////////////////
 
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
 static const char *TAG = "ui_ssd1680";
+#endif
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+static const char *TAG = "ui_ssd1681";
+#endif
+#ifdef CONFIG_DISPLAY_DRIVER_ST7789
+static const char *TAG = "ui_st7789";
+#endif
 
 // SCREEN: ui_SpeedScreen
 void ui_SpeedScreen_screen_init(void);
@@ -152,10 +160,18 @@ void loadRecordScreen() {
     if (ui_record_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_record_screen.font.info = &ui_font_OswaldRegular24p2;
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_record_screen.font.title = &ui_font_OswaldRegular48p2;
+#else
         ui_record_screen.font.title = &ui_font_OpenSansBold36p2;
+#endif
 #else
         ui_record_screen.font.info = &ui_font_OswaldRegular24p4;
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_record_screen.font.title = &ui_font_OswaldRegular48p4;
+#lse
         ui_record_screen.font.title = &ui_font_OpenSansBold36p4;
+#endif
 #endif
     }
     ui_RecordScreen_screen_init();
@@ -170,13 +186,29 @@ void loadSpeedScreen() {
     ILOG(TAG, "[%s]", __func__);
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+        ui_speed_screen.font.main = &ui_font_OswaldRegular96p2;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular36p2;
+#elif defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_speed_screen.font.main = &ui_font_OswaldRegular100p2;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular48p2;
+#else
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p2;
+#endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p2;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p2;
 #else
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+        ui_speed_screen.font.main = &ui_font_OswaldRegular84p4;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular36p4;
+#elif defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_speed_screen.font.main = &ui_font_OswaldRegular100p4;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular48p4;
+#else
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p4;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p4;
+#endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p4;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p4;
 #endif
@@ -193,16 +225,48 @@ void loadStatsScreen(int rows, int cols) {
     ILOG(TAG, "[%s]", __func__);
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
+
+#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold30p2;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular36p2;
+#elif defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_stats_screen.font.title_small = &ui_font_OswaldRegular36p2;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular48p2;
+#else
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;
         ui_stats_screen.font.title = &ui_font_OpenSansBold28p2;
+#endif
+
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_stats_screen.font.title_big = &ui_font_OswaldRegular60p2;
+#else
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p2;
+#endif
+
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p2;
+
+#else
+
+#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold30p4;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular36p4;
+#elif defined(CONFIG_DISPLAY_DRIVER_ST7789)
+        ui_stats_screen.font.title_small = &ui_font_OswaldRegular36p4;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular48p4;
 #else
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p4;
         ui_stats_screen.font.title = &ui_font_OpenSansBold28p4;
+#endif
+
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+    ui_stats_screen.font.title_big = &ui_font_OswaldRegular60p4;
+#else
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p4;
+#endif
+
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p4;
 #endif
+
     }
     ui_StatsScreen_screen_init(rows, cols);
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){

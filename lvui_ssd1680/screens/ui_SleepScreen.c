@@ -39,8 +39,11 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_set_style_pad_right(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+    lv_obj_t *right_container =  ui_common_panel_init(panel, 20, 100);
+#else
     lv_obj_t *right_container =  ui_common_panel_init(panel, 30, 100);
+#endif
     lv_obj_set_align(right_container, LV_ALIGN_TOP_RIGHT);
     
     lv_obj_t *up_img = lv_img_create(right_container);
@@ -65,7 +68,11 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_clear_flag(bottom_img, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
     ui_sleep_screen.bottom_img = bottom_img;
 
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+    lv_obj_t *left_container =  ui_common_panel_init(panel, 85, 100);
+#else
     lv_obj_t *left_container =  ui_common_panel_init(panel, 80, 100);
+#endif
     lv_obj_set_style_text_font(left_container, ui_sleep_screen.font.normal, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t *rows[6]={0}; // , *cols[2]={0};

@@ -6,12 +6,18 @@ static const char * TAG = "ui_info_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
-    
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+    lv_coord_t col_2_x = 33, col_1_x = 4;
+#elif defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+    lv_coord_t col_2_x = 27, col_1_x = 6;
+#else
+    lv_coord_t col_2_x = 35, col_1_x = 12;
+#endif
     lv_obj_t *label;
     label = lv_label_create(panel);
     lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_x(label, lv_pct(27));
+    lv_obj_set_x(label, lv_pct(col_2_x));
     lv_obj_set_y(label, lv_pct(-14));
     lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
     lv_obj_set_style_text_font(label, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -20,7 +26,7 @@ static lv_obj_t * load(lv_obj_t *parent) {
     label = lv_label_create(panel);
     lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_x(label, lv_pct(27));
+    lv_obj_set_x(label, lv_pct(col_2_x));
     lv_obj_set_y(label, lv_pct(11));
     lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
     lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -30,7 +36,7 @@ static lv_obj_t * load(lv_obj_t *parent) {
     label = lv_label_create(panel);
     lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_x(label, lv_pct(27));
+    lv_obj_set_x(label, lv_pct(col_2_x));
     lv_obj_set_y(label, lv_pct(30));
     lv_obj_set_align(label, LV_ALIGN_LEFT_MID);
     lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -42,7 +48,7 @@ static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_set_width(ui_MainImage, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_MainImage, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_y(ui_MainImage, 0);
-    lv_obj_set_x(ui_MainImage, lv_pct(6));
+    lv_obj_set_x(ui_MainImage, lv_pct(col_1_x));
     lv_obj_set_align(ui_MainImage, LV_ALIGN_LEFT_MID);
     lv_obj_add_flag(ui_MainImage, LV_OBJ_FLAG_ADV_HITTEST);   /// Flags
     lv_obj_clear_flag(ui_MainImage, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
@@ -72,5 +78,6 @@ void ui_InfoScreen_screen_init(void) {
     ui_flush_screens(&ui_info_screen.screen);
     if(ui_info_screen.screen.main_cnt == 0)
         ui_info_screen.screen.main_cnt = load(ui_info_screen.screen.self);
+    lv_obj_set_x(ui_info_screen.screen.main_cnt, lv_pct(ui_info_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_info_screen.screen);
 }

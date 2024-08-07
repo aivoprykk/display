@@ -262,6 +262,8 @@
         0x07, 0x17, 0x41, 0x00, 0x32, 0x20 \
 })
 
+#define PARTIAL_UPDATE_LUT_SIZE 159
+
 // NOTE: After several refreshes using SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH, you may notice the WHITE color
 // goes GRAY and contrast decrease a lot. Use the LUT below to avoid that issue.
 // NOTE: The LUT below will have the source output "keep previous output before power off", so the service life may be affected.

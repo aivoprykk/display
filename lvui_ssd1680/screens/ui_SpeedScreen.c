@@ -45,7 +45,7 @@ lv_obj_t * load(lv_obj_t *parent) {
     // lv_obj_set_height(bottom_cnt, lv_pct(65));
     // lv_obj_align(bottom_cnt, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     // lv_obj_clear_flag(bottom_cnt, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
-
+    
     lv_obj_t *main_lbl = lv_label_create(panel);
     lv_obj_set_width(main_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(main_lbl, LV_SIZE_CONTENT);  /// 1
@@ -114,5 +114,6 @@ void ui_SpeedScreen_screen_init(void) {
     ui_flush_screens(&ui_speed_screen.screen);
     if(ui_speed_screen.screen.main_cnt == 0)
         ui_speed_screen.screen.main_cnt = load(ui_speed_screen.screen.self);
+    lv_obj_set_x(ui_speed_screen.screen.main_cnt, lv_pct(ui_speed_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_speed_screen.screen);
 }

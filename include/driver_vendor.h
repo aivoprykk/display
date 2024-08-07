@@ -16,15 +16,15 @@ extern "C" {
 bool _lvgl_lock(int timeout_ms);
 void _lvgl_unlock(void);
 
-esp_lcd_panel_handle_t display_ssd1681_new();
-void display_ssd1681_del();
-esp_err_t display_epd_ssd1681_request_full_update();
-esp_err_t display_epd_ssd1681_request_fast_update();
+// esp_lcd_panel_handle_t display_ssd1681_new();
+// void display_ssd1681_del();
+// esp_err_t display_epd_ssd1681_request_full_update();
+// esp_err_t display_epd_ssd1681_request_fast_update();
 
-esp_lcd_panel_handle_t display_ssd1680_new();
-void display_ssd1680_del();
-esp_err_t display_epd_ssd1680_request_full_update();
-esp_err_t display_epd_ssd1680_request_fast_update();
+esp_lcd_panel_handle_t display_ssd168x_new();
+void display_ssd168x_del();
+esp_err_t display_epd_ssd168x_request_full_update();
+esp_err_t display_epd_ssd168x_request_fast_update();
 
 esp_lcd_panel_handle_t display_st7789_new();
 void display_st7789_del();
@@ -33,14 +33,10 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 
 #if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
 #define LCD_H_RES (200)               // horizontal
+#define LCD_H_VISIBLE (200)           // vertical
 #define LCD_V_RES (200)               // vertical
 #define LCD_H_GAP (0)
 #define LCD_V_GAP (0)
-#define display_new display_ssd1681_new
-#define display_del display_ssd1681_del
-#define display_init_cb display_ssd1681_init_cb
-#define display_epd_request_full_update display_epd_ssd1681_request_full_update
-#define display_epd_request_fast_update display_epd_ssd1681_request_fast_update
 #endif
 #if defined(CONFIG_DISPLAY_DRIVER_SSD1680)
 #define LCD_H_RES (128)               // horizontal
@@ -48,11 +44,12 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_V_RES (250)               // vertical
 #define LCD_H_GAP (0)
 #define LCD_V_GAP (0)
-#define display_new display_ssd1680_new
-#define display_del display_ssd1680_del
-#define display_init_cb display_ssd1680_init_cb
-#define display_epd_request_full_update display_epd_ssd1680_request_full_update
-#define display_epd_request_fast_update display_epd_ssd1680_request_fast_update
+#endif
+#if defined(CONFIG_DISPLAY_DRIVER_SSD1681) || defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#define display_new display_ssd168x_new
+#define display_del display_ssd168x_del
+#define display_epd_request_full_update display_epd_ssd168x_request_full_update
+#define display_epd_request_fast_update display_epd_ssd168x_request_fast_update
 #endif
 #if defined(CONFIG_DISPLAY_DRIVER_ST7789)
 #define LCD_H_RES (320)               // horizontal
@@ -61,8 +58,7 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define LCD_V_GAP (35)
 #define display_new display_st7789_new
 #define display_del display_st7789_del
-#define display_init_cb display_st7789_init_cb
-#define display_epd_request_full_update (void)0
+#define display_epd_request_full_update(a) ((void)0)
 #endif
 
 #define LCD_RESOLUTION  (LCD_H_RES * LCD_V_RES)

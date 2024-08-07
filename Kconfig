@@ -27,7 +27,7 @@ menu "Logger Display Module Options"
         prompt "Screen model"
         default HAS_SCREEN_DEPG0213BN if DISPLAY_DRIVER_SSD1680
         default HAS_SCREEN_GDEY0154D67 if DISPLAY_DRIVER_SSD1681
-        default HAS_SCREEN_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+        default HAS_SCREEN_ST7789 if DISPLAY_DRIVER_ST7789
         config HAS_SCREEN_DEPG0213BN
             depends on DISPLAY_DRIVER_SSD1680
             bool "DEPG0213BN 2.13 122x250 Eink"

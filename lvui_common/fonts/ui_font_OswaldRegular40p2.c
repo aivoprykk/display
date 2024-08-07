@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 40 px
  * Bpp: 2
- * Opts: --bpp 2 --size 40 --font /Users/aivo/Downloads/squareline/squareline-proj-tdisplay-s3-04/assets/Oswald-Regular.ttf -o /Users/aivo/Downloads/squareline/squareline-proj-tdisplay-s3-04/assets/ui_font_OswaldRegular40p2.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
+ * Opts: --bpp 2 --size 40 --font /Users/aivo/Downloads/squareline/squareline_proj_1_54_01_s/assets/Oswald-Regular.ttf -o /Users/aivo/Downloads/squareline/squareline_proj_1_54_01_s/assets/ui_font_OswaldRegular40p2.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
 #include "ui_common.h"
@@ -2519,9 +2519,12 @@ static const lv_font_fmt_txt_kern_pair_t kern_pairs =
  *  ALL CUSTOM DATA
  *--------------------*/
 
-#if LV_VERSION_CHECK(8, 0, 0)
+#if LVGL_VERSION_MAJOR == 8
 /*Store all the custom data of the font*/
 static  lv_font_fmt_txt_glyph_cache_t cache;
+#endif
+
+#if LVGL_VERSION_MAJOR >= 8
 static const lv_font_fmt_txt_dsc_t font_dsc = {
 #else
 static lv_font_fmt_txt_dsc_t font_dsc = {
@@ -2535,10 +2538,11 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
     .bpp = 2,
     .kern_classes = 0,
     .bitmap_format = 0,
-#if LV_VERSION_CHECK(8, 0, 0)
+#if LVGL_VERSION_MAJOR == 8
     .cache = &cache
 #endif
 };
+
 
 
 /*-----------------
@@ -2546,7 +2550,7 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
  *----------------*/
 
 /*Initialize a public general font descriptor*/
-#if LV_VERSION_CHECK(8, 0, 0)
+#if LVGL_VERSION_MAJOR >= 8
 const lv_font_t ui_font_OswaldRegular40p2 = {
 #else
 lv_font_t ui_font_OswaldRegular40p2 = {
@@ -2562,7 +2566,11 @@ lv_font_t ui_font_OswaldRegular40p2 = {
     .underline_position = -4,
     .underline_thickness = 2,
 #endif
-    .dsc = &font_dsc           /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
+    .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
+#if LV_VERSION_CHECK(8, 2, 0) || LVGL_VERSION_MAJOR >= 9
+    .fallback = NULL,
+#endif
+    .user_data = NULL,
 };
 
 

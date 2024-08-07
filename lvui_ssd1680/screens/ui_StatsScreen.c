@@ -38,18 +38,21 @@ static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) 
 
 static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
-    
     lv_obj_set_style_pad_left(panel, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+    if(rowlen<5)
+#else
     if(rowlen<4)
+#endif
     lv_obj_set_style_text_font(panel, ui_stats_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     else
     lv_obj_set_style_text_font(panel, ui_stats_screen.font.title_small, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t *rows[7] = {0}, *cols[2] = {0};
-    int numrows = rowlen, h = 100 / numrows, numcols = collen, fh=h;
+    int numrows = rowlen, h = ((1000/numrows%10>=5) ? 1 : 0) + (100 / numrows), numcols = collen, fh=h;
     if (numcols > 100){
         if (numcols > 200)
             numcols -= 200;
@@ -75,7 +78,11 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
         if ((collen > 200 && i < 2) || (collen > 100 && i < 1) || collen==1) {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             if(collen == 1 ) {
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+                cols[0] = ui_Cell(rows[i], ((rowlen<5) ? 85 : 80), 38, 62, &ui_stats_screen.cells[i][0]);
+#else
                 cols[0] = ui_Cell(rows[i], 60, 35, 75, &ui_stats_screen.cells[i][0]);
+#endif
                 lv_obj_set_x(cols[0], lv_pct(-10));
             }
             else
@@ -132,5 +139,6 @@ void ui_StatsScreen_screen_init(int rows, int cols) {
         ui_stats_screen.cols = cols;
         ui_stats_screen.screen.main_cnt = load(ui_stats_screen.screen.self);
     }
+    lv_obj_set_x(ui_stats_screen.screen.main_cnt, lv_pct(ui_stats_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_stats_screen.screen);
 }

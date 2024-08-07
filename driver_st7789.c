@@ -57,9 +57,9 @@ static lv_disp_drv_t disp_drv;       // contains callback functions
 //static lv_color_t *lv_disp_buf[LCD_BUF_SIZE_DIV_10];
 //static lv_color_t *lv_disp_buf2[LCD_BUF_SIZE_DIV_10];
 
-esp_lcd_panel_handle_t panel_handle = NULL;
-esp_lcd_panel_io_handle_t io_handle = NULL;
-esp_lcd_i80_bus_handle_t bus_handle = NULL;
+static esp_lcd_panel_handle_t panel_handle = NULL;
+static esp_lcd_panel_io_handle_t io_handle = NULL;
+static esp_lcd_i80_bus_handle_t bus_handle = NULL;
 
 static bool is_initialized_lvgl = false;
 
@@ -69,7 +69,7 @@ typedef struct {
     uint8_t len;
 } lcd_cmd_t;
 
-lcd_cmd_t lcd_st7789v[] = {
+static const lcd_cmd_t lcd_st7789v[] = {
     {0x11, {0}, 0 | 0x80},
     {0x3A, {0X05}, 1},
     {0xB2, {0X0B, 0X0B, 0X00, 0X33, 0X33}, 5},
@@ -88,7 +88,7 @@ lcd_cmd_t lcd_st7789v[] = {
 };
 
 static void bl_init() {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     const ledc_channel_config_t LCD_backlight_channel = {
         .gpio_num = CONFIG_DISPLAY_BL,
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -153,6 +153,7 @@ static void increase_lvgl_tick(void *arg) {
     lv_tick_inc(L_LVGL_TICK_PERIOD_MS*1000);
 }
 
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
 bool _lvgl_lock(int timeout_ms) {
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
@@ -163,15 +164,15 @@ bool _lvgl_lock(int timeout_ms) {
 void _lvgl_unlock(void) {
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 }
-
+#endif
 void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
-    LOGR
+    ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
-    disp_drv->action = LCD_H_RES;
-    disp_drv->actionver_res = LCD_V_RES;
-    disp_drv->actionflush_cb = lvgl_flush_cb;
-    // disp_drv->actionwait_cb = lvgl_wait_cb;
-    // disp_drv->actiondrv_update_cb = epaper_lvgl_port_update_callback;
+    disp_drv->hor_res = LCD_H_RES;
+    disp_drv->ver_res = LCD_V_RES;
+    disp_drv->flush_cb = lvgl_flush_cb;
+    // disp_drv->wait_cb = lvgl_wait_cb;
+    // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
     disp_drv->user_data = panel_handle;
 }
 
@@ -321,7 +322,7 @@ esp_lcd_panel_handle_t display_st7789_new() {
     esp_lcd_panel_io_tx_param(io_handle, 0x29, NULL, 0);
      
     //delay_ms(100);
-    init_screen(display_init_cb);
+    init_screen(display_st7789_init_cb);
 
     ESP_LOGI(TAG, "Create LVGL task");
 

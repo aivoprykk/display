@@ -153,10 +153,11 @@ void ui_status_panel_load(ui_screen_t* parent) {
         lv_obj_set_parent(ui_status_panel.self, parent->status_cnt);
     }
     ui_status_panel.parent = parent;
+    lv_obj_set_x(ui_status_panel.self, parent->main_cnt_offset);
 }
 
 lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
-    lv_obj_t *panel, *l, *right;
+    lv_obj_t *panel, *l;
     panel = ui_common_panel_init(parent, 100, 100);
     lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
     // if (!ui_status_panel.viewmode) {
@@ -191,7 +192,11 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         l = lv_label_create(panel);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
+#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-38), 0);
+#else
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-35), 0);
+#endif
         // if(ui_status_panel.viewmode==0){
         //     lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
         //     lv_label_set_text(l, LV_SYMBOL_GPS);
@@ -222,7 +227,11 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         l = lv_label_create(panel);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
+#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-25), 0);
+#else
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-20), 0);
+#endif
         lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
         lv_label_set_text(l, LV_SYMBOL_BATTERY_FULL);
         // lv_obj_set_style_transform_angle(l, 900, 0);
@@ -316,7 +325,9 @@ lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
     if(screen->has_status_cnt) {
         if(!screen->status_cnt) {
             lv_obj_t *panel = ui_common_panel_init(scr, 100, 18);
+#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
             lv_obj_set_y(panel, -4); // for SSD1680, visible height is 128-6=122
+#endif
             lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
             screen->status_cnt = panel;
         }
@@ -364,4 +375,9 @@ void ui_flush_screens(ui_screen_t * screen) {
     if(scr->main_cnt != screen->main_cnt && scr->unload) {
             scr->unload();
     }
+}
+
+void ui_set_main_cnt_offset(ui_screen_t * screen, int8_t off) {
+    assert(screen);
+    screen->main_cnt_offset = off;
 }
