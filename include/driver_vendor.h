@@ -59,6 +59,7 @@ void driver_st7789_bl_set(uint8_t brightness_percent);
 #define display_new display_st7789_new
 #define display_del display_st7789_del
 #define display_epd_request_full_update(a) ((void)0)
+#define display_epd_request_fast_update(a) ((void)0)
 #endif
 
 #define LCD_RESOLUTION  (LCD_H_RES * LCD_V_RES)
