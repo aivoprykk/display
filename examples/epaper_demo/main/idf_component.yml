@@ -4,3 +4,9 @@ dependencies:
     path: "../../../../esp_lcd_panel_ssd1680"
   logger_common: 
     path: "../../../../logger_common"
+  display:
+    path: "../../../../display"
+  lvgl:
+    path: "../../../../lvgl"
+  logger_button:
+    path: "../../../../logger_button"

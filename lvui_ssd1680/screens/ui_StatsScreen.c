@@ -1,14 +1,52 @@
 
 #include "../ui.h"
+#include "driver_vendor.h"
 
 ui_stats_screen_t ui_stats_screen = {0};
-static const char *TAG = "ui_stats_screen";
+// static const char *TAG = "ui_stats_screen";
+void update_dims(void) {
+    bool is_l = (display_get_width(display_get())>128);
+    lv_obj_t *obj;
+    int numcols = ui_stats_screen.cols > 200 ? ui_stats_screen.cols - 200 : ui_stats_screen.cols > 100 ? ui_stats_screen.cols - 100 : ui_stats_screen.cols;
+    int w = ((1000/numcols%10>=5) ? 1 : 0) + (100 / numcols);
+    for (int i = 0; i < ui_stats_screen.rows; ++i) {
+        obj = lv_obj_get_parent(ui_stats_screen.cells[i][0].self);
+        if(is_l) {
+            lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
+        } else {
+            lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_COLUMN);
+        }
+        for (int j = 0; j < numcols; ++j) {
+            obj = ui_stats_screen.cells[i][j].self;
+            if(obj) {
+                if(is_l){
+                    lv_obj_set_height(obj, lv_pct(100));
+                    if((ui_stats_screen.cols > 200 && j < 2)||(ui_stats_screen.cols > 100 && j < 1))
+                        lv_obj_set_width(obj, 100);
+                    else if(ui_stats_screen.cols==1)
+                        lv_obj_set_width(obj, lv_pct(60));
+                    else
+                        lv_obj_set_width(obj, lv_pct(w));
+                    obj = ui_stats_screen.cells[i][j].info;
+                    lv_obj_set_x(obj, 0);
+                } else{
+                    lv_obj_set_height(obj, lv_pct(w));
+                    lv_obj_set_width(obj, lv_pct(100));
+                    obj = ui_stats_screen.cells[i][j].info;
+                    lv_obj_set_x(obj, 5);
+                }
+            }
+        }
+    }
+    ui_status_panel_update_dims(&ui_stats_screen.screen);
+}
 
-static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int wi, int wt, ui_cell_t *cell) {
+static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int h, int wi, int wt, ui_cell_t *cell) {
 
-    lv_obj_t *panel = ui_common_panel_init(cnt, w, 100);
+    lv_obj_t *panel = ui_common_panel_init(cnt, w, h);
+    cell->self = panel;
 
-    lv_obj_t *info_cnt = ui_common_panel_init(panel, wi, 100);
+    lv_obj_t *info_cnt = ui_common_panel_init(panel, wi, h);
     lv_obj_set_align(info_cnt, LV_ALIGN_LEFT_MID);
     lv_obj_set_style_pad_left(info_cnt, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_right(info_cnt, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -47,9 +85,9 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
 #else
     if(rowlen<4)
 #endif
-    lv_obj_set_style_text_font(panel, ui_stats_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(panel, ui_stats_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     else
-    lv_obj_set_style_text_font(panel, ui_stats_screen.font.title_small, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(panel, ui_stats_screen.font.title_small, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     lv_obj_t *rows[7] = {0}, *cols[2] = {0};
     int numrows = rowlen, h = ((1000/numrows%10>=5) ? 1 : 0) + (100 / numrows), numcols = collen, fh=h;
@@ -63,7 +101,7 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
             fh = 100-h; // 70%
         }
     }
-    // w = 100 / numcols;
+    int w = ((1000/numcols%10>=5) ? 1 : 0) + (100 / numcols);
     for (int i = 0, ypos = 0; i < numrows; ++i) {
         if(i>0) ypos += (i==1 ? fh : h);
         rows[i] = ui_common_panel_init(panel, 100, (i==0 ? fh : h));
@@ -79,14 +117,14 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             if(collen == 1 ) {
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1681
-                cols[0] = ui_Cell(rows[i], ((rowlen<5) ? 85 : 80), 38, 62, &ui_stats_screen.cells[i][0]);
+                cols[0] = ui_Cell(rows[i], ((rowlen<5) ? 85 : 80), 100, 38, 62, &ui_stats_screen.cells[i][0]);
 #else
-                cols[0] = ui_Cell(rows[i], 60, 35, 75, &ui_stats_screen.cells[i][0]);
+                cols[0] = ui_Cell(rows[i], 60, 100, 35, 75, &ui_stats_screen.cells[i][0]);
 #endif
                 lv_obj_set_x(cols[0], lv_pct(-10));
             }
             else
-                cols[0] = ui_Cell(rows[i], 100, 20, 85, &ui_stats_screen.cells[i][0]);
+                cols[0] = ui_Cell(rows[i], 100, 100, 20, 85, &ui_stats_screen.cells[i][0]);
             cols[1] = 0;
             if(collen!=1 && fh!=h && i==0) {
                 lv_obj_set_style_text_font(ui_stats_screen.cells[i][0].title, ui_stats_screen.font.title_big, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -94,7 +132,7 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
         } else {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             for (int j = 0; j < numcols; ++j) {
-                cols[j] = ui_Cell(rows[i], 50, 35, 65, &ui_stats_screen.cells[i][j]);
+                cols[j] = ui_Cell(rows[i], w, 100, 35, 65, &ui_stats_screen.cells[i][j]);
                 if (j > 0) {
                     lv_obj_set_style_border_width(cols[j], 1, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_obj_set_style_border_side(cols[j], LV_BORDER_SIDE_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -128,6 +166,7 @@ void ui_StatsScreen_screen_init(int rows, int cols) {
         ui_stats_screen.screen.status_viewmode = 0;
         ui_stats_screen.screen.load = load;
         ui_stats_screen.screen.unload = unload;
+        ui_stats_screen.screen.update_dims = update_dims;
         ui_common_screen_init(&ui_stats_screen.screen);
     }
     ui_flush_screens(&ui_stats_screen.screen);

@@ -340,44 +340,64 @@ lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
 
 void ui_common_screen_uninit(ui_screen_t * screen) {
     if(screen->self) {
+        if(screen->status_cnt) {
+            if((lv_obj_get_parent(ui_status_panel.self) == screen->status_cnt)) {
+                ui_status_panel_delete();
+            }
+            screen->status_cnt = NULL;
+        }
         lv_obj_clean(screen->self);
         lv_obj_del(screen->self);
         screen->self = NULL;
-    }
-    if(screen->status_cnt) {
-        screen->status_cnt = NULL;
+        screen->main_cnt = NULL;
+        
     }
 }
 
+static void flush_screen(ui_screen_t * screen, ui_screen_t * screen2) {
+    if(screen && screen->main_cnt && screen->unload) {
+        if(!screen2 || screen->main_cnt != screen2->main_cnt)
+            screen->unload();
+    }
+}
+
+void ui_uninit_screens(void) {
+    ILOG(TAG, "[%s]", __func__);
+    ui_common_screen_uninit(&ui_init_screen.screen);
+    ui_common_screen_uninit(&ui_info_screen.screen);
+    ui_common_screen_uninit(&ui_speed_screen.screen);
+    ui_common_screen_uninit(&ui_stats_screen.screen);
+    ui_common_screen_uninit(&ui_sleep_screen.screen);
+    ui_common_screen_uninit(&ui_record_screen.screen);
+}
+
+
 void ui_flush_screens(ui_screen_t * screen) {
     ILOG(TAG, "[%s]", __func__);
-    ui_screen_t * scr = &ui_init_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
-    scr = &ui_info_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
-    scr = &ui_speed_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
-    scr = &ui_stats_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
-    scr = &ui_sleep_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
-    scr = &ui_record_screen.screen;
-    if(scr->main_cnt != screen->main_cnt && scr->unload) {
-            scr->unload();
-    }
+    flush_screen(&ui_init_screen.screen, screen);
+    flush_screen(&ui_speed_screen.screen, screen);
+    flush_screen(&ui_speed_screen.screen, screen);
+    flush_screen(&ui_stats_screen.screen, screen);
+    flush_screen(&ui_sleep_screen.screen, screen);
+    flush_screen(&ui_record_screen.screen, screen);
 }
 
 void ui_set_main_cnt_offset(ui_screen_t * screen, int8_t off) {
     assert(screen);
     screen->main_cnt_offset = off;
+}
+
+static void ui_invalidate_screen(ui_screen_t * screen) {
+    if(screen && screen->main_cnt) {
+        lv_obj_invalidate(screen->main_cnt);
+    }
+}
+void ui_invalidate_screens(void) {
+    ILOG(TAG, "[%s]", __func__);
+    ui_invalidate_screen(&ui_init_screen.screen);
+    ui_invalidate_screen(&ui_info_screen.screen);
+    ui_invalidate_screen(&ui_speed_screen.screen);
+    ui_invalidate_screen(&ui_stats_screen.screen);
+    ui_invalidate_screen(&ui_sleep_screen.screen);
+    ui_invalidate_screen(&ui_record_screen.screen);
 }

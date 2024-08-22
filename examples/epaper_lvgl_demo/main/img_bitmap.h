@@ -3,9 +3,7 @@
  *
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
-
-#ifndef E3474625_C3C1_4902_B946_B301694B45C0
-#define E3474625_C3C1_4902_B946_B301694B45C0
+#pragma once
 
 #include <stdint.h>
 
@@ -15,12 +13,14 @@ extern "C" {
 
 extern const uint8_t speed_raw_200x200[];
 extern const uint8_t BITMAP_200_200[];
+
+extern const uint8_t speed_raw_250x122[];
+extern const uint8_t speed_raw_122x250[];
+extern const uint8_t speed_raw_122[];
+extern const uint8_t esp_gps_logo_122[];
 extern const uint8_t BITMAP_128_64[];
 extern const uint8_t BITMAP_64_128[];
 
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif /* E3474625_C3C1_4902_B946_B301694B45C0 */

@@ -3,7 +3,7 @@
 //#include "logger_common.h"
 
 ui_init_screen_t ui_init_screen = {0};
-static const char * TAG = "ui_init_screen";
+// static const char * TAG = "ui_init_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
     

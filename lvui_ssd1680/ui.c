@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "ui_helpers.h"
 #include "../display_private.h"
+#include "driver_vendor.h"
 
 ///////////////////// VARIABLES ////////////////////
 
@@ -60,6 +61,7 @@ void ui_deinit() {
 
 #if defined(USE_2BPP_FONT)
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p2;
+const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p2;
 #else
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
@@ -85,6 +87,37 @@ void ui_status_panel_init(ui_screen_t *parent) {
     lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
+void ui_status_panel_update_dims(ui_screen_t *parent) {
+    bool is_l = (display_get_width(display_get())>128);
+    lv_obj_t *obj = ui_status_panel.self;
+    if(obj) {
+        if(is_l) {
+            lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
+            obj = ui_status_panel.bat_image;
+            if(obj) {
+                lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+            }
+            obj = ui_status_panel.gps_image;
+            if(obj) {
+                if((display_get_width(display_get())>200))
+                    lv_obj_set_x(obj, lv_pct(-35));
+                else
+                    lv_obj_set_x(obj, lv_pct(-38));
+            }
+        } else {
+            lv_obj_set_style_text_font(obj, parent->status_font_portrait ? parent->status_font_portrait : ui_status_font_default_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
+            obj = ui_status_panel.bat_image;
+            if(obj) {
+                lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+            }
+            obj = ui_status_panel.gps_image;
+            if(obj) {
+                lv_obj_set_x(obj, lv_pct(-50));
+            }
+        }
+    }
+}
+
 #if (CONFIG_DISPLAY_LOG_LEVEL<=1 || defined(DEBUG))
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
@@ -105,6 +138,7 @@ void loadSleepScreen() {
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p2;
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p2;
         ui_sleep_screen.screen.status_font = &ui_font_OswaldRegular14p2;
+        ui_sleep_screen.screen.status_font_portrait = &ui_font_OswaldRegular14p2;
 #else
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p4;
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p4;
@@ -112,6 +146,7 @@ void loadSleepScreen() {
 #endif
     }
     ui_SleepScreen_screen_init();
+    ui_sleep_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_sleep_screen.screen.self);
@@ -131,6 +166,7 @@ void loadInfoScreen() {
 #endif
     }
     ui_InfoScreen_screen_init();
+    ui_info_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_info_screen.screen.self);
@@ -188,13 +224,19 @@ void loadSpeedScreen() {
 #if defined(USE_2BPP_FONT)
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1681
         ui_speed_screen.font.main = &ui_font_OswaldRegular96p2;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular96p2;
         ui_speed_screen.font.title = &ui_font_OswaldRegular36p2;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p2;
 #elif defined(CONFIG_DISPLAY_DRIVER_ST7789)
         ui_speed_screen.font.main = &ui_font_OswaldRegular100p2;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular100p2;
         ui_speed_screen.font.title = &ui_font_OswaldRegular48p2;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular48p2;
 #else
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular60p2;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p2;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p2;
 #endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p2;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p2;
@@ -214,6 +256,7 @@ void loadSpeedScreen() {
 #endif
     }
     ui_SpeedScreen_screen_init();
+    ui_speed_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_speed_screen.screen.self);
@@ -269,6 +312,7 @@ void loadStatsScreen(int rows, int cols) {
 
     }
     ui_StatsScreen_screen_init(rows, cols);
+    ui_stats_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_stats_screen.screen.self);

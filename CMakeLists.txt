@@ -4,20 +4,21 @@ SET (PRIVREQ driver logger_common esp_timer esp_lcd_panel_ssd1680)
 
 if(CONFIG_DISPLAY_DRIVER_SSD1680 OR CONFIG_DISPLAY_DRIVER_SSD1681)
 set(source_file driver_ssd168x.c)
-set(PRIVREQ driver logger_common esp_timer esp_lcd_panel_ssd1680)
+list(APPEND REQ esp_lcd_panel_ssd1680)
 elseif(DEFINED CONFIG_DISPLAY_DRIVER_ST7789)
 set(source_file driver_st7789.c)
-set(PRIVREQ driver logger_common esp_timer)
 endif()
-
-set(src_dir lvui_ssd1680)
 
 if(CONFIG_BMX_ENABLE)
 list(APPEND PRIVREQ bmx280)
 endif(CONFIG_BMX_ENABLE)
 
+SET(SRCS ${source_file})
+SET(INCS include)
+
 if(CONFIG_DISPLAY_USE_LVGL)
 
+list(APPEND REQ lvgl)
 SET(lvcommon_dir lvui_common)
 FILE(GLOB LSRCS  ${lvcommon_dir}/*.c)
 FILE(GLOB FONTS ${lvcommon_dir}/fonts/ui_font*.c)
@@ -28,9 +29,9 @@ else()
     FILE(GLOB IMAGES ${lvcommon_dir}/img8b/*.c)
 endif()
 
-SET(SRCS ${source_file})
+set(src_dir lvui_ssd1680)
 FILE(GLOB SOURCES ${src_dir}/*.c ${src_dir}/screens/*.c)
-SET(INCS include ${src_dir} ${lvcommon_dir}/include)
+SET(INCS ${INCS} ${src_dir} ${lvcommon_dir}/include)
 
 endif(CONFIG_DISPLAY_USE_LVGL)
 

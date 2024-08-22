@@ -1,0 +1,63 @@
+dependencies:
+  display:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/display
+      type: local
+    version: 0.1.0
+  esp_lcd_panel_ssd1680:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/esp_lcd_panel_ssd1680
+      type: local
+    version: 0.1.0
+  espressif/button:
+    component_hash: c3ee3ba339a3848977496d0157008ae574a24fc59f54d27c93ab51b14446a2fb
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 3.3.1
+  espressif/cmake_utilities:
+    component_hash: 351350613ceafba240b761b4ea991e0f231ac7a9f59a9ee901f751bddc0bb18f
+    source:
+      service_url: https://api.components.espressif.com/
+      type: service
+    version: 0.5.3
+  idf:
+    component_hash: null
+    source:
+      type: idf
+    version: 5.2.2
+  logger_adc:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_adc
+      type: local
+    version: 0.1.0
+  logger_button:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_button
+      type: local
+    version: 0.1.0
+  logger_common:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_common
+      type: local
+    version: 0.1.0
+  logger_str:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_str
+      type: local
+    version: 0.1.0
+  lvgl:
+    component_hash: null
+    source:
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/lvgl
+      type: local
+    version: '*'
+manifest_hash: a63c61fe4e65d052f3e422e400ff1c91f797ce2b259f8d5f431f943061e86198
+target: esp32
+version: 1.0.0

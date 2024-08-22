@@ -50,6 +50,7 @@ static const char *TAG = "display_drv.st7789";
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
 static lv_disp_draw_buf_t disp_buf;  // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv;       // contains callback functions
+static lv_disp_t *lv_disp = NULL;
 
 //static uint8_t *converted_buffer_black;
 //static uint8_t *converted_buffer_red;
@@ -121,6 +122,34 @@ void driver_st7789_bl_set(uint8_t brightness_percent) {
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 }
 
+lv_disp_drv_t *display_st7789_get_driver() {
+    return &disp_drv;
+}
+
+lv_disp_t *display_st7789_get() {
+    return lv_disp;
+}
+
+esp_err_t driver_st7789_set_rotation(int r) {
+    ILOG(TAG, "[%s] %d", __func__, r);
+    if(r > DISP_ROT_270)
+        return ESP_ERR_INVALID_ARG;
+#if defined(CONFIG_DISPLAY_USE_LVGL)
+    if(r!=disp_drv.rotated) {
+        disp_drv.rotated = r;
+        lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
+        lv_obj_invalidate(lv_scr_act());
+    }
+#else
+    if(r!=rotated) {
+        rotated = r;
+    }
+#endif
+    printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
+        (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
+    return ESP_OK;
+}
+
 static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx) {
     if (is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
@@ -153,18 +182,20 @@ static void increase_lvgl_tick(void *arg) {
     lv_tick_inc(L_LVGL_TICK_PERIOD_MS*1000);
 }
 
-#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
-bool _lvgl_lock(int timeout_ms) {
+bool lock_st7789(int timeout_ms) {
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
+    if(!panel_refreshing_sem)
+        return true;
     const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
     return xSemaphoreTakeRecursive(panel_refreshing_sem, timeout_ticks) == pdTRUE;
 }
 
-void _lvgl_unlock(void) {
-    xSemaphoreGiveRecursive(panel_refreshing_sem);
+void unlock_st7789(void) {
+    if(panel_refreshing_sem)
+        xSemaphoreGiveRecursive(panel_refreshing_sem);
 }
-#endif
+
 void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
     ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
@@ -174,6 +205,7 @@ void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
     // disp_drv->wait_cb = lvgl_wait_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
     disp_drv->user_data = panel_handle;
+    disp_drv->rotated = DISP_ROT_NONE;
 }
 
 /**
@@ -206,7 +238,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
 
     ESP_LOGI(TAG, "Register display driver to LVGL");
     //lv_disp_t *disp = 
-    lv_disp_drv_register(&disp_drv);
+    lv_disp = lv_disp_drv_register(&disp_drv);
     is_initialized_lvgl = true;
 
     // init lvgl tick

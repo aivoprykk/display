@@ -2,7 +2,7 @@
 #include "../ui.h"
 
 ui_record_screen_t ui_record_screen = {0};
-static const char * TAG = "ui_record_screen";
+// static const char * TAG = "ui_record_screen";
 
 static lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 100);

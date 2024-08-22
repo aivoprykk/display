@@ -13,6 +13,11 @@ extern "C" {
 
 extern const uint8_t speed_raw_200x200[];
 extern const uint8_t BITMAP_200_200[];
+
+extern const uint8_t speed_raw_250x122[];
+extern const uint8_t speed_raw_122x250[];
+extern const uint8_t speed_raw_122[];
+extern const uint8_t esp_gps_logo_122[];
 extern const uint8_t BITMAP_128_64[];
 extern const uint8_t BITMAP_64_128[];
 
