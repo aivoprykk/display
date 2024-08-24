@@ -5,7 +5,11 @@
 ui_stats_screen_t ui_stats_screen = {0};
 // static const char *TAG = "ui_stats_screen";
 void update_dims(void) {
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+    bool is_l = (display_get_width(display_get())>170);
+#else
     bool is_l = (display_get_width(display_get())>128);
+#endif
     lv_obj_t *obj;
     int numcols = ui_stats_screen.cols > 200 ? ui_stats_screen.cols - 200 : ui_stats_screen.cols > 100 ? ui_stats_screen.cols - 100 : ui_stats_screen.cols;
     int w = ((1000/numcols%10>=5) ? 1 : 0) + (100 / numcols);
@@ -22,9 +26,9 @@ void update_dims(void) {
                 if(is_l){
                     lv_obj_set_height(obj, lv_pct(100));
                     if((ui_stats_screen.cols > 200 && j < 2)||(ui_stats_screen.cols > 100 && j < 1))
-                        lv_obj_set_width(obj, 100);
+                        lv_obj_set_width(obj, lv_pct(100));
                     else if(ui_stats_screen.cols==1)
-                        lv_obj_set_width(obj, lv_pct(60));
+                        lv_obj_set_width(obj, lv_pct(display_get_width(display_get())>200 ? 60 : 80));
                     else
                         lv_obj_set_width(obj, lv_pct(w));
                     obj = ui_stats_screen.cells[i][j].info;

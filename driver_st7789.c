@@ -48,8 +48,8 @@ static const char *TAG = "display_drv.st7789";
 #define PSRAM_DATA_ALIGNMENT 64
 
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
-static lv_disp_draw_buf_t disp_buf;  // contains internal graphic buffer(s) called draw buffer(s)
-static lv_disp_drv_t disp_drv;       // contains callback functions
+static lv_disp_draw_buf_t disp_buf = {0};  // contains internal graphic buffer(s) called draw buffer(s)
+static lv_disp_drv_t disp_drv = {0};       // contains callback functions
 static lv_disp_t *lv_disp = NULL;
 
 //static uint8_t *converted_buffer_black;
@@ -130,23 +130,54 @@ lv_disp_t *display_st7789_get() {
     return lv_disp;
 }
 
+esp_err_t driver_st7789_set_hw_rotation(int r) {
+    if(r == DISP_ROT_90 || r == DISP_ROT_270) {
+        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
+#if (LCD_H_GAP>0) || (LCD_V_GAP>0)
+        esp_lcd_panel_set_gap(panel_handle, LCD_V_GAP, LCD_H_GAP);
+#endif
+    }
+    else {
+        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+#if (LCD_H_GAP>0) || (LCD_V_GAP>0)
+        esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
+#endif
+    }
+    if(r == DISP_ROT_NONE) {
+        esp_lcd_panel_mirror(panel_handle, true, false);
+    }
+    else if(r == DISP_ROT_90) {
+        esp_lcd_panel_mirror(panel_handle, true, true);
+    }
+    else if(r == DISP_ROT_180) {
+        esp_lcd_panel_mirror(panel_handle, false, true);
+    }
+    else if(r == DISP_ROT_270) {
+        esp_lcd_panel_mirror(panel_handle, false, false);
+    }
+    return ESP_OK;
+}
+
 esp_err_t driver_st7789_set_rotation(int r) {
     ILOG(TAG, "[%s] %d", __func__, r);
     if(r > DISP_ROT_270)
         return ESP_ERR_INVALID_ARG;
+
 #if defined(CONFIG_DISPLAY_USE_LVGL)
     if(r!=disp_drv.rotated) {
+        int swap = disp_drv.rotated;
         disp_drv.rotated = r;
         lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
         lv_obj_invalidate(lv_scr_act());
-    }
+            printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
+        (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
+
 #else
     if(r!=rotated) {
         rotated = r;
-    }
 #endif
-    printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
-        (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
+        driver_st7789_set_hw_rotation(r);
+    }
     return ESP_OK;
 }
 
@@ -205,7 +236,7 @@ void display_st7789_init_cb(lv_disp_drv_t *disp_drv) {
     // disp_drv->wait_cb = lvgl_wait_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
     disp_drv->user_data = panel_handle;
-    disp_drv->rotated = DISP_ROT_NONE;
+    disp_drv->rotated = DISP_ROT_NONE; // fake value to force initial rotation
 }
 
 /**
@@ -239,6 +270,9 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     ESP_LOGI(TAG, "Register display driver to LVGL");
     //lv_disp_t *disp = 
     lv_disp = lv_disp_drv_register(&disp_drv);
+
+    driver_st7789_set_rotation(DISP_ROT_180);
+    
     is_initialized_lvgl = true;
 
     // init lvgl tick
@@ -332,13 +366,13 @@ esp_lcd_panel_handle_t display_st7789_new() {
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
     esp_lcd_panel_invert_color(panel_handle, true);
-    esp_lcd_panel_swap_xy(panel_handle, true);
-    esp_lcd_panel_mirror(panel_handle, true, false);
-#if (LCD_H_GAP>0) || (LCD_V_GAP>0)
-    //  the gap is LCD panel specific, even panels with the same driver IC, can
-    //  have different gap value
-    esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
-#endif
+    // esp_lcd_panel_swap_xy(panel_handle, true);
+    // esp_lcd_panel_mirror(panel_handle, true, false);
+// #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
+//     //  the gap is LCD panel specific, even panels with the same driver IC, can
+//     //  have different gap value
+//     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
+// #endif
 #if defined(LCD_MODULE_CMD_1)
     // send panel init commands
     for (uint8_t i = 0; i < (sizeof(lcd_st7789v) / sizeof(lcd_cmd_t)); i++) {

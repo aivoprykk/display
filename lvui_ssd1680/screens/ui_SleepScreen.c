@@ -6,7 +6,11 @@ ui_sleep_screen_t ui_sleep_screen = {0};
 // static const char * TAG = "ui_sleep_screen";
 
 static void update_dims() {
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+    bool is_l = (display_get_width(display_get())>170);
+#else
     bool is_l = (display_get_width(display_get())>128);
+#endif
     lv_obj_t *obj = ui_sleep_screen.myid;
     // if(obj) {
     //     if(is_l)
@@ -117,7 +121,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
     ui_sleep_screen.bottom_img = bottom_img;
 
 #ifdef CONFIG_DISPLAY_DRIVER_SSD1681
-    lv_obj_t *left_container =  ui_common_panel_init(panel, 85, 100);
+    lv_obj_t *left_container =  ui_common_panel_init(panel, 90, 100);
 #else
     lv_obj_t *left_container =  ui_common_panel_init(panel, 80, 100);
 #endif

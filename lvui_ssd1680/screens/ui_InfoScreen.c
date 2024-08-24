@@ -13,7 +13,11 @@ static void update_dims() {
 #else
     lv_coord_t col_2_x = 35, col_1_x = 12;
 #endif
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+    bool is_l = (display_get_width(display_get())>170);
+#else
     bool is_l = (display_get_width(display_get())>128);
+#endif
     lv_obj_t *obj = ui_info_screen.info_lbl;
     if(obj) {
         if(is_l) {

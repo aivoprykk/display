@@ -88,7 +88,11 @@ void ui_status_panel_init(ui_screen_t *parent) {
 }
 
 void ui_status_panel_update_dims(ui_screen_t *parent) {
+#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
+    bool is_l = (display_get_width(display_get())>170);
+#else
     bool is_l = (display_get_width(display_get())>128);
+#endif
     lv_obj_t *obj = ui_status_panel.self;
     if(obj) {
         if(is_l) {
