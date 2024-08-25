@@ -132,13 +132,17 @@ esp_err_t display_epd_ssd168x_set_rotation(int r) {
             lv_obj_invalidate(lv_scr_act());
         }
     }
+#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
     printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
         (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
+#endif
 #else
     if(r!=rotated) {
         rotated = r;
     }
+#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
     printf("New orientation is %d:, rotated flag is :%d\r\n", (int)r, rotated);
+#endif
 #endif
     return ESP_OK;
 }
@@ -206,7 +210,9 @@ esp_err_t display_epd_ssd168x_refresh_and_turn_off(esp_lcd_panel_handle_t panel_
 #ifdef CONFIG_DISPLAY_USE_LVGL
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
+#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
     printf("flush_cb: display_get_width(display_get_driver()) %d\n", display_get_width(display_get()));
+#endif
     ILOG(TAG, "[%s] x1:%hd y1:%hd, x2:%hd y2:%hd", __func__, area->x1, area->y1, area->x2, area->y2);
     IMEAS_START();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
