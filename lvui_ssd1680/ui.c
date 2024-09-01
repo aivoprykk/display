@@ -345,6 +345,19 @@ void showRecordScreen(bool invert_colors) {
     }
 }
 
+void showFwUpdateScreen(const char * title, const char * info, const char * desc) {
+    ILOG(TAG, "[%s]", __func__);
+    loadInfoScreen();
+    lv_obj_t* img = ui_info_screen.info_img;
+    const lv_img_dsc_t *img_src = &update_48px;
+    if(lv_img_get_src(img) != img_src) {
+        lv_img_set_src(img, img_src);
+        if(lv_img_get_angle(img) != 0)
+            lv_img_set_angle(img, 0);
+    }
+    set_info_screen_fields(&ui_info_screen, title, info, desc);
+}
+
 void showSettingsScreen(const char * title, const char * info, const char * desc) {
     ILOG(TAG, "[%s]", __func__);
     loadInfoScreen();
@@ -376,7 +389,7 @@ void showPushScreen(int push, const char * title) {
     ILOG(TAG, "[%s]", __func__);
     loadInitScreen();
     lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = push==1 ? &ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png : push==2 ? &ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png : &ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png;
+    const lv_img_dsc_t *img_src = push==1 ? &radio_button_partial_24px : push==2 ? &radio_button_checked_24px : &radio_button_unchecked_24px;
     if(lv_img_get_src(img) != img_src) {
         lv_img_set_src(img, img_src);
         lv_obj_set_y(img, lv_pct(-5));

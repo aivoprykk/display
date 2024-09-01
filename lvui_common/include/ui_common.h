@@ -143,15 +143,31 @@ LV_IMG_DECLARE( save_bold_48px);
 LV_IMG_DECLARE( sd_trouble_bold_48px);
 LV_IMG_DECLARE( battery_horiz_bold_48px);
 LV_IMG_DECLARE( settings_48px);
+LV_IMG_DECLARE( update_48px);
+LV_IMG_DECLARE( radio_button_checked_24px);
+LV_IMG_DECLARE( radio_button_partial_24px);
+LV_IMG_DECLARE( radio_button_unchecked_24px);
+
 LV_IMG_DECLARE( espidf_logo_v2_48px);
+
+//sail logos
+LV_IMG_DECLARE( ga_48px);
+LV_IMG_DECLARE( duotone_48px);
+LV_IMG_DECLARE( np_48px);
+LV_IMG_DECLARE( loftsails_48px);
 LV_IMG_DECLARE( gunsails_48px);
-// LV_IMG_DECLARE( jp_48px);
+LV_IMG_DECLARE( p7_48px);
+LV_IMG_DECLARE( ns_48px);
+LV_IMG_DECLARE( patrik_48px);
+
+extern const lv_img_dsc_t * const sail_logo_img [];
+
+// board logos
 LV_IMG_DECLARE( sb_48px);
-// LV_IMG_DECLARE( ui_img_sd_card_fill0_wght400_grad0_opsz24_png);   // assets/sd_card_FILL0_wght400_GRAD0_opsz24.png
-// LV_IMG_DECLARE( ui_img_navigation_fill0_wght400_grad0_opsz24_png);   // assets/navigation_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_checked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_checked_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_partial_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_partial_FILL0_wght400_GRAD0_opsz24.png
-LV_IMG_DECLARE( ui_img_radio_button_unchecked_fill0_wght400_grad0_opsz24_png);   // assets/radio_button_unchecked_FILL0_wght400_GRAD0_opsz24.png
+LV_IMG_DECLARE( fanatic_48px);
+LV_IMG_DECLARE( jp_48px);
+
+extern const lv_img_dsc_t * const board_logo_img [];
 
 #define USE_2BPP_FONT 1
 
@@ -285,6 +301,7 @@ void loadInitScreen();
 void loadSpeedScreen();
 void loadStatsScreen(int rows, int cols);
 
+void showFwUpdateScreen(const char * title, const char * info, const char * desc);
 void showSleepScreen();
 void showLowBatScreen();
 void showWifiScreen(const char * title, const char * info, const char * desc);
