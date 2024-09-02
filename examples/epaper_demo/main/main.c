@@ -308,6 +308,8 @@ void app_main(void) {
     }
 
     vSemaphoreDelete(refreshing_sem);
+    refreshing_sem = NULL;
     display_del(panel_handle);
+    panel_handle = NULL;
     button_deinit();
 }

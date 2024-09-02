@@ -404,6 +404,7 @@ void display_st7789_del() {
     esp_lcd_panel_del(panel_handle);
     esp_lcd_panel_io_del(io_handle);
     vSemaphoreDelete(panel_refreshing_sem);
+    panel_refreshing_sem = NULL;
 }
 
 #endif
