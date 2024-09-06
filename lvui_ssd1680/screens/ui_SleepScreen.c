@@ -1,6 +1,7 @@
 
 #include "../ui.h"
 #include "driver_vendor.h"
+#include <string.h>
 
 ui_sleep_screen_t ui_sleep_screen = {0};
 // static const char * TAG = "ui_sleep_screen";

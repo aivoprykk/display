@@ -3,7 +3,7 @@
 
 #include "lvgl.h"
 #include "sdkconfig.h"
-
+#include <string.h>
 #include "ui_events.h"
 
 #ifdef __cplusplus

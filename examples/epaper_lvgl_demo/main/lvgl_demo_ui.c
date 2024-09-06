@@ -9,6 +9,9 @@
 #include "adc.h"
 #include "button.h"
 #include "ui_common.h"
+#if LVGL_VERSION_MAJOR >= 9
+#include "../managed_components/lvgl__lvgl/src/core/lv_refr_private.h"
+#endif
 
 static const char *TAG = "lvgl_demo_ui";
 static float voltage_bat = 0.0;
@@ -223,7 +226,7 @@ static void load_screen(int noinc) {
     if (count == BLANK_SCREEN) {
         ESP_LOGI(TAG, "load blank screen");
         if(color > 1)
-            color = 0;
+            color = 1;
         scr = blankScreenLoad(color++);
     } else if(count == SLEEP_SCREEN) {
         ESP_LOGI(TAG, "load sleep screen");
@@ -334,7 +337,12 @@ static void load_screen(int noinc) {
         lv_timer_handler();
         _lvgl_unlock();
     }
+#if LVGL_VERSION_MAJOR <= 8
     _lv_disp_refr_timer(NULL);
+#else
+    _lv_display_refr_timer(NULL);
+#endif
+
 }
 
 static void timer_cb(lv_timer_t *timer) {
@@ -361,9 +369,11 @@ void ui_demo(void) {
     ESP_LOGI(TAG, "create timer with 3,5sec interval");
 #endif
     lv_disp_t * disp = lv_disp_get_default();
+#if LVGL_VERSION_MAJOR <= 8
     lv_timer_del(disp->refr_timer);
     disp->refr_timer = NULL;
-    // lv_timer_t *timer = lv_timer_create(timer_cb, 1000, NULL);
-    // lv_timer_ready(timer);
+#else
+    lv_display_delete_refr_timer(disp);
+#endif
     timer_cb(0);
 }

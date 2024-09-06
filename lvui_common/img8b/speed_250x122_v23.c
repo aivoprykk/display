@@ -150,9 +150,13 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_SPEED_250
 };
 
 const lv_img_dsc_t speed_250x122_v23 = {
+  #if LVGL_VERSION_MAJOR <= 8
   .header.cf = LV_IMG_CF_INDEXED_1BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
+#else
+  .header.cf = LV_COLOR_FORMAT_I1,
+#endif
   .header.w = 250,
   .header.h = 122,
   .data_size = 3912,

@@ -39,26 +39,26 @@ static const char *TAG = "example.ssd1681";
 extern void example_lvgl_demo_ui(lv_disp_t *disp);
 extern void ui_demo(void);
 extern lv_obj_t *ui_InfoScreen;
-static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
-static lv_disp_drv_t disp_drv;      // contains callback functions
+// static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
+// static lv_disp_drv_t disp_drv;      // contains callback functions
 
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
-static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
-#endif
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
-static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
-#endif
+// #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+// static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
+// #endif
+// #ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+// static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
+// #endif
 
-static void clearScreen(esp_lcd_panel_handle_t panel_handle, uint8_t * color_data)
-{
-    MEAS_START();
-    if(lock_ssd168x(1000) == false) {
-        ESP_LOGE(TAG, "Failed to lock the display");
-        return;
-    }
-    ESP_ERROR_CHECK(epaper_panel_clear_screen_ssd168x(panel_handle, color_data, 0xff));
-    MEAS_END(TAG, "[%s] took %llu us",__func__);
-}
+// static void clearScreen(esp_lcd_panel_handle_t panel_handle, uint8_t * color_data)
+// {
+//     MEAS_START();
+//     if(lock_ssd168x(1000) == false) {
+//         ESP_LOGE(TAG, "Failed to lock the display");
+//         return;
+//     }
+//     ESP_ERROR_CHECK(epaper_panel_clear_screen_ssd168x(panel_handle, color_data, 0xff));
+//     MEAS_END(TAG, "[%s] took %llu us",__func__);
+// }
 
 // #define BIT_SET(a, b)       ((a) |= (1u << (b)))
 // #define BIT_CLEAR(a, b)     ((a) &= ~(1u << (b)))

@@ -126,7 +126,11 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
+#if LVGL_VERSION_MAJOR < 9
     printf("used: %6lu (%3hhu %%), frag: %3hhu %%, biggest free: %6d\n", mon.total_size - mon.free_size,
+#else
+    printf("used: %6u (%3u %%), frag: %3u %%, biggest free: %6d\n", mon.total_size - mon.free_size,
+#endif
             mon.used_pct,
             mon.frag_pct,
             (int)mon.free_biggest_size);

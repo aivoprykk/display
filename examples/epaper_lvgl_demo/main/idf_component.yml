@@ -12,5 +12,4 @@ dependencies:
     path: "../../../../logger_adc"
   logger_button:
     path: "../../../../logger_button"
-  lvgl:
-    path: "../../../../lvgl"
+  lvgl/lvgl: "=9.*"
