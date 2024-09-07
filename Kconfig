@@ -139,7 +139,7 @@ menu "Logger Display Module Options"
     endmenu
     choice
         bool "Default log verbosity"
-        default DISPLAY_LOG_LEVEL_WARN
+        default DISPLAY_LOG_LEVEL_ERROR
         help
             Specify how important log should be added.
         config DISPLAY_LOG_LEVEL_TRACE
