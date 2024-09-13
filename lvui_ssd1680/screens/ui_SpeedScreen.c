@@ -101,7 +101,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, int h, ui_cell_t *cell) {
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
     lv_obj_align(lbl, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(lbl, "109.09");
+    lv_label_set_text(lbl, "--.--");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->title = lbl;
     return panel;
@@ -122,7 +122,7 @@ lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_set_width(main_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(main_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_align(main_lbl, LV_ALIGN_CENTER, 0, lv_pct(15));
-    lv_label_set_text(main_lbl, "134.90");
+    lv_label_set_text(main_lbl, "--.--");
     lv_obj_set_style_text_font(main_lbl, ui_speed_screen.font.main, LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_speed_screen.speed = main_lbl;
 
