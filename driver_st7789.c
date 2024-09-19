@@ -181,6 +181,15 @@ esp_err_t driver_st7789_set_rotation(int r) {
     return ESP_OK;
 }
 
+int driver_st7789_get_rotation(void) {
+    ILOG(TAG, "[%s]", __func__);
+#if defined(CONFIG_DISPLAY_USE_LVGL)
+    return disp_drv.rotated;
+#else
+    return rotated;
+#endif
+}
+
 static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx) {
     if (is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;

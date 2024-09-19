@@ -55,7 +55,7 @@ static SemaphoreHandle_t panel_refreshing_sem = NULL;
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #define LBUFSZ LCD_RESOLUTION
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv;      // contains callback functions
 lv_color_t buf1[LBUFSZ] = {0};
@@ -87,7 +87,7 @@ static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
 IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
     lv_disp_drv_t *disp_driver = (lv_disp_drv_t *) user_data;
     lv_disp_flush_ready(disp_driver);
 #else
@@ -120,7 +120,7 @@ esp_err_t display_epd_ssd168x_request_fast_update()
 }
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 lv_disp_drv_t * display_ssd1680_get_driver()
 {
     return &disp_drv;
@@ -175,6 +175,20 @@ esp_err_t display_epd_ssd168x_set_rotation(int r) {
 #endif
     return ESP_OK;
 }
+
+int display_epd_ssd168x_get_rotation() {
+    ILOG(TAG, "[%s]", __func__);
+#ifdef CONFIG_DISPLAY_USE_LVGL
+#if (LVGL_VERSION_MAJOR < 9)
+    return disp_drv.rotated;
+#else
+return lv_display_get_rotation(lv_disp); 
+#endif
+#else
+    return rotated;
+#endif
+}
+
 
 esp_err_t display_epd_ssd168x_turn_on(esp_lcd_panel_handle_t panel_handle)
 {
@@ -237,7 +251,7 @@ esp_err_t display_epd_ssd168x_refresh_and_turn_off(esp_lcd_panel_handle_t panel_
 }
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 #define MYINT int
 #define MYINT_D "d"
 static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
@@ -255,7 +269,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     printf("flush_cb: display_get_width(display_get_driver()) %d\n", display_get_width(display_get()));
 #endif
     // IMEAS_START();
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
     ILOG(TAG, "[%s] x1:%hd y1:%hd, x2:%hd y2:%hd", __func__, area->x1, area->y1, area->x2, area->y2);
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
 #else
@@ -269,10 +283,8 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     // Used to vertical traverse lvgl framebuffer
     MYINT len_x = abs(offsetx1 - offsetx2)+1;
     MYINT len_y = abs(offsety1 - offsety2)+1;
-#if LVGL_VERSION_MAJOR < 9
-    int rotated = display_get_rotation(drv);
-#else
-    int rotated = display_get_rotation(dspl);
+    int rotated = display_get_rotation();
+#if (LVGL_VERSION_MAJOR >= 9)
 #if (LV_COLOR_DEPTH == 1)
     uint8_t * buf = color_map+8;
 #else
@@ -286,7 +298,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     // else len_x = BYTE_PADDING(len_x);
     // --- Convert buffer from color to monochrome bitmap
     MYINT len_bits = (len_x * len_y);
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
     ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,drv->rotated);
 #else
     ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,display_get_rotation(dspl));
@@ -299,7 +311,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
         // NOTE: Set bits of converted_buffer[] FROM LOW ADDR TO HIGH ADDR, FROM HSB TO LSB
         // NOTE: 1 means BLACK/RED, 0 means WHITE
         // Horizontal traverse lvgl framebuffer (by row)
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
           converted_buffer_black[i8] |= (((lv_color_brightness(color_map[((i*len_x)%len_bits) + i/len_y])) > 250) << (7 - (bit_index)));
 #else
           // converted_buffer_black[i8] |= (((buf[((i*len_x)%len_bits) + i/len_y])) << (7 - (bit_index)));
@@ -309,7 +321,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
         else{
         // Vertical traverse lvgl framebuffer (by column), needs to uncomment len_x and len_y
         // NOTE: If your screen rotation requires setting the pixels vertically, you could use the code below
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
           converted_buffer_black[i8] |= (((lv_color_brightness(color_map[i])) <= 250) << (7 - (bit_index)));
 #else
           // converted_buffer_black[i8] |= (((buf[i])) << (7 - (bit_index)));
@@ -333,7 +345,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
 }
 
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 static void epaper_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
 #else
 static void epaper_lvgl_wait_cb(lv_display_t *disp)
@@ -377,7 +389,7 @@ void unlock_ssd168x(void) {
 }
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 #define BIT_SET(a, b)       ((a) |= (1u << (b)))
 #define BIT_CLEAR(a, b)     ((a) &= ~(1u << (b)))
 static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y, lv_color_t color, lv_opa_t opa)
@@ -393,7 +405,7 @@ static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w,
 }
 #endif
 
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 void display_ssd168x_init_cb(lv_disp_drv_t *disp_drv) {
     ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
@@ -434,7 +446,7 @@ void display_ssd168x_init_cb(lv_display_t *disp) {
  * @brief Initialize the screen
  * 
  */
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
 static void init_screen(void (*cb)(lv_disp_drv_t *)) {
 #else
 static void init_screen(void (*cb)(lv_display_t*)) {
@@ -448,7 +460,7 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
     size_t bufsz = LBUFSZ;
     ESP_LOGI(TAG, "Allocate %dkb memory for LVGL buffers" , (bufsz/1024));
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
     // lv_color_t *buf1 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
     // assert(buf1);
     // lv_color_t *buf2 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
@@ -566,7 +578,7 @@ esp_lcd_panel_handle_t display_ssd168x_new() {
     };
 #ifdef CONFIG_DISPLAY_USE_LVGL
     init_screen(display_ssd168x_init_cb);
-#if LVGL_VERSION_MAJOR < 9
+#if (LVGL_VERSION_MAJOR < 9)
     epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &disp_drv);
 #else
     epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, lv_disp);

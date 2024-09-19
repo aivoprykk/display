@@ -38,6 +38,7 @@ void display_ssd168x_del();
 esp_err_t display_epd_ssd168x_request_full_update();
 esp_err_t display_epd_ssd168x_request_fast_update();
 esp_err_t display_epd_ssd168x_set_rotation(int r);
+int display_epd_ssd168x_get_rotation(void);
 bool lock_ssd168x(int timeout_ms);
 void unlock_ssd168x();
 esp_err_t display_epd_ssd168x_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
@@ -53,11 +54,9 @@ lv_disp_t * display_ssd1680_get();
 
 #if (LVGL_VERSION_MAJOR < 9)
 lv_disp_drv_t * display_ssd1680_get_driver();
-inline int display_get_rotation(lv_disp_drv_t * disp_drv) { return disp_drv->rotated; }
 inline int display_get_width(lv_disp_t * disp) { return lv_disp_get_hor_res(disp); }
 inline int display_get_height(lv_disp_t * disp) { return lv_disp_get_ver_res(disp); }
 #else
-#define display_get_rotation lv_display_get_rotation
 inline int display_get_width(lv_disp_t * disp) { return lv_display_get_horizontal_resolution(disp); }
 inline int display_get_height(lv_disp_t * disp) { return lv_display_get_vertical_resolution(disp); }
 #endif
@@ -69,6 +68,7 @@ bool lock_st7789(int timeout_ms);
 void unlock_st7789();
 void driver_st7789_bl_set(uint8_t brightness_percent);
 esp_err_t driver_st7789_set_rotation(int r);
+int driver_st7789_get_rotation(void);
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
@@ -97,6 +97,7 @@ lv_disp_t * display_st7789_get();
 #define display_epd_request_full_update display_epd_ssd168x_request_full_update
 #define display_epd_request_fast_update display_epd_ssd168x_request_fast_update
 #define display_set_rotation display_epd_ssd168x_set_rotation
+#define display_get_rotation display_epd_ssd168x_get_rotation
 #ifdef CONFIG_DISPLAY_USE_LVGL
 // #define display_get_driver display_ssd1680_get_driver
 #define display_get display_ssd1680_get
@@ -114,6 +115,7 @@ lv_disp_t * display_st7789_get();
 #define display_epd_request_full_update(a) ((void)0)
 #define display_epd_request_fast_update(a) ((void)0)
 #define display_set_rotation(a) driver_st7789_set_rotation(a)
+#define display_get_rotation driver_st7789_get_rotation
 #ifdef CONFIG_DISPLAY_USE_LVGL
 // #define display_get_driver display_st7789_get_driver
 #define display_get display_st7789_get
