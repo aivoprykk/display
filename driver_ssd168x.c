@@ -5,6 +5,8 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 
+#include "display_private.h"
+
 #include "esp_err.h"
 #include "esp_log.h"
 
@@ -17,7 +19,6 @@
 
 #include "driver_vendor.h"
 #include "ui_events.h"
-#include "display_private.h"
 #include "logger_common.h"
 #include "esp_lcd_panel_ssd168x.h"
 

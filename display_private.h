@@ -8,6 +8,8 @@ extern "C" {
 // Your code here
 #if (CONFIG_DISPLAY_LOG_LEVEL <= 2)
 
+#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+
 #include "esp_timer.h"
 #include "esp_log.h"
 

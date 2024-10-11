@@ -5,6 +5,8 @@
 
 #include "esp_system.h"
 
+#include "display_private.h"
+
 #include "esp_err.h"
 #include "esp_log.h"
 
@@ -20,7 +22,6 @@
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 
-#include "display_private.h"
 #include <logger_common.h>
 #include "driver_vendor.h"
 
@@ -90,24 +91,30 @@ static const lcd_cmd_t lcd_st7789v[] = {
 
 static void bl_init() {
     ILOG(TAG, "[%s]", __func__);
-    const ledc_channel_config_t LCD_backlight_channel = {
-        .gpio_num = CONFIG_DISPLAY_BL,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = LEDC_CHANNEL_0,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = LEDC_TIMER_0,
-        .duty = 0,
-        .hpoint = 0};
+#if defined(BL_IS_PWM)
     const ledc_timer_config_t LCD_backlight_timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT,
         .timer_num = LEDC_TIMER_0,
-        .freq_hz = 10000,
-        .clk_cfg = LEDC_AUTO_CLK};
-
+        .duty_resolution = LEDC_TIMER_8_BIT,
+        .freq_hz = 5000,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
     ledc_timer_config(&LCD_backlight_timer);
+    const ledc_channel_config_t LCD_backlight_channel = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .intr_type = LEDC_INTR_FADE_END,
+        .timer_sel = LEDC_TIMER_0,
+        .gpio_num = CONFIG_DISPLAY_BL,
+        .duty = 0,
+        .hpoint = 0,
+    };
     ledc_channel_config(&LCD_backlight_channel);
     gpio_matrix_out(CONFIG_DISPLAY_BL, SIG_GPIO_OUT_IDX, true, 0);
+#else
+    gpio_set_direction(CONFIG_DISPLAY_BL, GPIO_MODE_OUTPUT);
+    // gpio_set_level(CONFIG_DISPLAY_BL, 1);
+#endif
 }
 
 /**
@@ -115,11 +122,46 @@ static void bl_init() {
  * 
  * @param brightness_percent The brightness of the backlight, expressed as a percentage (0-100)
  */
+
+#if !defined(BL_IS_PWM)
+static uint8_t bl_level = 0;
+static const uint8_t bl_steps = 16;
+#endif
+
 void driver_st7789_bl_set(uint8_t brightness_percent) {
-    ILOG(TAG, "[%s] backlight brightness to %hhu", __func__, brightness_percent);
-    uint32_t duty_cycle = (254 * brightness_percent) / 100;
+#if defined(BL_IS_PWM)
+    uint32_t duty_cycle = (1 << 8U) / (100 / brightness_percent); // 8-bit resolution
+    ILOG(TAG, "[%s] backlight brightness to %hhu eq duty %lu", __func__, brightness_percent, duty_cycle);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_cycle);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+#else
+    ILOG(TAG, "[%s] backlight brightness to %hhu %%, cur level %hhu of %hhu", __func__, brightness_percent, bl_level, bl_steps);
+    uint16_t level;
+    if (brightness_percent == 0) {
+        gpio_set_level(CONFIG_DISPLAY_BL, 0);
+        level = 0;
+        goto end;
+    }
+    if (bl_level == 0) {
+        gpio_set_level(CONFIG_DISPLAY_BL, 1);
+        vTaskDelay(pdMS_TO_TICKS(1));
+        bl_level = bl_steps;
+    }
+    level = bl_steps * brightness_percent;
+    if(level < 100) level=100;
+    level /= 100;
+    uint8_t from = bl_steps - bl_level;
+    uint8_t to = bl_steps - level;
+    uint8_t num = (bl_steps + to - from) % bl_steps;
+    printf("from %d, num %d, to %d\n", from, to, num);
+    for (uint8_t i = 0; i < num; i++) {
+        gpio_set_level(CONFIG_DISPLAY_BL, 0);
+        gpio_set_level(CONFIG_DISPLAY_BL, 1);
+    }
+    end:
+    bl_level = level;
+    vTaskDelay(pdMS_TO_TICKS(1));
+#endif
 }
 
 lv_disp_drv_t *display_st7789_get_driver() {
