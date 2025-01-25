@@ -1,9 +1,5 @@
-/*
- * SPDX-FileCopyrightText: 2023 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Unlicense OR CC0-1.0
- */
-#pragma once
+#ifndef EAC3424C_3DA7_4AFE_B1E0_C1B2E9EFFB5A
+#define EAC3424C_3DA7_4AFE_B1E0_C1B2E9EFFB5A
 
 #include <stdint.h>
 
@@ -24,3 +20,6 @@ extern const uint8_t BITMAP_64_128[];
 #ifdef __cplusplus
 }
 #endif
+
+
+#endif /* EAC3424C_3DA7_4AFE_B1E0_C1B2E9EFFB5A */
