@@ -19,7 +19,7 @@
 
 #define S(x) #x
 #include "img_bitmap.h"
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
 #include "../../../ssd1680_waveshare_2in13_lut.h"
 static const char *TAG = "display_drv.ssd1680";
 const uint8_t *img_full_p = speed_raw_122x250;
@@ -27,7 +27,7 @@ const uint8_t *img_full_l = speed_raw_250x122;
 const char *img_bitmap_p = S(speed_raw_122x250);
 const char *img_bitmap_l = S(speed_raw_250x122);
 #endif
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 #include "../../../ssd1681_waveshare_1in54_lut.h"
 static const char *TAG = "display_drv.ssd1681";
 const uint8_t *img_full_p = speed_raw_200x200;
@@ -41,10 +41,10 @@ const char *img_bitmap_l = S(speed_raw_200x200);
 #define WAIT_TIME_MS 5000
 
 // static SemaphoreHandle_t epaper_panel_semaphore = 0;
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
 #endif
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
 #endif
 
@@ -211,10 +211,10 @@ static void load_screen(int noinc) {
         // lv_obj_invalidate(lv_scr_act());
     }
 
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     m_point_t pt_p = {0, 0, 200, 200, 0};
     m_point_t pt_l = {0, 0, 200, 200, 0};
-#elif defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#elif defined(CONFIG_SSD168X_PANEL_SSD1680)
     m_point_t pt_p = {0, 0, 122, 250, 6};
     m_point_t pt_l = {0, 0, 250, 122, 6};
 #endif

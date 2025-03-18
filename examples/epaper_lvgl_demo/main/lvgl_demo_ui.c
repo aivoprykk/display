@@ -16,13 +16,13 @@
 static const char *TAG = "lvgl_demo_ui";
 static float voltage_bat = 0.0;
 #define MINIMUM_VOLTAGE 3.2
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
 LV_IMG_DECLARE(speed_250x122_v23);
 LV_IMG_DECLARE(speed_122x250_v23);
 const lv_img_dsc_t * img_full_l = &speed_250x122_v23;
 const lv_img_dsc_t * img_full_p = &speed_122x250_v23;
 #endif
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 LV_IMG_DECLARE(speed_raw_200x200);
 const lv_img_dsc_t * img_full_l = &speed_raw_200x200;
 const lv_img_dsc_t * img_full_p = &speed_raw_200x200;

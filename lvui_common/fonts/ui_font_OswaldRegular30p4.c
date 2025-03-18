@@ -4,7 +4,19 @@
  * Opts: --bpp 4 --size 30 --font /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/Oswald-Regular.ttf -o /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/ui_font_OswaldRegular30p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "ui_common.h"
+#ifdef __has_include
+    #if __has_include("lvgl.h")
+        #ifndef LV_LVGL_H_INCLUDE_SIMPLE
+            #define LV_LVGL_H_INCLUDE_SIMPLE
+        #endif
+    #endif
+#endif
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+    #include "lvgl.h"
+#else
+    #include "lvgl/lvgl.h"
+#endif
 
 #ifndef UI_FONT_OSWALDREGULAR30P4
 #define UI_FONT_OSWALDREGULAR30P4 1

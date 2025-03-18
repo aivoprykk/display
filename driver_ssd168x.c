@@ -1,3 +1,7 @@
+#include "driver_vendor.h"
+
+#if defined(CONFIG_DISPLAY_DRIVER_SSD168X)
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -7,22 +11,16 @@
 
 #include "display_private.h"
 
-#include "esp_err.h"
-#include "esp_log.h"
-
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
 
 #include <esp_lcd_panel_ops.h>
-// #include <esp_lcd_panel_io.h>
-// #include <esp_lcd_panel_vendor.h>
 
-#include "driver_vendor.h"
 #include "ui_events.h"
 #include "logger_common.h"
 #include "esp_lcd_panel_ssd168x.h"
 
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 #include "ssd1681_waveshare_1in54_lut.h"
 static const char *TAG = "display_drv.ssd1681";
 #else
@@ -30,19 +28,23 @@ static const char *TAG = "display_drv.ssd1681";
 static const char *TAG = "display_drv.ssd1680";
 #endif
 
-#if defined(CONFIG_HAS_BOARD_LILYGO_EPAPER_T5)
-#define LCD_HOST SPI3_HOST
+#if defined(CONFIG_DISPLAY_SPI1_HOST)
+# define SPIx_HOST SPI1_HOST
+#elif defined(CONFIG_DISPLAY_SPI2_HOST)
+# define SPIx_HOST SPI2_HOST
+#elif defined(CONFIG_DISPLAY_SPI3_HOST)
+# define SPIx_HOST SPI3_HOST
 #else
-#define LCD_HOST SPI2_HOST
+# error "SPI host 1 2 or 3 must be selected"
 #endif
 
 #define PIN_NUM_SCLK           CONFIG_DISPLAY_SPI_CLK
 #define PIN_NUM_MOSI           CONFIG_DISPLAY_SPI_MOSI
 #define PIN_NUM_MISO           CONFIG_DISPLAY_SPI_MISO
-#define PIN_NUM_EPD_DC         CONFIG_DISPLAY_DC
-#define PIN_NUM_EPD_RST        CONFIG_DISPLAY_RST
+#define PIN_NUM_EPD_DC         CONFIG_DISPLAY_SPI_DC
+#define PIN_NUM_EPD_RST        CONFIG_DISPLAY_SPI_RST
 #define PIN_NUM_EPD_CS         CONFIG_DISPLAY_SPI_CS
-#define PIN_NUM_EPD_BUSY       CONFIG_DISPLAY_BUSY
+#define PIN_NUM_EPD_BUSY       CONFIG_DISPLAY_SPI_BUSY
 
 #define LCD_PIXEL_CLOCK_HZ     (20 * 1000 * 1000)
 
@@ -76,7 +78,7 @@ static uint8_t converted_buffer_black[LCD_PIXELS_MEM_ALIGNED] = {0};
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_panel_io_handle_t io_handle = NULL;
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
 #else
 static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
@@ -85,7 +87,7 @@ static bool init_requested = true;
 static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
 // const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
 
-IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
+IRAM_ATTR bool _flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
@@ -104,16 +106,14 @@ IRAM_ATTR bool epaper_flush_ready_callback(const esp_lcd_panel_handle_t handle, 
     return false;
 }
 
-esp_err_t display_epd_ssd168x_request_full_update()
-{
+static esp_err_t _request_full_update() {
     ILOG(TAG, "[%s]", __func__);
     init_mode = INIT_MODE_FULL_1;
     init_requested = true;
     return ESP_OK;
 }
 
-esp_err_t display_epd_ssd168x_request_fast_update()
-{
+static esp_err_t _request_fast_update() {
     ILOG(TAG, "[%s]", __func__);
     init_mode = INIT_MODE_FULL_2;
     init_requested = true;
@@ -122,19 +122,17 @@ esp_err_t display_epd_ssd168x_request_fast_update()
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
-lv_disp_drv_t * display_ssd1680_get_driver()
-{
+static lv_disp_drv_t * lv_get_driver() {
     return &disp_drv;
 }
 #endif
 
-lv_disp_t * display_ssd1680_get()
-{
+static lv_disp_t * lv_get() {
     return lv_disp;
 }
 #endif
 
-esp_err_t display_epd_ssd168x_set_rotation(int r) {
+static esp_err_t _set_rotation(int r) {
     ILOG(TAG, "[%s] %d", __func__, r);
     if(r > DISP_ROT_270)
         return ESP_ERR_INVALID_ARG;
@@ -142,13 +140,15 @@ esp_err_t display_epd_ssd168x_set_rotation(int r) {
 #if (LVGL_VERSION_MAJOR < 9)
     if(disp_drv.rotated != r) {
         disp_drv.rotated = r;
-        lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-        if(lv_scr_act()) {
-            lv_obj_invalidate(lv_scr_act());
+        if(lv_disp) {
+            lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
+            if(lv_scr_act()) {
+                lv_obj_invalidate(lv_scr_act());
+            }
         }
     }
 #else
-    if(r!=lv_display_get_rotation(lv_disp)) {
+    if(lv_disp && r!=lv_display_get_rotation(lv_disp)) {
         lv_display_set_rotation(lv_disp, r);
         // lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
         if(lv_scr_act()) {
@@ -158,13 +158,14 @@ esp_err_t display_epd_ssd168x_set_rotation(int r) {
 #endif
 
 #if (CONFIG_DISPLAY_LOG_LEVEL < 2)
+    if(lv_disp) {
+        printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n",
 #if (LVGL_VERSION_MAJOR < 9)
-    printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
-        (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
+            (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
 #else
-    printf("New orientation is %d:, rotated flag is :%d, hor_res is: %ld, ver_res is: %ld\r\n", \
-        (int)r, lv_display_get_rotation(lv_disp), lv_display_get_horizontal_resolution(lv_disp), lv_display_get_vertical_resolution(lv_disp));
+            (int)r, lv_display_get_rotation(lv_disp), lv_display_get_horizontal_resolution(lv_disp), lv_display_get_vertical_resolution(lv_disp));
 #endif
+    }
 #endif
 #else
     if(r!=rotated) {
@@ -177,7 +178,7 @@ esp_err_t display_epd_ssd168x_set_rotation(int r) {
     return ESP_OK;
 }
 
-int display_epd_ssd168x_get_rotation() {
+static int _get_rotation() {
     ILOG(TAG, "[%s]", __func__);
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
@@ -191,8 +192,7 @@ return lv_display_get_rotation(lv_disp);
 }
 
 
-esp_err_t display_epd_ssd168x_turn_on(esp_lcd_panel_handle_t panel_handle)
-{
+static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
     ILOG(TAG, "[%s]", __func__);
     const char *x = "e-Paper display...";
     UNUSED_PARAMETER(x);
@@ -213,8 +213,7 @@ esp_err_t display_epd_ssd168x_turn_on(esp_lcd_panel_handle_t panel_handle)
     return ESP_OK;
 }
 
-esp_err_t display_epd_ssd168x_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map)
-{
+static esp_err_t _refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map) {
     ILOG(TAG, "[%s]", __func__);
     if(rotated == DISP_ROT_NONE || rotated == DISP_ROT_180) {
         ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
@@ -255,7 +254,7 @@ esp_err_t display_epd_ssd168x_refresh_and_turn_off(esp_lcd_panel_handle_t panel_
 #if (LVGL_VERSION_MAJOR < 9)
 #define MYINT int
 #define MYINT_D "d"
-static void epaper_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
+static void _lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 #else
 static inline uint8_t LV_ATTRIBUTE_FAST_MEM get_bit(const uint8_t * buf, int32_t bit_idx)
 {
@@ -263,11 +262,11 @@ static inline uint8_t LV_ATTRIBUTE_FAST_MEM get_bit(const uint8_t * buf, int32_t
 }
 #define MYINT int32_t
 #define MYINT_D PRId32
-static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *color_map)
+static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *color_map)
 #endif
 {
 #if (CONFIG_DISPLAY_LOG_LEVEL < 2)
-    printf("flush_cb: display_get_width(display_get_driver()) %d\n", display_get_width(display_get()));
+    printf("flush_cb: display_drv_get_width(lv_get_driver()) %d\n", display_drv_get_width(display_drv_get()));
 #endif
     // IMEAS_START();
 #if (LVGL_VERSION_MAJOR < 9)
@@ -284,7 +283,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     // Used to vertical traverse lvgl framebuffer
     MYINT len_x = abs(offsetx1 - offsetx2)+1;
     MYINT len_y = abs(offsety1 - offsety2)+1;
-    int rotated = display_get_rotation();
+    int rotated = _get_rotation();
 #if (LVGL_VERSION_MAJOR >= 9)
 #if (LV_COLOR_DEPTH == 1)
     uint8_t * buf = color_map+8;
@@ -292,7 +291,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
     uint8_t * buf = color_map;
 #endif
 #endif
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#if defined(CONFIG_SSD168X_PANEL_SSD1680)
     if(rotated==DISP_ROT_270 || rotated==DISP_ROT_90) len_y = BYTE_PADDING(len_y);
     else len_x = BYTE_PADDING(len_x);
 #endif
@@ -329,7 +328,7 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
           converted_buffer_black[i8] |= get_bit(buf, i) << (7 - (bit_index));
 #endif
         }
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#if defined(CONFIG_SSD168X_PANEL_SSD1680)
         if(bit_index==0 && j>8 && (rotated == DISP_ROT_90 || rotated == DISP_ROT_180)) {
             uint8_t current_byte = converted_buffer_black[i8+1];
             uint8_t prev_byte = (i8 >= 0 ) ? converted_buffer_black[i8] : 0;
@@ -338,18 +337,18 @@ static void epaper_lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint
 #endif
     }
     ILOG(TAG, "[%s] turn on, len x:%"MYINT_D", y:%"MYINT_D" bits: %"MYINT_D"", __func__, len_x, len_y, len_bits);
-    display_epd_ssd168x_turn_on(panel_handle);
+    _turn_on(panel_handle);
     // --- Draw bitmap
     ILOG(TAG, "[%s] refresh and turn off", __func__);
-    display_epd_ssd168x_refresh_and_turn_off(panel_handle, rotated, &((m_area_t) {offsetx1, offsety1, offsetx2, offsety2}), converted_buffer_black);
+    _refresh_and_turn_off(panel_handle, rotated, &((m_area_t) {offsetx1, offsety1, offsetx2, offsety2}), converted_buffer_black);
     // IMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
 }
 
 #if (LVGL_VERSION_MAJOR < 9)
-static void epaper_lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
+static void _lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
 #else
-static void epaper_lvgl_wait_cb(lv_display_t *disp)
+static void _lvgl_wait_cb(lv_display_t *disp)
 #endif
 {
     if(panel_refreshing_sem)
@@ -375,7 +374,7 @@ static void increase_lvgl_tick(void *arg)
 
 #endif
 
-bool lock_ssd168x(int timeout_ms) {
+static bool lock(int timeout_ms) {
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     if(!panel_refreshing_sem)
@@ -384,7 +383,7 @@ bool lock_ssd168x(int timeout_ms) {
     return xSemaphoreTake(panel_refreshing_sem, timeout_ticks) == pdTRUE;
 }
 
-void unlock_ssd168x(void) {
+static void unlock(void) {
     if(panel_refreshing_sem)
         xSemaphoreGive(panel_refreshing_sem);
 }
@@ -407,7 +406,7 @@ static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w,
 #endif
 
 #if (LVGL_VERSION_MAJOR < 9)
-void display_ssd168x_init_cb(lv_disp_drv_t *disp_drv) {
+static void _init_cb(lv_disp_drv_t *disp_drv) {
     ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
     disp_drv->hor_res = LCD_H_RES;
@@ -422,13 +421,13 @@ void display_ssd168x_init_cb(lv_disp_drv_t *disp_drv) {
     // alloc bitmap buffer to draw
     //converted_buffer_black = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
     //converted_buffer_red = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
-    disp_drv->flush_cb = epaper_lvgl_flush_cb;
-    disp_drv->wait_cb = epaper_lvgl_wait_cb;
+    disp_drv->flush_cb = _lvgl_flush_cb;
+    disp_drv->wait_cb = _lvgl_wait_cb;
     // disp_drv->set_px_cb = set_px_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
 }
 #else
-void display_ssd168x_init_cb(lv_display_t *disp) {
+static void _init_cb(lv_display_t *disp) {
     ILOG(TAG, "[%s]", __func__);
     lv_display_set_rotation(disp, DISP_ROT_270);
     // NOTE: The ssd168x e-paper is monochrome and 1 byte represents 8 pixels
@@ -437,8 +436,8 @@ void display_ssd168x_init_cb(lv_display_t *disp) {
     // lv_disp_set_direct_mode(disp, 1);
     // lv_disp_set_sw_rotate(disp, false);
     lv_display_set_user_data(disp, panel_handle);
-    lv_display_set_flush_cb(disp, epaper_lvgl_flush_cb);
-    lv_display_set_flush_wait_cb(disp, epaper_lvgl_wait_cb);
+    lv_display_set_flush_cb(disp, _lvgl_flush_cb);
+    lv_display_set_flush_wait_cb(disp, _lvgl_wait_cb);
     // lv_display_set_color_format(disp, LV_COLOR_FORMAT_I8);
 }
 #endif
@@ -462,11 +461,6 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     size_t bufsz = LBUFSZ;
     ESP_LOGI(TAG, "Allocate %dkb memory for LVGL buffers" , (bufsz/1024));
 #if (LVGL_VERSION_MAJOR < 9)
-    // lv_color_t *buf1 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    // assert(buf1);
-    // lv_color_t *buf2 = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-    // assert(buf2);
-    // initialize LVGL draw buffers
     lv_disp_draw_buf_init(&disp_buf, buf1, 0, bufsz);
     lv_disp_drv_init(&disp_drv);
     disp_drv.draw_buf = &disp_buf;
@@ -495,30 +489,59 @@ static void init_screen(void (*cb)(lv_display_t*)) {
 }
 #endif
 
-esp_lcd_panel_handle_t display_ssd168x_new() {
+static void _lv_init() {
+    ILOG(TAG, "[%s]", __func__);
+    if(disp_drv.user_data == NULL) {
+        // --- Register the e-Paper refresh done callback
+    #ifdef CONFIG_DISPLAY_USE_LVGL
+        epaper_panel_callbacks_t cbs = {
+            .on_epaper_refresh_done = _flush_ready_callback
+        };
+    #if (LVGL_VERSION_MAJOR < 9)
+        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &disp_drv);
+    #else
+        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, lv_disp);
+    #endif
+    #else
+        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, 0);
+        rotated = DISP_ROT_270;
+    #endif
+        init_screen(_init_cb);
+    }
+}
+
+static esp_lcd_panel_handle_t _new() {
     ILOG(TAG, "[%s]", __func__);
     panel_refreshing_sem = xSemaphoreCreateBinary();
     xSemaphoreGive(panel_refreshing_sem);
 
-    // Initialize GPIOs direction & initial states
-    gpio_set_direction(PIN_NUM_EPD_CS, GPIO_MODE_OUTPUT);
-    gpio_set_direction(PIN_NUM_EPD_DC, GPIO_MODE_OUTPUT);
-    gpio_set_direction(PIN_NUM_EPD_RST, GPIO_MODE_OUTPUT);
-    gpio_set_direction(PIN_NUM_EPD_BUSY, GPIO_MODE_INPUT);
-    gpio_set_pull_mode(PIN_NUM_EPD_BUSY, GPIO_PULLUP_ONLY);
     esp_err_t err = 0;
+    // Initialize GPIOs direction & initial states
+#if (PIN_NUM_EPD_CS >= 0)
+    gpio_set_direction(PIN_NUM_EPD_CS, GPIO_MODE_OUTPUT);
     err = gpio_set_level(PIN_NUM_EPD_CS, 1);
     if(err) {
         ESP_LOGE(TAG, "[%s] err: %s", __func__, esp_err_to_name(err));
     }
+#endif
+#if (PIN_NUM_EPD_DC >= 0)
+    gpio_set_direction(PIN_NUM_EPD_DC, GPIO_MODE_OUTPUT);
     err = gpio_set_level(PIN_NUM_EPD_DC, 1);
     if(err) {
         ESP_LOGE(TAG, "[%s] err: %s", __func__, esp_err_to_name(err));
     }
+#endif
+#if (PIN_NUM_EPD_RST >= 0)
+    gpio_set_direction(PIN_NUM_EPD_RST, GPIO_MODE_OUTPUT);
     err = gpio_set_level(PIN_NUM_EPD_RST, 1);
     if(err) {
         ESP_LOGE(TAG, "[%s] err: %s", __func__, esp_err_to_name(err));
     }
+#endif
+#if (PIN_NUM_EPD_BUSY >= 0)
+    gpio_set_direction(PIN_NUM_EPD_BUSY, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(PIN_NUM_EPD_BUSY, GPIO_PULLUP_ONLY);
+#endif
 
     ESP_LOGI(TAG, "Initialize SPI bus");
     spi_bus_config_t buscfg = {
@@ -529,7 +552,7 @@ esp_lcd_panel_handle_t display_ssd168x_new() {
         .quadhd_io_num = -1,
         .max_transfer_sz = LCD_RESOLUTION,
     };
-    ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
+    ESP_ERROR_CHECK(spi_bus_initialize(SPIx_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
     ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_spi_config_t io_config = {
@@ -543,10 +566,10 @@ esp_lcd_panel_handle_t display_ssd168x_new() {
         .on_color_trans_done = NULL,
     };
     // --- Attach the LCD to the SPI bus
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) LCD_HOST, &io_config, &io_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) SPIx_HOST, &io_config, &io_handle));
 
     // --- Create esp_lcd panel
-    esp_lcd_ssd168x_config_t epaper_ssd168x_config = {
+    esp_lcd_ssd168x_config_t lcd_ssd168x_config = {
         .busy_gpio_num = PIN_NUM_EPD_BUSY,
         .non_copy_mode = true,
         .height = LCD_V_RES,
@@ -557,7 +580,7 @@ esp_lcd_panel_handle_t display_ssd168x_new() {
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = PIN_NUM_EPD_RST,
         .flags.reset_active_high = false,
-        .vendor_config = &epaper_ssd168x_config
+        .vendor_config = &lcd_ssd168x_config
     };
     gpio_install_isr_service(0);
     ESP_ERROR_CHECK(esp_lcd_new_panel_ssd168x(io_handle, &panel_config, &panel_handle));
@@ -573,26 +596,12 @@ esp_lcd_panel_handle_t display_ssd168x_new() {
     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif
     delay_ms(100);
-    // --- Register the e-Paper refresh done callback
-    epaper_panel_callbacks_t cbs = {
-        .on_epaper_refresh_done = epaper_flush_ready_callback
-    };
-#ifdef CONFIG_DISPLAY_USE_LVGL
-    init_screen(display_ssd168x_init_cb);
-#if (LVGL_VERSION_MAJOR < 9)
-    epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &disp_drv);
-#else
-    epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, lv_disp);
-#endif
-#else
-    epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, 0);
-    rotated = DISP_ROT_270;
-#endif    
-    //ui_init();
+    // display_lv_init();
+    
     return panel_handle;
 }
 
-void display_ssd168x_del() {
+static void _del() {
     ILOG(TAG, "[%s]", __func__);
 #ifdef CONFIG_DISPLAY_USE_LVGL
     lv_deinit();
@@ -607,4 +616,28 @@ void display_ssd168x_del() {
     vSemaphoreDelete(panel_refreshing_sem);
     panel_refreshing_sem = NULL;
 }
+
+display_driver_op_t display_driver_ssd168x_op = {
+    .new = _new,
+    .del = _del,
+    .set_rotation = _set_rotation,
+    .get_rotation = _get_rotation,
+    .lock = lock,
+    .unlock = unlock,
+    .epd_request_fast_update = _request_fast_update,
+    .epd_request_full_update = _request_full_update,
+    .epd_refresh_and_turn_off = _refresh_and_turn_off,
+    .epd_turn_on = _turn_on,
+#ifdef CONFIG_DISPLAY_USE_LVGL
+#if (LVGL_VERSION_MAJOR < 9)
+    .get_driver = lv_get_driver,
+    #else
+    .get_driver = 0,
+    #endif
+    .get = lv_get,
+    .lv_init = _lv_init,
+#endif
+};
+
+#endif
 

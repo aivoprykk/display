@@ -20,11 +20,11 @@
 #include "driver_vendor.h"
 
 #include "img_bitmap.h"
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
 #include "../../../ssd1680_waveshare_2in13_lut.h"
 static const char *TAG = "display_drv.ssd1680";
 #endif
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
 #include "../../../ssd1681_waveshare_1in54_lut.h"
 static const char *TAG = "example.ssd1681";
 #endif
@@ -42,10 +42,10 @@ extern lv_obj_t *ui_InfoScreen;
 // static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 // static lv_disp_drv_t disp_drv;      // contains callback functions
 
-// #ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+// #ifdef CONFIG_SSD168X_PANEL_SSD1680
 // static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
 // #endif
-// #ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+// #ifdef CONFIG_SSD168X_PANEL_SSD1681
 // static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
 // #endif
 

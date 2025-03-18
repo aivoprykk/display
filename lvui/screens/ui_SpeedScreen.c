@@ -6,10 +6,10 @@ ui_speed_screen_t ui_speed_screen = {0};
 // static const char *TAG = "ui_speed_screen";
 
 static void update_dims() {
-#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
-    bool is_l = (display_get_width(display_get())>170);
+#if !defined(CONFIG_LCD_IS_EPD)
+    bool is_l = (display_drv_get_width(display_drv_get())>170);
 #else
-    bool is_l = (display_get_width(display_get())>128);
+    bool is_l = (display_drv_get_width(display_drv_get())>128);
 #endif
     lv_obj_t *obj = ui_speed_screen.speed;
     if(obj) {

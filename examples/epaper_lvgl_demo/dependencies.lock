@@ -69,12 +69,12 @@ dependencies:
       path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_common
       type: local
     version: 0.1.0
-  logger_str:
+  strutil:
     dependencies:
     - name: idf
       version: '>=5.0'
     source:
-      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/logger_str
+      path: /Users/aivo/Downloads/Arendus/Majasa/esp-gps-logger/espidf-gps-logger/components/strutil
       type: local
     version: 0.1.0
   lvgl/lvgl:
@@ -91,7 +91,7 @@ direct_dependencies:
 - logger_adc
 - logger_button
 - logger_common
-- logger_str
+- strutil
 - lvgl/lvgl
 manifest_hash: 99c0c635ff8385d703e5a931da6c55e1ec0d95a6b173bba6b850ef156b155745
 target: esp32

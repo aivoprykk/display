@@ -1,144 +1,202 @@
 menu "Logger Display Module Options"
-    choice DISPLAY_DRIVER
-        prompt "Installed Panel"
-        default DISPLAY_DRIVER_ST7789 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-        default DISPLAY_DRIVER_SSD1680
-        config DISPLAY_DRIVER_SSD1680
-            bool "SSD1680"
-        config DISPLAY_DRIVER_SSD1681
-            bool "SSD1681"
-        config DISPLAY_DRIVER_ST7789
-            bool "ST7789"
-    endchoice
-    choice DISPLAY_USE_DRIVER
-        prompt "Screen driver type"
-        default DISPLAY_USE_LVGL
-        config DISPLAY_USE_LVGL
-            bool "Use lvgl capable driver"
-            help 
-                Select to use lvgl capable driver
-        config DISPLAY_USE_EPD
-            bool "Use custom EPD driver"
-            depends on DISPLAY_DRIVER_SSD1680 || DISPLAY_DRIVER_SSD1681
-            help 
-                Select to use custom EPD driver
-    endchoice
-    choice DISPLAY_HAS_SCREEN
-        prompt "Screen model"
-        default HAS_SCREEN_DEPG0213BN if DISPLAY_DRIVER_SSD1680
-        default HAS_SCREEN_GDEY0154D67 if DISPLAY_DRIVER_SSD1681
-        default HAS_SCREEN_ST7789 if DISPLAY_DRIVER_ST7789
-        config HAS_SCREEN_DEPG0213BN
-            depends on DISPLAY_DRIVER_SSD1680
-            bool "DEPG0213BN 2.13 122x250 Eink"
-            help 
-                Select if screen model is DEPG0213BN
-        config HAS_SCREEN_GDEY0213B74
-            depends on DISPLAY_DRIVER_SSD1680
-            bool "GDEY0213B74 2.13 122x250 Eink"
-            help 
-                Select if screen model is GDEY0213B74
-    
-        config HAS_SCREEN_GDEY0154D67
-            depends on DISPLAY_DRIVER_SSD1681
-            bool "GDEY0154D67 1.54 200x200 Eink"
-            help 
-                Select if screen model is GDEY0154D67
-    
-        config HAS_SCREEN_ST7789
-            depends on HAS_BOARD_LILYGO_T_DISPLAY_S3
-            bool "ST7789 170x320 TFT"
-            help 
-                Select if screen model is TFT ST7789
-    endchoice
-    
+    config DISPLAY_ENABLED
+        bool "Enable logger_display module"
+        default y
+        help
+            Enable logger_display module.
+    if DISPLAY_ENABLED
 
+    if HAS_BOARD_LILYGO_T_DISPLAY_S3
+    config DISPLAY_DRIVER_ST7789
+        default y
+        bool
+        help
+            Selected when ST7789 driver present
+    endif
+    if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
+    config DISPLAY_DRIVER_RM67162
+        default y
+        bool
+        help
+            Selected when RM67162 driver present
+    endif
+    if HAS_BOARD_QEMU_ESP32
+    config DISPLAY_DRIVER_QEMU
+        default y
+        bool
+        help
+            Selected when QEMU driver present
+    endif
+    if HAS_BOARD_LILYGO_EPAPER_T5
+    config DISPLAY_DRIVER_SSD168X
+        default y
+        bool
+        help
+            Selected when SSD168X driver present
+    config LCD_IS_EPD
+        bool
+        default y
+        help
+            Set EPD flag for Display
+    endif
+    config DISPLAY_TASK_STACK_SIZE
+        int "Display Task Stack Size"
+        default 5632 if !DISPLAY_DRIVER_SSD168X
+        default 5132
+    config DISPLAY_USE_LVGL
+        bool
+        default y
+        help
+            Enable LVGL support default
     menu "SPI Options"
+        choice
+            prompt "SPI Host for the display controller"
+            default DISPLAY_SPI3_HOST if DISPLAY_DRIVER_SSD168X
+            default DISPLAY_SPI2_HOST
+            config DISPLAY_SPI1_HOST
+                bool "SPI1_HOST"
+            config DISPLAY_SPI2_HOST
+                bool "SPI2_HOST"
+            config DISPLAY_SPI3_HOST
+                bool "SPI3_HOST"
+        endchoice
+        if DISPLAY_DRIVER_RM67162
+        choice
+            prompt "SPI bus width"
+            default HWE_DISPLAY_SPI_QSPI
+            config HWE_DISPLAY_SPI_SPI
+                bool "Regular SPI"
+            config HWE_DISPLAY_SPI_QSPI
+                bool "Quad SPI"
+            config HWE_DISPLAY_SPI_OSPI
+                bool "Octal SPI"
+        endchoice
+        config HWE_DISPLAY_SPI_FREQUENCY
+            int "SPI Frequency for the Display Controller"
+            default 75000000
     
-        config DISPLAY_SPI_MISO
-            int "GPIO for MISO"
+        choice
+            prompt "SPI Mode0 or Mode3"
+            default HWE_DISPLAY_SPI_MODE0
+            config HWE_DISPLAY_SPI_MODE0
+                bool "Mode 0"
+            config HWE_DISPLAY_SPI_MODE3
+                bool "Mode 3"
+        endchoice
+        endif
+        if DISPLAY_DRIVER_ST7789 || DISPLAY_DRIVER_RM67162
+        config DISPLAY_BL
+            int "GPIO for Display BlackLight (BL)"
             range -1 48
+            default 38
+        config DISPLAY_PWR
+            int "GPIO for Display Power (PWR)"
+            range -1 48
+            default 15
+        endif
+        if DISPLAY_DRIVER_SSD168X
+        config DISPLAY_SPI_MISO
+            int "GPIO for M1S0"
+            range -1 48
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default -1
         config DISPLAY_SPI_MOSI
-            int "GPIO for MOSI (DIN in epaper)"
+            int "GPIO for M0S1 (DIN in epaper)"
             range -1 48
             default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
             default 23
-        config DISPLAY_SPI_CLK
-            int "GPIO for SPI Clock"
+        config DISPLAY_SPI_BUSY
+                int "GPIO for Busy signal (BUSY)"
+                range -1 48
+                default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+                default 4
+        endif
+        if DISPLAY_DRIVER_ST7789 || DISPLAY_DRIVER_RM67162
+            config DISPLAY_SPI_D0
+            int "GPIO for D0"
             range -1 48
-            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-            default 18
-        config DISPLAY_BUSY
-            int "GPIO for Busy signal"
-            range -1 48
-            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-            default 4
-        config DISPLAY_SPI_CS
-            int "GPIO for Chip Select"
-            range -1 48
-            default 6 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-            default 5
-        config DISPLAY_DC
-            int "GPIO for DC"
-            range -1 48
-            default 7 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-            default 17
-        config DISPLAY_RST
-            int "GPIO for Reset"
-            range -1 48
-            default 5 if HAS_BOARD_LILYGO_T_DISPLAY_S3
-            default 16
-
-        if DISPLAY_DRIVER_ST7789
-            config DISPLAY_WR
-            int "LCD: GPIO for Write"
-            range -1 48
-            default 8
-            config DISPLAY_RD
-            int "LCD: GPIO for Read"
-            range -1 48
-            default 9
-            config DISPLAY_D0
-            int "LCD: GPIO for D0"
-            range -1 48
+            default 18 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
             default 39
-            config DISPLAY_D1
-            int "LCD: GPIO for D1"
+            config DISPLAY_SPI_D1
+            int "GPIO for D1"
             range -1 48
+            default 7 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
             default 40
-            config DISPLAY_D2
-            int "LCD: GPIO for D2"
+            config DISPLAY_SPI_D2
+            int "GPIO for D2"
             range -1 48
+            default 48 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
             default 41
-            config DISPLAY_D3
-            int "LCD: GPIO for D3"
+            config DISPLAY_SPI_D3
+            int "GPIO for D3"
             range -1 48
+            default 5 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
             default 42
-            config DISPLAY_D4
-            int "LCD: GPIO for D4"
+            
+            if DISPLAY_DRIVER_ST7789
+            config DISPLAY_SPI_D4
+            int "GPIO for D4"
             range -1 48
             default 45
-            config DISPLAY_D5
-            int "LCD: GPIO for D5"
+            config DISPLAY_SPI_D5
+            int "GPIO for D5"
             range -1 48
             default 46
-            config DISPLAY_D6
-            int "LCD: GPIO for D6"
+            config DISPLAY_SPI_D6
+            int "GPIO for D6"
             range -1 48
             default 47
-            config DISPLAY_D7
-            int "LCD: GPIO for D7"
+            config DISPLAY_SPI_D7
+            int "GPIO for D7"
             range -1 48
             default 48
-            config DISPLAY_BL
-            int "LCD: GPIO for Display BlackLight"
+            config DISPLAY_SPI_WR
+                int "GPIO for Write"
+                range -1 48
+                default 8
+            config DISPLAY_SPI_RD
+                int "GPIO for Read"
+                range -1 48
+                default 9
+            endif
+            if DISPLAY_DRIVER_RM67162
+            config DISPLAY_SPI_TE
+                int "GPIO for TE signal (TE)"
+                range -1 48
+                default 9
+            config DISPLAY_SPI_SD0
+                int "GPIO for SD0 signal (SD0)"
+                range -1 48
+                default 8
+            endif
+        endif
+        config DISPLAY_SPI_CLK
+            int "GPIO for SPI Clock (SCLK or SCK)"
             range -1 48
-            default 38
-        endif    
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+            default 47 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
+            default 18
+        config DISPLAY_SPI_CS
+            int "GPIO for Chip Select (CS)"
+            range -1 48
+            default 6 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+            default 6 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
+            default 5
+        config DISPLAY_SPI_DC
+            int "GPIO for Data Control (DC)"
+            range -1 48
+            default 7 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+            default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
+            default 17
+        config DISPLAY_SPI_RST
+            int "GPIO for Reset (RST)"
+            range -1 48
+            default 5 if HAS_BOARD_LILYGO_T_DISPLAY_S3
+            default 17 if HAS_BOARD_LILYGO_T_DISPLAY_S3_AMOLED
+            default 16
     endmenu
     choice
-        bool "Default log verbosity"
+        bool "Display Log verbosity"
         default DISPLAY_LOG_LEVEL_ERROR
         help
             Specify how important log should be added.
@@ -163,4 +221,5 @@ menu "Logger Display Module Options"
         default 3 if DISPLAY_LOG_LEVEL_ERROR
         default 4 if DISPLAY_LOG_LEVEL_USER
         default 5 if DISPLAY_LOG_LEVEL_NONE
+    endif
 endmenu

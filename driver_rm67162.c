@@ -1,7 +1,6 @@
+
 #include "display_private.h"
-
-#ifdef CONFIG_DISPLAY_DRIVER_ST7789
-
+#ifdef CONFIG_DISPLAY_DRIVER_RM67162
 #include "driver_vendor.h"
 
 #include "freertos/FreeRTOS.h"
@@ -9,6 +8,7 @@
 #include "freertos/task.h"
 
 #include "esp_system.h"
+
 
 #include "esp_err.h"
 #include "esp_log.h"
@@ -25,9 +25,11 @@
 #include "driver/spi_common.h"
 #include "driver/spi_master.h"
 
+#include "esp_lcd_panel_rm67162.h"
+
 #include <logger_common.h>
 
-static const char *TAG = "display_drv.st7789";
+static const char *TAG = "display_drv.67162";
 
 #if defined(CONFIG_DISPLAY_SPI1_HOST)
 # define SPIx_HOST SPI1_HOST
@@ -39,10 +41,18 @@ static const char *TAG = "display_drv.st7789";
 # error "SPI host 1 2 or 3 must be selected"
 #endif
 
+#if defined(CONFIG_HWE_DISPLAY_SPI_MODE0)
+# define SPI_MODEx (0)
+#elif defined(CONFIG_HWE_DISPLAY_SPI_MODE3)
+# define SPI_MODEx (2)
+#else
+# error "SPI MODE0 or MODE3 must be selected"
+#endif
+
 #define SPI_D_DMA_CHAN 1
 
 #define LCD_MODULE_CMD_1
-#define LCD_PIXEL_CLOCK_HZ (6528000UL)  //(6 * 1000 * 1000)
+#define LCD_PIXEL_CLOCK_HZ CONFIG_HWE_DISPLAY_SPI_FREQUENCY
 
 #define L_LVGL_TICK_PERIOD_MS 2
 
@@ -53,15 +63,8 @@ static lv_disp_draw_buf_t disp_buf = {0};  // contains internal graphic buffer(s
 static lv_disp_drv_t disp_drv = {0};       // contains callback functions
 static lv_disp_t *lv_disp = NULL;
 
-//static uint8_t *converted_buffer_black;
-//static uint8_t *converted_buffer_red;
-
-//static lv_color_t *lv_disp_buf[LCD_BUF_SIZE_DIV_10];
-//static lv_color_t *lv_disp_buf2[LCD_BUF_SIZE_DIV_10];
-
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_panel_io_handle_t io_handle = NULL;
-static esp_lcd_i80_bus_handle_t bus_handle = NULL;
 
 static bool is_initialized_lvgl = false;
 
@@ -70,24 +73,6 @@ typedef struct {
     uint8_t data[14];
     uint8_t len;
 } lcd_cmd_t;
-
-static const lcd_cmd_t lcd_st7789v[] = {
-    {0x11, {0}, 0 | 0x80},
-    {0x3A, {0X05}, 1},
-    {0xB2, {0X0B, 0X0B, 0X00, 0X33, 0X33}, 5},
-    {0xB7, {0X75}, 1},
-    {0xBB, {0X28}, 1},
-    {0xC0, {0X2C}, 1},
-    {0xC2, {0X01}, 1},
-    {0xC3, {0X1F}, 1},
-    {0xC6, {0X13}, 1},
-    {0xD0, {0XA7}, 1},
-    {0xD0, {0XA4, 0XA1}, 2},
-    {0xD6, {0XA1}, 1},
-    {0xE0, {0XF0, 0X05, 0X0A, 0X06, 0X06, 0X03, 0X2B, 0X32, 0X43, 0X36, 0X11, 0X10, 0X2B, 0X32}, 14},
-    {0xE1, {0XF0, 0X08, 0X0C, 0X0B, 0X09, 0X24, 0X2B, 0X22, 0X43, 0X38, 0X15, 0X16, 0X2F, 0X37}, 14},
-
-};
 
 static void bl_init() {
     ILOG(TAG, "[%s]", __func__);
@@ -164,15 +149,18 @@ static void _bl_set(uint8_t brightness_percent) {
 #endif
 }
 
+#if defined(CONFIG_DISPLAY_USE_LVGL)
+#if (LVGL_VERSION_MAJOR < 9)
 static lv_disp_drv_t *lv_get_driver() {
     return &disp_drv;
 }
-
+#endif
 static lv_disp_t *lv_get() {
     return lv_disp;
 }
+#endif
 
-static esp_err_t _set_hw_rotation(int r) {
+static esp_err_t driver_set_hw_rotation(int r) {
     if(!panel_handle)
         return ESP_ERR_INVALID_STATE;
     if(r == DISP_ROT_90 || r == DISP_ROT_270) {
@@ -218,10 +206,10 @@ static esp_err_t _set_rotation(int r) {
         (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
 #else
-    if(r!=rotated) {
-        rotated = r;
+        if(r!=rotated) {
+            rotated = r;
 #endif
-        _set_hw_rotation(r);
+        driver_set_hw_rotation(r);
     }
     return ESP_OK;
 }
@@ -235,27 +223,32 @@ static int _get_rotation(void) {
 #endif
 }
 
+#if (LVGL_VERSION_MAJOR > 8)
+static bool IRAM_ATTR color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
+{
+	lv_display_t *disp = (lv_display_t*)user_ctx;
+	lv_display_flush_ready(disp);
+	// Whether a high priority task has been waken up by this function
+	return false; 
+}
+static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *px_map) {
+	esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp_drv);
+	ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, (uint16_t *) px_map));
+}
+#else
 static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx) {
     if (is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
-        assert(disp_driver);
-        lv_disp_flush_ready(disp_driver);
+        if(disp_driver)
+            lv_disp_flush_ready(disp_driver);
     }
     return false;
 }
-
-/**
- * @brief Notify the LVGL driver that a flush is ready
- *
- * @param panel_io The LCD panel I/O handle
- * @param edata The event data
- * @param user_ctx The user context
- * @return Whether the event was handled
- */
 static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map) {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)drv->user_data;
     ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map));
 }
+#endif
 
 static void increase_lvgl_tick(void *arg) {
     /* Tell LVGL how many milliseconds has elapsed */
@@ -279,13 +272,35 @@ static void unlock(void) {
 static void display_init_cb(lv_disp_drv_t *disp_drv) {
     ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
+    size_t bufsz = SEND_BUF_SIZE; // Send_buf_size
+    ESP_LOGI(TAG, "Allocate memory");
+    static lv_color_t *buf[2];
+	for (int i = 0; i < 2; i++) {
+		buf[i] = heap_caps_malloc(bufsz  * sizeof(lv_color_t), MALLOC_CAP_DMA);
+		assert(buf[i] != NULL);
+	}
+#if LVGL_VERSION_MAJOR > 8
+	lv_display_set_buffers(disp, buf[0], buf[1], bufsz, LV_DISPLAY_RENDER_MODE_PARTIAL);
+	// lv_disp_set_rotation(disp, DISP_ROT_NONE);
+
+    ESP_ERROR_CHECK(esp_lcd_panel_io_register_event_callbacks(
+		io_handle,
+		&(esp_lcd_panel_io_callbacks_t) {
+			color_trans_done
+		},
+	    disp));
+	lv_display_set_user_data(disp, panel_handle);
+	lv_display_set_flush_cb(disp, disp_flush);
+#else
+    lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], bufsz);
+    lv_disp_drv_init(disp_drv);
     disp_drv->hor_res = LCD_H_RES;
     disp_drv->ver_res = LCD_V_RES;
-    disp_drv->flush_cb = lvgl_flush_cb;
-    // disp_drv->wait_cb = lvgl_wait_cb;
-    // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
+    disp_drv->draw_buf = &disp_buf;
     disp_drv->user_data = panel_handle;
+    disp_drv->flush_cb = lvgl_flush_cb;
     disp_drv->rotated = DISP_ROT_NONE; // fake value to force initial rotation
+#endif
 }
 
 /**
@@ -299,23 +314,10 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     lv_init();
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    ESP_LOGI(TAG, "Allocate memory");
-    size_t bufsz = LCD_BUF_SIZE;
-    static lv_color_t *buf[2];
-	for (int i = 0; i < 2; i++) {
-		buf[i] = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-		assert(buf[i] != NULL);
-	}
-    // initialize LVGL draw buffers
-    lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], bufsz);
-    // initialize LVGL display driver
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.draw_buf = &disp_buf;
 
     cb(&disp_drv);
 
     ESP_LOGI(TAG, "Register display driver to LVGL");
-    //lv_disp_t *disp = 
     lv_disp = lv_disp_drv_register(&disp_drv);
 
     //_set_rotation(DISP_ROT_180);
@@ -346,106 +348,79 @@ static esp_lcd_panel_handle_t _new() {
     panel_refreshing_sem = xSemaphoreCreateRecursiveMutex();
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 
-    ESP_ERROR_CHECK(gpio_set_direction(CONFIG_DISPLAY_PWR, GPIO_MODE_OUTPUT));
-	ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_PWR, 1));
-    
-    gpio_set_direction(CONFIG_DISPLAY_SPI_RD, GPIO_MODE_OUTPUT);
-    gpio_set_level(CONFIG_DISPLAY_SPI_RD, 1);
+    // ESP_ERROR_CHECK(gpio_set_direction(CONFIG_DISPLAY_BL, GPIO_MODE_OUTPUT));
+	// ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_BL, 1));
     bl_init();
+	vTaskDelay(pdMS_TO_TICKS(500));
 
-    esp_lcd_i80_bus_config_t bus_config = {
-        .dc_gpio_num = CONFIG_DISPLAY_SPI_DC,
-        .wr_gpio_num = CONFIG_DISPLAY_SPI_WR,
-        .clk_src = LCD_CLK_SRC_PLL160M,
-        .data_gpio_nums =
-        {
-            CONFIG_DISPLAY_SPI_D0,
-            CONFIG_DISPLAY_SPI_D1,
-            CONFIG_DISPLAY_SPI_D2,
-            CONFIG_DISPLAY_SPI_D3,
-            CONFIG_DISPLAY_SPI_D4,
-            CONFIG_DISPLAY_SPI_D5,
-            CONFIG_DISPLAY_SPI_D6,
-            CONFIG_DISPLAY_SPI_D7,
-        },
-        .bus_width = 8,
-        .max_transfer_bytes = LCD_PIXELS * sizeof(uint16_t), // LVGL_LCD_BUF_SIZE * sizeof(uint16_t),
-        .psram_trans_align = PSRAM_DATA_ALIGNMENT, // PSRAM_DATA_ALIGNMENT,
-        .sram_trans_align = 4,
-    };
-    ESP_ERROR_CHECK(esp_lcd_new_i80_bus(&bus_config, &bus_handle));
+	ESP_LOGI(TAG, "Initialize SPI bus");
+	ESP_ERROR_CHECK(spi_bus_initialize(SPIx_HOST,
+		& (spi_bus_config_t) {
+			.data0_io_num = CONFIG_DISPLAY_SPI_D0,
+			.data1_io_num = CONFIG_DISPLAY_SPI_D1,
+			.sclk_io_num = CONFIG_DISPLAY_SPI_CLK,
+			.data2_io_num = CONFIG_DISPLAY_SPI_D2,
+			.data3_io_num = CONFIG_DISPLAY_SPI_D3,
+			.max_transfer_sz = SEND_BUF_SIZE + 8,
+			.flags = SPICOMMON_BUSFLAG_MASTER
+				| SPICOMMON_BUSFLAG_GPIO_PINS
+				| SPICOMMON_BUSFLAG_QUAD,
+		},
+		SPI_DMA_CH_AUTO
+	));
+	ESP_LOGI(TAG, "Attach panel IO handle to SPI");
+	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(
+		(esp_lcd_spi_bus_handle_t)SPIx_HOST,
+	       	& (esp_lcd_panel_io_spi_config_t) {
+			.cs_gpio_num = CONFIG_DISPLAY_SPI_CS,
+			.pclk_hz = CONFIG_HWE_DISPLAY_SPI_FREQUENCY,
+			.lcd_cmd_bits = 32,
+			.lcd_param_bits = 8,
+#if (LVGL_VERSION_MAJOR < 9)
+            .on_color_trans_done = notify_lvgl_flush_ready,
+#endif
+#if defined(CONFIG_HWE_DISPLAY_SPI_SPI)
+			.spi_mode = 0,
+#elif defined(CONFIG_HWE_DISPLAY_SPI_QSPI)
+			.spi_mode = 0,
+			.flags.quad_mode = 1,
+#elif defined(CONFIG_HWE_DISPLAY_SPI_OSPI)
+			.spi_mode = 3,
+			.flags.octal_mode = 1,
+#else
+# error "SPI single, quad and octal modes are supported"
+#endif
+			.trans_queue_depth = 17,
+		},
+	       	&io_handle
+	));
 
-    esp_lcd_panel_io_i80_config_t io_config = {
-        .cs_gpio_num = CONFIG_DISPLAY_SPI_CS,
-        .pclk_hz = LCD_PIXEL_CLOCK_HZ, // LCD_PIXEL_CLOCK_HZ,
-        .trans_queue_depth = 20,
-        .on_color_trans_done = notify_lvgl_flush_ready,
-        .user_ctx = &disp_drv,
-        .lcd_cmd_bits = 8,
-        .lcd_param_bits = 8,
-        .dc_levels =
-        {
-            .dc_idle_level = 0,
-            .dc_cmd_level = 0,
-            .dc_dummy_level = 0,
-            .dc_data_level = 1,
-        },
-    };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i80(bus_handle, &io_config, &io_handle));
-
-    esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = CONFIG_DISPLAY_SPI_RST,
-        .color_space = ESP_LCD_COLOR_SPACE_RGB,
-        .bits_per_pixel = 16,
-        .vendor_config = NULL
-    };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_rm67162(
+		io_handle,
+		& (esp_lcd_panel_dev_config_t) {
+			.reset_gpio_num = CONFIG_DISPLAY_SPI_RST,
+			.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
+			.bits_per_pixel = 16,
+		},
+		&panel_handle
+	));
     // --- Reset the display
-    ESP_LOGI(TAG, "Resetting st7789 display...");
+    ESP_LOGI(TAG, "Resetting rm67162 display...");
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     // --- Initialize panel
-    ESP_LOGI(TAG, "Initializing st7789 display...");
-    //#define LCD_CMD_SLPOUT          0x11
-    esp_lcd_panel_io_tx_param(io_handle, 0x11, NULL, 0);
-    //vTaskDelay(pdMS_TO_TICKS(100));
-    // flush color before turn on the display
-    uint16_t image[800];
-    uint32_t sz = sizeof(image)/sizeof(image[0]);
-    for (uint16_t x = 0; x < sz; ++x) {
-            image[x] = (15 << 11) | (31 << 5) | 15;
-    }
-    for (uint16_t i = 0; i < LCD_H_RES; i++) {
-        //#define LCD_CMD_RAMWRC          0x3c
-        esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
-    }
-    //ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    
+    ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
     //delay_ms(100);
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
-    esp_lcd_panel_invert_color(panel_handle, true);
-    // esp_lcd_panel_swap_xy(panel_handle, true);
-    // esp_lcd_panel_mirror(panel_handle, true, false);
-// #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
-//     //  the gap is LCD panel specific, even panels with the same driver IC, can
-//     //  have different gap value
-//     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
-// #endif
-#if defined(LCD_MODULE_CMD_1)
-    // send panel init commands
-    for (uint8_t i = 0; i < (sizeof(lcd_st7789v) / sizeof(lcd_cmd_t)); i++) {
-        esp_lcd_panel_io_tx_param(io_handle, lcd_st7789v[i].cmd, lcd_st7789v[i].data, lcd_st7789v[i].len & 0x7f);
-        if (lcd_st7789v[i].len & 0x80)
-            delay_ms(120);
-    }
-    //delay_ms(100);
-#endif
-        // --- Turn on display
-    ESP_LOGI(TAG, "Turning st7789 display on...");
-    // #define LCD_CMD_DISPON          0x29
-    esp_lcd_panel_io_tx_param(io_handle, 0x29, NULL, 0);
+    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+	// ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
+	// Rotate 90 degrees clockwise:
+	// ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+	// ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
      
-    //delay_ms(100);
-    // display_lv_init();
+    ESP_LOGI(TAG, "Turn on backlight");
+	ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_BL, 1));
     
     return panel_handle;
 }
@@ -460,24 +435,24 @@ static void _del() {
     panel_refreshing_sem = NULL;
 }
 
-display_driver_op_t display_driver_st7789_op = {
+display_driver_op_t display_driver_rm67162_op = {
     .new = _new,
     .del = _del,
     .set_rotation = _set_rotation,
     .get_rotation = _get_rotation,
-    .lock = lock,
-    .unlock = unlock,
-    .bl_set = _bl_set,
     .epd_request_fast_update = 0,
     .epd_request_full_update = 0,
     .epd_refresh_and_turn_off = 0,
     .epd_turn_on = 0,
+    .lock = lock,
+    .unlock = unlock,
+    .bl_set = _bl_set,
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
     .get_driver = lv_get_driver,
-    #else
+#else
     .get_driver = 0,
-    #endif
+#endif
     .get = lv_get,
     .lv_init = _lv_init,
 #endif

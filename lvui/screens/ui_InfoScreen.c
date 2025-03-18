@@ -6,17 +6,17 @@ ui_info_screen_t ui_info_screen = {0};
 // static const char * TAG = "ui_info_screen";
 
 static void update_dims() {
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     lv_coord_t col_2_x = 33, col_1_x = 4;
-#elif defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#elif defined(CONFIG_SSD168X_PANEL_SSD1680)
     lv_coord_t col_2_x = 27, col_1_x = 6;
 #else
     lv_coord_t col_2_x = 35, col_1_x = 12;
 #endif
-#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
-    bool is_l = (display_get_width(display_get())>170);
+#if !defined(CONFIG_LCD_IS_EPD)
+    bool is_l = (display_drv_get_width(display_drv_get())>170);
 #else
-    bool is_l = (display_get_width(display_get())>128);
+    bool is_l = (display_drv_get_width(display_drv_get())>128);
 #endif
     lv_obj_t *obj = ui_info_screen.info_lbl;
     if(obj) {
@@ -62,9 +62,9 @@ static void update_dims() {
 }
 
 static lv_obj_t * load(lv_obj_t *parent) {
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     lv_coord_t col_2_x = 33, col_1_x = 4;
-#elif defined(CONFIG_DISPLAY_DRIVER_SSD1680)
+#elif defined(CONFIG_SSD168X_PANEL_SSD1680)
     lv_coord_t col_2_x = 27, col_1_x = 6;
 #else
     lv_coord_t col_2_x = 35, col_1_x = 12;

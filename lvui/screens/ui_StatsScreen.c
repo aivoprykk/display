@@ -5,10 +5,10 @@
 ui_stats_screen_t ui_stats_screen = {0};
 // static const char *TAG = "ui_stats_screen";
 void update_dims(void) {
-#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
-    bool is_l = (display_get_width(display_get())>170);
+#if !defined(CONFIG_LCD_IS_EPD)
+    bool is_l = (display_drv_get_width(display_drv_get())>170);
 #else
-    bool is_l = (display_get_width(display_get())>128);
+    bool is_l = (display_drv_get_width(display_drv_get())>128);
 #endif
     lv_obj_t *obj;
     int numcols = ui_stats_screen.cols > 200 ? ui_stats_screen.cols - 200 : ui_stats_screen.cols > 100 ? ui_stats_screen.cols - 100 : ui_stats_screen.cols;
@@ -28,7 +28,7 @@ void update_dims(void) {
                     if((ui_stats_screen.cols > 200 && j < 2)||(ui_stats_screen.cols > 100 && j < 1))
                         lv_obj_set_width(obj, lv_pct(100));
                     else if(ui_stats_screen.cols==1)
-                        lv_obj_set_width(obj, lv_pct(display_get_width(display_get())>200 ? 60 : 80));
+                        lv_obj_set_width(obj, lv_pct(display_drv_get_width(display_drv_get())>200 ? 60 : 80));
                     else
                         lv_obj_set_width(obj, lv_pct(w));
                     obj = ui_stats_screen.cells[i][j].info;
@@ -84,7 +84,7 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
     lv_obj_set_style_pad_right(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     if(rowlen<5)
 #else
     if(rowlen<4)
@@ -120,7 +120,7 @@ static lv_obj_t *uiStatsPanelLoad(lv_obj_t *parent, int rowlen, int collen) {
         if ((collen > 200 && i < 2) || (collen > 100 && i < 1) || collen==1) {
             lv_obj_set_flex_align(rows[i], LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
             if(collen == 1 ) {
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
                 cols[0] = ui_Cell(rows[i], ((rowlen<5) ? 85 : 80), 100, 38, 62, &ui_stats_screen.cells[i][0]);
 #else
                 cols[0] = ui_Cell(rows[i], 60, 100, 35, 75, &ui_stats_screen.cells[i][0]);

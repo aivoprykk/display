@@ -1,14 +1,29 @@
 #ifndef F0ECA8C3_6869_4ED6_A941_F279E95283B9
 #define F0ECA8C3_6869_4ED6_A941_F279E95283B9
 
-#include "lvgl.h"
-#include "sdkconfig.h"
-#include <string.h>
-#include "ui_events.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "sdkconfig.h"
+
+#ifdef __has_include
+    #if __has_include("lvgl.h")
+        #ifndef LV_LVGL_H_INCLUDE_SIMPLE
+            #define LV_LVGL_H_INCLUDE_SIMPLE
+        #endif
+    #endif
+#endif
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+    #include "lvgl.h"
+#else
+    #include "lvgl/lvgl.h"
+#endif
+
+#include <string.h>
+
+#include "ui_events.h"
 
 #define STATUS_PANEL_V1 1
 #if defined(STATUS_PANEL_V1)
@@ -179,25 +194,25 @@ LV_FONT_DECLARE(ui_font_OswaldRegular20p2); // statusbar
 LV_FONT_DECLARE(ui_font_OswaldRegular24p2);
 LV_FONT_DECLARE(ui_font_OswaldRegular36p2);
 
-#if defined (CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined (CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OpenSansBold30p2);
-#elif defined (CONFIG_DISPLAY_DRIVER_ST7789)
+#elif !defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OswaldRegular100p2); // speed big
 #else
 LV_FONT_DECLARE(ui_font_OpenSansBold24p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold28p2);
 #endif
-#if !defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if !defined(CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OswaldRegular60p2); // speed big
 #endif
-#if !defined (CONFIG_DISPLAY_DRIVER_ST7789)
+#if defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OpenSansBold36p2); // record screen
 LV_FONT_DECLARE(ui_font_OpenSansBold60p2);
 #endif
 
 
-#if defined (CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined (CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OswaldRegular96p2);
 #else
 LV_FONT_DECLARE(ui_font_OpenSansBold84p2);
@@ -222,7 +237,7 @@ LV_FONT_DECLARE(ui_font_OpenSansBold28p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold36p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold32p4);
 LV_FONT_DECLARE(ui_font_OpenSansBold60p4);
-#if defined (CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined (CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OswaldRegular96p4);
 #else
 LV_FONT_DECLARE(ui_font_OpenSansBold84p4);

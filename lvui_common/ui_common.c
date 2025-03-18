@@ -1,18 +1,21 @@
-// LVGL version: 8.3.6
-// Project name: lilygo_tdisplay_s3_04
-
-#include "ui_common.h"
-#include "ui_helpers.h"
 #include "../display_private.h"
+
+#if defined(CONFIG_DISPLAY_ENABLED)
+#include "ui_common.h"
 
 ESP_EVENT_DEFINE_BASE(UI_EVENT);
 
-const char * ui_event_strings[] = {
-    "UI_EVENT_FLUSH_START",
-    "UI_EVENT_FLUSH_DONE",
-};
-
 static const char *TAG = "ui_common";
+
+#if (CONFIG_DISPLAY_LOG_LEVEL < 2 || CONFIG_LOGGER_GLOBAL_LOG_LEVEL < 3)
+static const char * _ui_event_strings[] = { UI_EVENT_LIST(STRINGIFY)};
+const char * ui_event_strings(int id) {
+    return _ui_event_strings[id];
+}
+#else
+const char * ui_event_strings(int id) {return "UI_EVENT";}
+#endif
+
 // TIMER_INIT
 
 // const lv_style_const_prop_t style_plain_panel_props[] = {
@@ -192,7 +195,7 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         l = lv_label_create(panel);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-38), 0);
 #else
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-35), 0);
@@ -227,7 +230,7 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         l = lv_label_create(panel);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-#if defined(CONFIG_DISPLAY_DRIVER_SSD1681)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-25), 0);
 #else
         lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-20), 0);
@@ -291,10 +294,10 @@ void ui_status_panel_delete(void) {
 void ui_common_init(void) {
     ILOG(TAG, "[%s]", __func__);
     lv_disp_t* dispp = lv_disp_get_default();
-#ifdef CONFIG_DISPLAY_DRIVER_ST7789
-    lv_theme_t* theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
-#else
+#if defined(CONFIG_LCD_IS_EPD)
     lv_theme_t* theme = lv_theme_mono_init(dispp, false, LV_FONT_DEFAULT);
+#else
+    lv_theme_t* theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
 #endif
     lv_disp_set_theme(dispp, theme);
     ui_create_styles();
@@ -325,7 +328,7 @@ lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
     if(screen->has_status_cnt) {
         if(!screen->status_cnt) {
             lv_obj_t *panel = ui_common_panel_init(scr, 100, 18);
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1680
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
             lv_obj_set_y(panel, -4); // for SSD1680, visible height is 128-6=122
 #endif
             lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
@@ -401,3 +404,5 @@ void ui_invalidate_screens(void) {
     ui_invalidate_screen(&ui_sleep_screen.screen);
     ui_invalidate_screen(&ui_record_screen.screen);
 }
+
+#endif

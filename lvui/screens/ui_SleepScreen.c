@@ -10,10 +10,10 @@ const lv_img_dsc_t * const sail_logo_img [] = {&ga_48px, &duotone_48px, &np_48px
 const lv_img_dsc_t * const board_logo_img [] = {&sb_48px, &fanatic_48px, &jp_48px, &patrik_48px};
 
 static void update_dims() {
-#if defined(CONFIG_DISPLAY_DRIVER_ST7789)
-    bool is_l = (display_get_width(display_get())>170);
+#if !defined(CONFIG_LCD_IS_EPD)
+    bool is_l = (display_drv_get_width(display_drv_get())>170);
 #else
-    bool is_l = (display_get_width(display_get())>128);
+    bool is_l = (display_drv_get_width(display_drv_get())>128);
 #endif
     lv_obj_t *obj = ui_sleep_screen.myid;
     // if(obj) {
@@ -99,7 +99,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_set_style_pad_right(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_top(panel, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     lv_obj_t *right_container =  ui_common_panel_init(panel, 20, 100);
 #else
     lv_obj_t *right_container =  ui_common_panel_init(panel, 30, 100);
@@ -124,7 +124,7 @@ static lv_obj_t *load(lv_obj_t *parent) {
     lv_obj_clear_flag(bottom_img, LV_OBJ_FLAG_SCROLLABLE);  /// Flags
     ui_sleep_screen.bottom_img = bottom_img;
 
-#ifdef CONFIG_DISPLAY_DRIVER_SSD1681
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
     lv_obj_t *left_container =  ui_common_panel_init(panel, 90, 100);
 #else
     lv_obj_t *left_container =  ui_common_panel_init(panel, 80, 100);

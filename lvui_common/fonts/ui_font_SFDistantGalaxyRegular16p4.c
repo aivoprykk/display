@@ -4,7 +4,19 @@
  * Opts: --bpp 4 --size 16 --font /Users/aivo/Downloads/squareline/squareline_proj_2_13_01_s/assets/SF_Distant_Galaxy.ttf -o /Users/aivo/Downloads/squareline/squareline_proj_2_13_01_s/assets/ui_font_SFDistantGalaxyRegular16p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#include "ui_common.h"
+#ifdef __has_include
+    #if __has_include("lvgl.h")
+        #ifndef LV_LVGL_H_INCLUDE_SIMPLE
+            #define LV_LVGL_H_INCLUDE_SIMPLE
+        #endif
+    #endif
+#endif
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+    #include "lvgl.h"
+#else
+    #include "lvgl/lvgl.h"
+#endif
 
 #ifndef UI_FONT_SFDISTANTGALAXYREGULAR16P4
 #define UI_FONT_SFDISTANTGALAXYREGULAR16P4 1
