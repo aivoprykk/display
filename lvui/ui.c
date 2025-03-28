@@ -44,6 +44,8 @@ void ui_StatsScreen_screen_init(int rows, int cols);
 void ui_SleepScreen_screen_init(void);
 //lv_obj_t *ui_SleepScreen = 0;
 
+void ui_BlankScreen_screen_init(void);
+
 lv_obj_t *ui____initial_actions0;
 
 void ui_init( void )
@@ -124,7 +126,7 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
     }
 }
 
-#if (CONFIG_DISPLAY_LOG_LEVEL<=1 || defined(DEBUG))
+#if (C_LOG_LEVEL < 2 || defined(DEBUG))
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
@@ -328,6 +330,22 @@ void loadStatsScreen(int rows, int cols) {
         lv_scr_load(ui_stats_screen.screen.self);
     }
     print_lv_mem_mon();
+}
+
+void load_BlankScreen(uint8_t invert) {
+    ILOG(TAG, "[%s]", __func__);
+    ui_BlankScreen_screen_init();
+    ui_blank_screen.invert = invert;
+    if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_blank_screen.screen.self){
+        ILOG(TAG, "[%s] load to screen", __func__);
+        lv_scr_load(ui_blank_screen.screen.self);
+    }
+    print_lv_mem_mon();
+}
+
+void showBlankScreen(uint8_t invert) {
+    ILOG(TAG, "[%s]", __func__);
+    load_BlankScreen(invert);
 }
 
 void showSleepScreen() {

@@ -1,4 +1,3 @@
-
 #include "display_private.h"
 #ifdef CONFIG_DISPLAY_DRIVER_RM67162
 #include "driver_vendor.h"
@@ -8,7 +7,6 @@
 #include "freertos/task.h"
 
 #include "esp_system.h"
-
 
 #include "esp_err.h"
 #include "esp_log.h"
@@ -138,7 +136,7 @@ static void _bl_set(uint8_t brightness_percent) {
     uint8_t from = bl_steps - bl_level;
     uint8_t to = bl_steps - level;
     uint8_t num = (bl_steps + to - from) % bl_steps;
-    printf("from %d, num %d, to %d\n", from, to, num);
+    DLOG(TAG, "[%s] from %d, num %d, to %d\n", __func__, from, to, num);
     for (uint8_t i = 0; i < num; i++) {
         gpio_set_level(CONFIG_DISPLAY_BL, 0);
         gpio_set_level(CONFIG_DISPLAY_BL, 1);
@@ -202,7 +200,7 @@ static esp_err_t _set_rotation(int r) {
         if(lv_disp) {
         lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
         lv_obj_invalidate(lv_scr_act());
-            printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
+            DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", __func__, \
         (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
 #else
@@ -273,7 +271,7 @@ static void display_init_cb(lv_disp_drv_t *disp_drv) {
     ILOG(TAG, "[%s]", __func__);
     // Set the callback functions
     size_t bufsz = SEND_BUF_SIZE; // Send_buf_size
-    ESP_LOGI(TAG, "Allocate memory");
+    ILOG(TAG, "[%s] Allocate memory", __func__);
     static lv_color_t *buf[2];
 	for (int i = 0; i < 2; i++) {
 		buf[i] = heap_caps_malloc(bufsz  * sizeof(lv_color_t), MALLOC_CAP_DMA);
@@ -310,14 +308,14 @@ static void display_init_cb(lv_disp_drv_t *disp_drv) {
 static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     ILOG(TAG, "[%s]", __func__);
     // --- Initialize LVGL
-    ESP_LOGI(TAG, "Initialize LVGL library");
+    ILOG(TAG, "[%s] Initialize LVGL library", __func__);
     lv_init();
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
 
     cb(&disp_drv);
 
-    ESP_LOGI(TAG, "Register display driver to LVGL");
+    ILOG(TAG, "[%s] Register display driver to LVGL", __func__);
     lv_disp = lv_disp_drv_register(&disp_drv);
 
     //_set_rotation(DISP_ROT_180);
@@ -325,7 +323,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     is_initialized_lvgl = true;
 
     // init lvgl tick
-    ESP_LOGI(TAG, "Install LVGL tick timer");
+    ILOG(TAG, "[%s] Install LVGL tick timer", __func__);
     // Tick interface for LVGL (using esp_timer to generate 2ms periodic event)
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = &increase_lvgl_tick,
@@ -353,14 +351,14 @@ static esp_lcd_panel_handle_t _new() {
     bl_init();
 	vTaskDelay(pdMS_TO_TICKS(500));
 
-	ESP_LOGI(TAG, "Initialize SPI bus");
+	ILOG(TAG, "[%s] Initialize SPI bus", __func__);
 	ESP_ERROR_CHECK(spi_bus_initialize(SPIx_HOST,
 		& (spi_bus_config_t) {
-			.data0_io_num = CONFIG_DISPLAY_SPI_D0,
-			.data1_io_num = CONFIG_DISPLAY_SPI_D1,
+			.data0_io_num = CONFIG_DISPLAY_SPI_A_D0,
+			.data1_io_num = CONFIG_DISPLAY_SPI_A_D1,
 			.sclk_io_num = CONFIG_DISPLAY_SPI_CLK,
-			.data2_io_num = CONFIG_DISPLAY_SPI_D2,
-			.data3_io_num = CONFIG_DISPLAY_SPI_D3,
+			.data2_io_num = CONFIG_DISPLAY_SPI_A_D2,
+			.data3_io_num = CONFIG_DISPLAY_SPI_A_D3,
 			.max_transfer_sz = SEND_BUF_SIZE + 8,
 			.flags = SPICOMMON_BUSFLAG_MASTER
 				| SPICOMMON_BUSFLAG_GPIO_PINS
@@ -368,7 +366,7 @@ static esp_lcd_panel_handle_t _new() {
 		},
 		SPI_DMA_CH_AUTO
 	));
-	ESP_LOGI(TAG, "Attach panel IO handle to SPI");
+	ILOG(TAG, "[%s] Attach panel IO handle to SPI", __func__);
 	ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(
 		(esp_lcd_spi_bus_handle_t)SPIx_HOST,
 	       	& (esp_lcd_panel_io_spi_config_t) {
@@ -398,7 +396,7 @@ static esp_lcd_panel_handle_t _new() {
     ESP_ERROR_CHECK(esp_lcd_new_panel_rm67162(
 		io_handle,
 		& (esp_lcd_panel_dev_config_t) {
-			.reset_gpio_num = CONFIG_DISPLAY_SPI_RST,
+			.reset_gpio_num = CONFIG_DISPLAY_SPI_A_RST,
 			.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
 			.bits_per_pixel = 16,
 		},
@@ -413,13 +411,13 @@ static esp_lcd_panel_handle_t _new() {
     //delay_ms(100);
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
-	// ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
+    // ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+	ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
 	// Rotate 90 degrees clockwise:
 	// ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
 	// ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
      
-    ESP_LOGI(TAG, "Turn on backlight");
+    ILOG(TAG, "[%s] Turn on backlight", __func__);
 	ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_BL, 1));
     
     return panel_handle;

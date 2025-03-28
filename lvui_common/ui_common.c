@@ -7,7 +7,7 @@ ESP_EVENT_DEFINE_BASE(UI_EVENT);
 
 static const char *TAG = "ui_common";
 
-#if (CONFIG_DISPLAY_LOG_LEVEL < 2 || CONFIG_LOGGER_GLOBAL_LOG_LEVEL < 3)
+#if (C_LOG_LEVEL < 2)
 static const char * _ui_event_strings[] = { UI_EVENT_LIST(STRINGIFY)};
 const char * ui_event_strings(int id) {
     return _ui_event_strings[id];

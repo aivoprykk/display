@@ -153,7 +153,7 @@ static void _bl_set(uint8_t brightness_percent) {
     uint8_t from = bl_steps - bl_level;
     uint8_t to = bl_steps - level;
     uint8_t num = (bl_steps + to - from) % bl_steps;
-    printf("from %d, num %d, to %d\n", from, to, num);
+    DLOG(TAG, "[%s] from %d, num %d, to %d\n", __func__, from, to, num);
     for (uint8_t i = 0; i < num; i++) {
         gpio_set_level(CONFIG_DISPLAY_BL, 0);
         gpio_set_level(CONFIG_DISPLAY_BL, 1);
@@ -214,7 +214,7 @@ static esp_err_t _set_rotation(int r) {
         if(lv_disp) {
         lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
         lv_obj_invalidate(lv_scr_act());
-            printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
+            DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\n", __func__, \
         (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
 #else

@@ -121,7 +121,7 @@ esp_err_t driver_qemu_set_rotation(int r) {
         if(lv_disp){
             lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
             lv_obj_invalidate(lv_scr_act());
-                printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
+                DLOG(TAG, "New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n", \
             (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
 

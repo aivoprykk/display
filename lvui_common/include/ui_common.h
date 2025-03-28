@@ -139,6 +139,11 @@ typedef struct ui_record_screen_s {
     } font;
 } ui_record_screen_t;
 
+typedef struct ui_blank_screen_s {
+    ui_screen_t screen;
+    uint8_t invert;
+} ui_blank_screen_t;
+
 #if defined(STATUS_PANEL_V1)
 extern ui_status_panel_t ui_status_panel;
 #endif
@@ -148,6 +153,7 @@ extern ui_info_screen_t ui_info_screen;
 extern ui_init_screen_t ui_init_screen;
 extern ui_stats_screen_t ui_stats_screen;
 extern ui_record_screen_t ui_record_screen;
+extern ui_blank_screen_t ui_blank_screen;
 
 lv_obj_t * ui_common_screen_init(ui_screen_t * screen);
 
@@ -308,6 +314,8 @@ void ui_StatsScreen_screen_init(int rows, int cols);
 // SCREEN: ui_SleepScreen
 void ui_SleepScreen_screen_init(void);
 
+void ui_Blankeen_screen_init(void);
+
 void loadSleepScreen();
 void loadInfoScreen();
 void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc);
@@ -315,6 +323,7 @@ void loadRecordScreen();
 void loadInitScreen();
 void loadSpeedScreen();
 void loadStatsScreen(int rows, int cols);
+void loadBlankScreen(uint8_t invert);
 
 void showFwUpdateScreen(const char * title, const char * info, const char * desc);
 void showSleepScreen();
@@ -333,6 +342,8 @@ void showStatsScreen32();
 void showPushScreen(int push, const char * title);
 void showRecordScreen(bool invert_colors);
 void showSettingsScreen(const char * title, const char * info, const char * desc);
+void showBlankScreen(uint8_t invert);
+
 void ui_flush_screens(ui_screen_t * screen);
 void ui_invalidate_screens(void);
 void ui_uninit_screens(void);

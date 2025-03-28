@@ -159,7 +159,7 @@ static esp_err_t _set_rotation(int r) {
 
 #if (CONFIG_DISPLAY_LOG_LEVEL < 2)
     if(lv_disp) {
-        printf("New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r\n",
+        DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\n", __func__,
 #if (LVGL_VERSION_MAJOR < 9)
             (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
 #else
@@ -172,7 +172,7 @@ static esp_err_t _set_rotation(int r) {
         rotated = r;
     }
 #if (CONFIG_DISPLAY_LOG_LEVEL < 2)
-    printf("New orientation is %d:, rotated flag is :%d\r\n", (int)r, rotated);
+    DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d\n", __func__, (int)r, rotated);
 #endif
 #endif
     return ESP_OK;
@@ -266,7 +266,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 #endif
 {
 #if (CONFIG_DISPLAY_LOG_LEVEL < 2)
-    printf("flush_cb: display_drv_get_width(lv_get_driver()) %d\n", display_drv_get_width(display_drv_get()));
+    DLOG(TAG, "[%s] display_drv_get_width(lv_get_driver()) %d\n", __func__, display_drv_get_width(display_drv_get()));
 #endif
     // IMEAS_START();
 #if (LVGL_VERSION_MAJOR < 9)

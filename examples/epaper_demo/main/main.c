@@ -84,6 +84,7 @@ static int count = 0;
 static bool button_down = false;
 static int rotation = 2, prev_rotation = 2; // 180 deg, next from default which is 90 deg eq 1
 static void load_screen(int noinc);
+static const char * TAG = "demo_ui";
 
 static void button_cb(int num, l_button_ev_t ev, uint64_t press_time) {
 #if defined(DEBUG)

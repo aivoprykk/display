@@ -84,6 +84,7 @@ static void unlock_timer() {
 }
 
 static uint32_t _lv_timer_handler() {
+    DLOG(TAG, "[%s] %ld\n", __func__, display_priv.self->count);
     uint32_t task_delay_ms = L_LVGL_TASK_MAX_DELAY_MS;
     if (_lvgl_lock(-1)) {
         task_delay_ms = lv_timer_handler(); 
@@ -94,6 +95,7 @@ static uint32_t _lv_timer_handler() {
     } else if (task_delay_ms < L_LVGL_TASK_MIN_DELAY_MS) {
         task_delay_ms = L_LVGL_TASK_MIN_DELAY_MS;
     }
+    DLOG(TAG, "[%s] done %ld, %lu\n", __func__, display_priv.self->count, task_delay_ms);
     return task_delay_ms;
 }
 
@@ -104,13 +106,11 @@ uint16_t get_offscreen_counter() {
 
 static uint32_t _ui_screen_draw() {
     ILOG(TAG, "[%s] %ld", __func__, display_priv.self->count);
-    IMEAS_START();
+    DMEAS_START();
     _lvgl_lock(0);
     _lvgl_unlock();
     uint32_t task_delay_ms = display_priv.self->op->screen_cb(0);
-    IMEAS_END(TAG, "[%s] . %ld (screen_cb req delay %lu), screen_cb took: %llu us",  __FUNCTION__, display_priv.self->count, task_delay_ms);
     uint32_t timer_delay_ms = _lv_timer_handler();
-    IMEAS_END(TAG, "[%s] .. %ld (_lv_timer_handler req delay %lu), timer_handler took: %llu us",  __FUNCTION__, display_priv.self->count, timer_delay_ms);
 #if defined(CONFIG_LCD_IS_EPD)
 #if (LVGL_VERSION_MAJOR <= 8)
     _lv_disp_refr_timer(NULL);
@@ -128,7 +128,7 @@ static uint32_t _ui_screen_draw() {
     if(timer_delay_ms > task_delay_ms)
 #endif
         task_delay_ms = timer_delay_ms;
-    IMEAS_END(TAG, "[%s] ... done. %ld (final req delay %lu), refr_timer took: %llu us", __FUNCTION__, display_priv.self->count, task_delay_ms);
+    DMEAS_END(TAG, "[%s] ... done. %ld (delay %lu), refr_timer took: %llu us", __FUNCTION__, display_priv.self->count, task_delay_ms);
     return task_delay_ms;
 };
 
@@ -162,7 +162,7 @@ static void _ui_start(int8_t rotation) {
 }
 
 static void _ui_task(void *args) {
-    ILOG(TAG, "[%s] task starting", __FUNCTION__);
+    ILOG(TAG, "[%s] starting", __FUNCTION__);
     _ui_start(display_priv.rotation);
     uint32_t task_delay_ms = _lv_timer_handler();
 #if defined(CONFIG_LCD_IS_EPD)
@@ -173,7 +173,7 @@ static void _ui_task(void *args) {
             display_refresh_unlock();
         }
         if(display_priv.task_not_paused || display_priv.self->task_resumed_for_times) {
-            ILOG(TAG, "[%s] ui next screen draw while %s (resumed_for_times:%hhu)", __FUNCTION__, (display_priv.task_not_paused ? "not paused" : display_priv.self->task_resumed_for_times ? "resumed" : ""), display_priv.self->task_resumed_for_times);
+            // DLOG(TAG, "[%s] ui next screen draw while %s (resumed_for_times:%hhu)\n", __FUNCTION__, (display_priv.task_not_paused ? "not paused" : display_priv.self->task_resumed_for_times ? "resumed" : ""), display_priv.self->task_resumed_for_times);
             task_delay_ms = _ui_screen_draw();
         }
         if(display_priv.task_is_running) {
@@ -190,7 +190,7 @@ static void _ui_task(void *args) {
 #endif
         }
     }
-    ILOG(TAG, "[%s] task finishing", __FUNCTION__);
+    ILOG(TAG, "[%s] finishing\n", __FUNCTION__);
     display_priv.task_is_finished = 1;
     display_priv.task_handle = 0;
     vTaskDelete(NULL);
@@ -282,7 +282,7 @@ static void _timer_cb(void*arg);
 static void _periodic_timer_start() {
     ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->count);
 #if defined(CONFIG_LCD_IS_EPD)
-    if(display_priv.timer_created) {
+    if(!display_priv.timer_created) {
         const esp_timer_create_args_t lcd_periodic_timer_args = {
             .callback = &_timer_cb,
             .name = "lcd_periodic",
@@ -390,8 +390,8 @@ void display_wait_for_task() {
         display_task_resume();
     display_priv.shutdown_counter_running = SHUT_DOWN_COUNTER_TIMES;
     while(!get_offscreen_counter() && display_priv.shutdown_counter_running) {
-#if (CONFIG_LOGGER_COMMON_LOG_LEVEL < 2)
-        printf("[%s] left %hu times (*%lu ms) wait for off_screen drawn\n", __func__, display_priv.shutdown_counter_running, delay);
+#if (C_LOG_LEVEL < 2)
+        DLOG(TAG, "[%s] left %hu times (*%lu ms) wait for off_screen drawn\n", __func__, display_priv.shutdown_counter_running, delay);
 #endif
         delay_ms(delay);
         --display_priv.shutdown_counter_running;
@@ -405,7 +405,7 @@ void display_wait_for_task() {
 
 static void _ui_stop() {
     ILOG(TAG, "[%s]", __func__);
-    IMEAS_START();
+    DMEAS_START();
     display_wait_for_task();
     display_priv.task_is_running = false;
     uint32_t wait = get_millis() + 15000;
@@ -414,7 +414,7 @@ static void _ui_stop() {
         delay_ms(150);
         if (get_millis() > wait) {
             if(display_priv.task_handle){
-                ILOG(TAG, "[%s] task not finished, deleting", __func__);
+                WLOG(TAG, "[%s] task not finished, deleting", __func__);
                 vTaskDelete(display_priv.task_handle);
             }
             break;
@@ -423,18 +423,21 @@ static void _ui_stop() {
     }
     //delay_ms(4000);
     if(display_priv.timer){
-        ILOG(TAG, "[%s] stop and delete periodic timer", __func__);
+        DLOG(TAG, "[%s] stop and delete periodic timer\n", __func__);
         _periodic_timer_stop();
         ESP_ERROR_CHECK(esp_timer_delete(display_priv.timer));
         display_priv.timer = 0;
     }
 
     ui_deinit();
-    IMEAS_END(TAG, "[%s] %hu 150 ms loops, total %llu us ",  __FUNCTION__, i);
+    DMEAS_END(TAG, "[%s] %hu 150 ms loops, total %llu us ",  __FUNCTION__, i);
 }
 
 struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
     ILOG(TAG, "[%s]", __func__);
+#if defined(LOG_LOCAL_LEVEL)
+    esp_log_level_set(TAG, ESP_LOG_DEBUG);
+#endif
     me->op = op;
     display_priv.self = me;
     display_priv.dspl_drv = display_drv_new();
