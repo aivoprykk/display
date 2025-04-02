@@ -85,26 +85,26 @@ menu "Logger Display Module Options"
             endchoice
         endif
         if DISPLAY_DRIVER_ST7789 || DISPLAY_DRIVER_RM67162
-        config DISPLAY_BL
-            int "GPIO for Display BlackLight (BL)"
-            range -1 48
-            default 38
-        config DISPLAY_PWR
-            int "GPIO for Display Power (PWR)"
-            range -1 48
-            default 15
+            config DISPLAY_BL
+                int "GPIO for Display BlackLight (BL)"
+                range -1 48
+                default 38
+            config DISPLAY_PWR
+                int "GPIO for Display Power (PWR)"
+                range -1 48
+                default 15
         endif
         if DISPLAY_DRIVER_SSD168X
             config DISPLAY_SPI_MOSI
-                int "GPIO for M0S1 (DIN in epaper)"
+                int "GPIO for M0S1 (D1, DIN in epaper)"
                 range -1 48
                 default 23
             config DISPLAY_SPI_DC
-                int "GPIO for Data Control (MISO in epaper)"
+                int "GPIO for DC (sometimes MISO in T5 epaper)"
                 range -1 48
                 default 17
             config DISPLAY_SPI_CLK
-                int "GPIO for SPI Clock (SCLK or SCK)"
+                int "GPIO for SPI Clock (D0, SCLK or SCK)"
                 range -1 48
                 default 18
             config DISPLAY_SPI_CS
@@ -118,7 +118,6 @@ menu "Logger Display Module Options"
             config DISPLAY_SPI_BUSY
                 int "GPIO for Busy signal (BUSY)"
                 range -1 48
-                default -1 if HAS_BOARD_LILYGO_T_DISPLAY_S3
                 default 4
         endif
         if DISPLAY_DRIVER_ST7789

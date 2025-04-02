@@ -172,12 +172,12 @@ LV_IMG_DECLARE( radio_button_unchecked_24px);
 LV_IMG_DECLARE( espidf_logo_v2_48px);
 
 //sail logos
-LV_IMG_DECLARE( ga_48px);
+LV_IMG_DECLARE( ga_logo_n_48px);
 LV_IMG_DECLARE( duotone_48px);
 LV_IMG_DECLARE( np_48px);
 LV_IMG_DECLARE( loftsails_48px);
 LV_IMG_DECLARE( gunsails_48px);
-LV_IMG_DECLARE( p7_48px);
+LV_IMG_DECLARE( p7_black_48px);
 LV_IMG_DECLARE( ns_48px);
 LV_IMG_DECLARE( patrik_48px);
 
@@ -290,6 +290,7 @@ void ui_common_init(void);
 lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h);
 
 lv_obj_t * ui_status_panel_create(lv_obj_t *parent);
+void ui_status_panel_rearrange(ui_screen_t *parent);
 void ui_status_panel_init(ui_screen_t * parent);
 void ui_status_panel_load(ui_screen_t *parent);
 void ui_status_panel_delete(void);

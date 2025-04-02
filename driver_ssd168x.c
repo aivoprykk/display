@@ -40,7 +40,6 @@ static const char *TAG = "display_drv.ssd1680";
 
 #define PIN_NUM_SCLK           CONFIG_DISPLAY_SPI_CLK
 #define PIN_NUM_MOSI           CONFIG_DISPLAY_SPI_MOSI
-#define PIN_NUM_MISO           CONFIG_DISPLAY_SPI_MISO
 #define PIN_NUM_EPD_DC         CONFIG_DISPLAY_SPI_DC
 #define PIN_NUM_EPD_RST        CONFIG_DISPLAY_SPI_RST
 #define PIN_NUM_EPD_CS         CONFIG_DISPLAY_SPI_CS
@@ -157,7 +156,7 @@ static esp_err_t _set_rotation(int r) {
     }
 #endif
 
-#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL < 2)
     if(lv_disp) {
         DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\n", __func__,
 #if (LVGL_VERSION_MAJOR < 9)
@@ -171,7 +170,7 @@ static esp_err_t _set_rotation(int r) {
     if(r!=rotated) {
         rotated = r;
     }
-#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL < 2)
     DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d\n", __func__, (int)r, rotated);
 #endif
 #endif
@@ -197,17 +196,27 @@ static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
     const char *x = "e-Paper display...";
     UNUSED_PARAMETER(x);
     if(init_requested) {
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] %s %s with init mode 0x%02x", "Reset/Init", __func__, x, init_mode);
-        ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+#endif
+        if(esp_lcd_panel_reset(panel_handle)) {
+            return ESP_FAIL;
+        }
         delay_ms(50);
-        ESP_ERROR_CHECK(epaper_panel_init_screen_ssd168x(panel_handle, init_mode, 0));
+        if(epaper_panel_init_screen_ssd168x(panel_handle, init_mode, 0)) {
+            return ESP_FAIL;
+        }
         init_mode = INIT_MODE_FULL_2;
         delay_ms(50);
     }
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
+    if(esp_lcd_panel_disp_on_off(panel_handle, true)) {
+        return ESP_FAIL;
+    }
     if(!init_requested) {
         ILOG(TAG, "[%s] %s %s", "Refresh", __func__, x);
-        ESP_ERROR_CHECK(epaper_panel_set_custom_lut_ssd168x(panel_handle, fast_refresh_lut, 159));
+        if(epaper_panel_set_custom_lut_ssd168x(panel_handle, fast_refresh_lut, 159)) {
+            return ESP_FAIL;
+        }
     }
     if(init_requested) init_requested = false;
     return ESP_OK;
@@ -216,37 +225,65 @@ static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
 static esp_err_t _refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map) {
     ILOG(TAG, "[%s]", __func__);
     if(rotated == DISP_ROT_NONE || rotated == DISP_ROT_180) {
-        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
+        if(esp_lcd_panel_swap_xy(panel_handle, false)) {
+            return ESP_FAIL;
+        }
 #ifdef CONFIG_DISPLAY_USE_LVGL
-        ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, false));
+        if(esp_lcd_panel_invert_color(panel_handle, false)) {
+            return ESP_FAIL;
+        }
 #endif
     }
     else {
-        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+        if(esp_lcd_panel_swap_xy(panel_handle, true)) {
+            return ESP_FAIL;
+        }
 #ifdef CONFIG_DISPLAY_USE_LVGL
-        ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
+        if(esp_lcd_panel_invert_color(panel_handle, true)) {
+            return ESP_FAIL;
+        }
 #endif
     }
 
     if(rotated == DISP_ROT_NONE) {
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, false)); // x inc y inc
+        if(esp_lcd_panel_mirror(panel_handle, false, false)) {
+            return ESP_FAIL;
+        } // x inc y inc
     }
     else if(rotated == DISP_ROT_90) {
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false)); // x *dec y inc
+        if(esp_lcd_panel_mirror(panel_handle, true, false)) {
+            return ESP_FAIL;
+        } // x *dec y inc
     }
     else if(rotated == DISP_ROT_180) {
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, true)); // x *dec y *dec
+        if(esp_lcd_panel_mirror(panel_handle, true, true)) {
+            return ESP_FAIL;
+        } // x *dec y *dec
     }
     else { // DISP_ROT_270 (270 degrees)
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, false, true)); // x inc y *dec
+        if(esp_lcd_panel_mirror(panel_handle, false, true)) {
+            return ESP_FAIL;
+        } // x inc y *dec
     }
 
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_BLACK));
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map));
-    ESP_ERROR_CHECK(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_RED));
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map));
-    ESP_ERROR_CHECK(epaper_panel_refresh_screen_ssd168x(panel_handle, 0));
-    ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, false));
+    if(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_BLACK)) {
+        return ESP_FAIL;
+    }
+    if(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map)) {
+        return ESP_FAIL;
+    }
+    if(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_RED)) {
+        return ESP_FAIL;
+    }
+    if(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map)) {
+        return ESP_FAIL;
+    }
+    if(epaper_panel_refresh_screen_ssd168x(panel_handle, 0)) {
+        return ESP_FAIL;
+    }
+    if(esp_lcd_panel_disp_on_off(panel_handle, false)) {
+        return ESP_FAIL;
+    }
     return ESP_OK;
 }
 
@@ -265,12 +302,14 @@ static inline uint8_t LV_ATTRIBUTE_FAST_MEM get_bit(const uint8_t * buf, int32_t
 static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *color_map)
 #endif
 {
-#if (CONFIG_DISPLAY_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL < 2)
     DLOG(TAG, "[%s] display_drv_get_width(lv_get_driver()) %d\n", __func__, display_drv_get_width(display_drv_get()));
 #endif
     // IMEAS_START();
 #if (LVGL_VERSION_MAJOR < 9)
+#if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] x1:%hd y1:%hd, x2:%hd y2:%hd", __func__, area->x1, area->y1, area->x2, area->y2);
+#endif
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
 #else
     ILOG(TAG, "[%s] x1:%ld y1:%ld, x2:%ld y2:%ld", __func__, area->x1, area->y1, area->x2, area->y2);
@@ -299,7 +338,9 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     // --- Convert buffer from color to monochrome bitmap
     MYINT len_bits = (len_x * len_y);
 #if (LVGL_VERSION_MAJOR < 9)
+#if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,drv->rotated);
+#endif
 #else
     ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,display_get_rotation(dspl));
 #endif
@@ -318,7 +359,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
           converted_buffer_black[i8] |= get_bit(buf,(((i*len_x)%len_bits) + i/len_y)) << (7 - (bit_index));
 #endif
         }
-        else{
+        else {
         // Vertical traverse lvgl framebuffer (by column), needs to uncomment len_x and len_y
         // NOTE: If your screen rotation requires setting the pixels vertically, you could use the code below
 #if (LVGL_VERSION_MAJOR < 9)
@@ -336,10 +377,14 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
         }
 #endif
     }
+#if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] turn on, len x:%"MYINT_D", y:%"MYINT_D" bits: %"MYINT_D"", __func__, len_x, len_y, len_bits);
+#endif
     _turn_on(panel_handle);
     // --- Draw bitmap
+#if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] refresh and turn off", __func__);
+#endif
     _refresh_and_turn_off(panel_handle, rotated, &((m_area_t) {offsetx1, offsety1, offsetx2, offsety2}), converted_buffer_black);
     // IMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
@@ -453,20 +498,25 @@ static void init_screen(void (*cb)(lv_display_t*)) {
 #endif
     ILOG(TAG, "[%s]", __func__);
     // --- Initialize LVGL
+#if (C_LOG_LEVEL < 3)
     ESP_LOGI(TAG, "Initialize LVGL library");
+#endif
     lv_init();
     // uint32_t fb_size = EPD_BUFFER_SIZE, pix_buf_size = LCD_H_RES * LCD_V_RES / 5;
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
     size_t bufsz = LBUFSZ;
+#if (C_LOG_LEVEL < 3)
     ESP_LOGI(TAG, "Allocate %dkb memory for LVGL buffers" , (bufsz/1024));
+#endif
 #if (LVGL_VERSION_MAJOR < 9)
     lv_disp_draw_buf_init(&disp_buf, buf1, 0, bufsz);
     lv_disp_drv_init(&disp_drv);
     disp_drv.draw_buf = &disp_buf;
     cb(&disp_drv);
-
+#if (C_LOG_LEVEL < 3)
     ESP_LOGI(TAG, "Register display driver / create display to LVGL");
+#endif
     lv_disp = lv_disp_drv_register(&disp_drv);
 #else
     ESP_LOGI(TAG, "Create display for LVGL");
@@ -478,14 +528,20 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     is_initialized_lvgl = true;
 
     // init lvgl tick
+#if (C_LOG_LEVEL < 3)
     ESP_LOGI(TAG, "Install LVGL tick timer");
+#endif
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = &increase_lvgl_tick,
         .name = "lvgl_tick"
     };
     esp_timer_handle_t lvgl_tick_timer = NULL;
-    ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000));
+    if(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer)) {
+        return;
+    }
+    if(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000)) {
+        return;
+    }
 }
 #endif
 
@@ -547,12 +603,15 @@ static esp_lcd_panel_handle_t _new() {
     spi_bus_config_t buscfg = {
         .sclk_io_num = PIN_NUM_SCLK,
         .mosi_io_num = PIN_NUM_MOSI,
-        .miso_io_num = PIN_NUM_MISO,
+        .miso_io_num = -1,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
         .max_transfer_sz = LCD_RESOLUTION,
     };
-    ESP_ERROR_CHECK(spi_bus_initialize(SPIx_HOST, &buscfg, SPI_DMA_CH_AUTO));
+    if(spi_bus_initialize(SPIx_HOST, &buscfg, SPI_DMA_CH_AUTO)) {
+        ESP_LOGE(TAG, "Failed to initialize bus");
+        return NULL;
+    }
 
     ESP_LOGI(TAG, "Install panel IO");
     esp_lcd_panel_io_spi_config_t io_config = {
@@ -566,7 +625,10 @@ static esp_lcd_panel_handle_t _new() {
         .on_color_trans_done = NULL,
     };
     // --- Attach the LCD to the SPI bus
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) SPIx_HOST, &io_config, &io_handle));
+    if(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t) SPIx_HOST, &io_config, &io_handle)) {
+        ESP_LOGE(TAG, "Failed to create panel io");
+        return NULL;
+    }
 
     // --- Create esp_lcd panel
     esp_lcd_ssd168x_config_t lcd_ssd168x_config = {
@@ -583,15 +645,24 @@ static esp_lcd_panel_handle_t _new() {
         .vendor_config = &lcd_ssd168x_config
     };
     gpio_install_isr_service(0);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_ssd168x(io_handle, &panel_config, &panel_handle));
+    if(esp_lcd_new_panel_ssd168x(io_handle, &panel_config, &panel_handle)) {
+        ESP_LOGE(TAG, "Failed to create panel");
+        return NULL;
+    }
 
     // // --- Reset the display
     // ESP_LOGI(TAG, "Resetting e-Paper display...");
-    // ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+    // if(esp_lcd_panel_reset(panel_handle)) {
+    //     ESP_LOGE(TAG, "Failed to reset panel");
+    //     return NULL;
+    // }
     // delay_ms(100);
     // // --- Initialize panel
     // ESP_LOGI(TAG, "Initializing e-Paper display...");
-    // ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    // if(esp_lcd_panel_init(panel_handle)) {
+    //     ESP_LOGE(TAG, "Failed to init panel");
+    //     return NULL;
+    // }
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif

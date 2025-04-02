@@ -70,6 +70,42 @@ const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p2;
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 #endif
 
+void ui_status_panel_rearrange(ui_screen_t *parent) {
+    assert(parent);
+    ILOG(TAG, "[%s] vm:%hhu", __func__, parent->status_viewmode);
+    if (ui_status_panel.self == NULL) return;
+    lv_obj_t *l;
+    if (parent->status_viewmode == 0)  {
+        l = ui_status_panel.temp_label;
+        if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)) {
+            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
+        }
+        l = ui_status_panel.bat_image;
+        if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)){
+            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+    else {
+        l = ui_status_panel.temp_label;
+        if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+        l = ui_status_panel.bat_image;
+        if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+    }
+    l = ui_status_panel.gps_image;
+    if (parent->status_viewmode == 0 || parent->status_viewmode == 2) {
+        if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)){
+            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+    else {
+        if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+    }
+    ui_status_panel_update_dims(parent);
+}
+
 void ui_status_panel_init(ui_screen_t *parent) {
     ILOG(TAG, "[%s]", __func__);
     if ( ui_status_panel.self != NULL)
@@ -89,6 +125,7 @@ void ui_status_panel_init(ui_screen_t *parent) {
     lv_obj_set_style_text_color(obj, lv_color_hex(0x0D0D0D), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(obj, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
+    ui_status_panel_rearrange(parent);
 }
 
 void ui_status_panel_update_dims(ui_screen_t *parent) {
@@ -97,14 +134,11 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
 #else
     bool is_l = (display_drv_get_width(display_drv_get())>128);
 #endif
+    ILOG(TAG, "[%s] l:%hhu", __func__,is_l);
     lv_obj_t *obj = ui_status_panel.self;
     if(obj) {
-        if(is_l) {
+        if(is_l) { /// landscape || ssd1681
             lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
-            obj = ui_status_panel.bat_image;
-            if(obj) {
-                lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
-            }
             obj = ui_status_panel.gps_image;
             if(obj) {
                 if((display_drv_get_width(display_drv_get())>200))
@@ -112,21 +146,22 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
                 else
                     lv_obj_set_x(obj, lv_pct(-38));
             }
-        } else {
-            lv_obj_set_style_text_font(obj, parent->status_font_portrait ? parent->status_font_portrait : ui_status_font_default_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
             obj = ui_status_panel.bat_image;
-            if(obj) {
-                lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+            if(obj){
+                if((display_drv_get_width(display_drv_get())>200))
+                    lv_obj_set_x(obj, lv_pct(-20));
+                else
+                    lv_obj_set_x(obj, lv_pct(-25));
             }
-            obj = ui_status_panel.gps_image;
-            if(obj) {
-                lv_obj_set_x(obj, lv_pct(-50));
-            }
+        } else { /// portrait
+            lv_obj_set_style_text_font(obj, parent->status_font_portrait ? parent->status_font_portrait : ui_status_font_default_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_x(ui_status_panel.gps_image, lv_pct(-50));
+            lv_obj_set_x(ui_status_panel.bat_image, lv_pct(-28));
         }
     }
 }
 
-#if (C_LOG_LEVEL < 2 || defined(DEBUG))
+#if (C_LOG_LEVEL < 2)
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
@@ -158,7 +193,7 @@ void loadSleepScreen() {
 #endif
     }
     ui_SleepScreen_screen_init();
-    ui_sleep_screen.screen.update_dims();
+    // ui_sleep_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_sleep_screen.screen.self);
@@ -178,7 +213,7 @@ void loadInfoScreen() {
 #endif
     }
     ui_InfoScreen_screen_init();
-    ui_info_screen.screen.update_dims();
+    // ui_info_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_info_screen.screen.self);
@@ -268,7 +303,7 @@ void loadSpeedScreen() {
 #endif
     }
     ui_SpeedScreen_screen_init();
-    ui_speed_screen.screen.update_dims();
+    // ui_speed_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_speed_screen.screen.self);
@@ -324,7 +359,7 @@ void loadStatsScreen(int rows, int cols) {
 
     }
     ui_StatsScreen_screen_init(rows, cols);
-    ui_stats_screen.screen.update_dims();
+    // ui_stats_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
         ILOG(TAG, "[%s] load to screen", __func__);
         lv_scr_load(ui_stats_screen.screen.self);

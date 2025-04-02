@@ -42,7 +42,7 @@ void update_dims(void) {
             }
         }
     }
-    ui_status_panel_update_dims(&ui_stats_screen.screen);
+    // ui_status_panel_update_dims(&ui_stats_screen.screen);
 }
 
 static lv_obj_t *ui_Cell(lv_obj_t *cnt, int w, int h, int wi, int wt, ui_cell_t *cell) {
@@ -184,4 +184,5 @@ void ui_StatsScreen_screen_init(int rows, int cols) {
     }
     lv_obj_set_x(ui_stats_screen.screen.main_cnt, lv_pct(ui_stats_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_stats_screen.screen);
+    update_dims();
 }

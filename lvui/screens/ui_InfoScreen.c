@@ -58,7 +58,7 @@ static void update_dims() {
         else
             lv_obj_align(obj, LV_ALIGN_TOP_MID, 0, lv_pct(5));
     }
-    ui_status_panel_update_dims(&ui_info_screen.screen);
+    // ui_status_panel_update_dims(&ui_info_screen.screen);
 }
 
 static lv_obj_t * load(lv_obj_t *parent) {
@@ -131,4 +131,5 @@ void ui_InfoScreen_screen_init(void) {
         ui_info_screen.screen.main_cnt = load(ui_info_screen.screen.self);
     lv_obj_set_x(ui_info_screen.screen.main_cnt, lv_pct(ui_info_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_info_screen.screen);
+    update_dims();
 }

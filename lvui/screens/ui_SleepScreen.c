@@ -6,7 +6,7 @@
 ui_sleep_screen_t ui_sleep_screen = {0};
 // static const char * TAG = "ui_sleep_screen";
 // order is defined in config module
-const lv_img_dsc_t * const sail_logo_img [] = {&ga_48px, &duotone_48px, &np_48px, &loftsails_48px, &gunsails_48px, &p7_48px, &patrik_48px};
+const lv_img_dsc_t * const sail_logo_img [] = {&ga_logo_n_48px, &duotone_48px, &np_48px, &loftsails_48px, &gunsails_48px, &p7_black_48px, &patrik_48px};
 const lv_img_dsc_t * const board_logo_img [] = {&sb_48px, &fanatic_48px, &jp_48px, &patrik_48px};
 
 static void update_dims() {
@@ -61,7 +61,7 @@ static void update_dims() {
             }
         }
     }
-    ui_status_panel_update_dims(&ui_sleep_screen.screen);
+    // ui_status_panel_update_dims(&ui_sleep_screen.screen);
 }
 
 static lv_obj_t * ui_Cell(lv_obj_t *cnt, int w, int h, int col, ui_cell_t *cell) {
@@ -188,4 +188,5 @@ void ui_SleepScreen_screen_init(void) {
     if(ui_sleep_screen.screen.main_cnt == NULL)
         ui_sleep_screen.screen.main_cnt = load(ui_sleep_screen.screen.self);
     ui_status_panel_load(&ui_sleep_screen.screen);
+    update_dims();
 }

@@ -146,13 +146,14 @@ void ui_status_panel_load(ui_screen_t* parent) {
     ILOG(TAG, "[%s]", __func__);
     if(!parent->has_status_cnt)
         return;
-    if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
-        ui_status_panel_delete();
-    }
+    // if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
+    //     ui_status_panel_delete();
+    // }
     ui_status_panel.viewmode = parent->status_viewmode;
     if (ui_status_panel.self == NULL)
         ui_status_panel_init(parent);
     else {
+        ui_status_panel_rearrange(parent);
         lv_obj_set_parent(ui_status_panel.self, parent->status_cnt);
     }
     ui_status_panel.parent = parent;
@@ -176,40 +177,33 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
     l = lv_label_create(panel);
     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-    lv_obj_set_align(l, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(l, "00:00");
+    lv_obj_align(l, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_label_set_text(l, ""); // time
     ui_status_panel.time_label = l;
     
-    if (ui_status_panel.viewmode==0) {
         l = lv_label_create(panel);
+        lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
+        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
         lv_obj_set_y(l, 0);
         lv_obj_set_x(l, lv_pct(-48));
-        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
-        lv_label_set_text(l, "19.0C");
+        lv_label_set_text(l, ""); // temp
         ui_status_panel.temp_label = l;
-    }
-
-    if (ui_status_panel.viewmode==0||ui_status_panel.viewmode==2) {
+    
         l = lv_label_create(panel);
+        lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-#if defined(CONFIG_SSD168X_PANEL_SSD1681)
-        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-38), 0);
-#else
-        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-35), 0);
-#endif
-        // if(ui_status_panel.viewmode==0){
+        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+        lv_obj_set_y(l, 0);
+        lv_label_set_text(l, ""); // gps
         //     lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
         //     lv_label_set_text(l, LV_SYMBOL_GPS);
         //     // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
-        // }
         // lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
         ui_status_panel.gps_image = l;
-    }
-
-    // if (ui_status_panel.viewmode==0) {
+    
     //     l = lv_label_create(panel);
     //     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
     //     lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
@@ -219,34 +213,25 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
     //     lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
     //     // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
     //     ui_status_panel.sdcard_image = l;
-    // }
-
-    // right = ui_common_panel_init(panel, 30, 100);
-    // lv_obj_set_align(right, LV_ALIGN_RIGHT_MID);
-    // lv_obj_set_flex_flow(right, LV_FLEX_FLOW_ROW);
-    // lv_obj_set_flex_align(right, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-
-    if (ui_status_panel.viewmode==0) {
+    
         l = lv_label_create(panel);
+        lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-#if defined(CONFIG_SSD168X_PANEL_SSD1681)
-        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-25), 0);
-#else
-        lv_obj_align(l, LV_ALIGN_RIGHT_MID, lv_pct(-20), 0);
-#endif
+        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+        lv_obj_set_y(l, 0);
         lv_obj_set_style_text_font(l, LV_FONT_DEFAULT, 0);
-        lv_label_set_text(l, LV_SYMBOL_BATTERY_FULL);
+        lv_label_set_text(l, "");
         // lv_obj_set_style_transform_angle(l, 900, 0);
         // lv_obj_set_style_pad_right(l, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
         // lv_obj_set_style_pad_top(l, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
         ui_status_panel.bat_image = l;
-    }
+
     l = lv_label_create(panel);
     lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
     lv_obj_align(l, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_label_set_text(l, "100%");
+    lv_label_set_text(l, ""); // battery
     ui_status_panel.bat_label = l;
 
     return panel;

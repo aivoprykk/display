@@ -73,7 +73,7 @@ static void update_dims() {
                 }
         }
     }
-    ui_status_panel_update_dims(&ui_speed_screen.screen);
+    // ui_status_panel_update_dims(&ui_speed_screen.screen);
 }
 
 static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, int h, ui_cell_t *cell) {
@@ -191,4 +191,5 @@ void ui_SpeedScreen_screen_init(void) {
         ui_speed_screen.screen.main_cnt = load(ui_speed_screen.screen.self);
     lv_obj_set_x(ui_speed_screen.screen.main_cnt, lv_pct(ui_speed_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_speed_screen.screen);
+    update_dims();
 }
