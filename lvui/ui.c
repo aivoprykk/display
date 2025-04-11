@@ -23,28 +23,28 @@ static const char *TAG = "ui_ssd1681";
 
 
 // SCREEN: ui_SpeedScreen
-void ui_SpeedScreen_screen_init(void);
+// void ui_SpeedScreen_screen_init(void);
 //lv_obj_t *ui_SpeedScreen = 0;
 
 
 // SCREEN: ui_InfoScreen
-void ui_InfoScreen_screen_init(void);
+// int ui_InfoScreen_screen_init(void);
 //lv_obj_t *ui_InfoScreen = 0;
 
 // SCREEN: ui_InitScreen
-void ui_InitScreen_screen_init(void);
+// void ui_InitScreen_screen_init(void);
 //lv_obj_t *ui_InitScreen = 0;
 
 
 // SCREEN: ui_StatsScreen
-void ui_StatsScreen_screen_init(int rows, int cols);
+// void ui_StatsScreen_screen_init(int rows, int cols);
 //lv_obj_t *ui_StatsScreen = 0;
 
 // SCREEN: ui_SleepScreen
-void ui_SleepScreen_screen_init(void);
+// void ui_SleepScreen_screen_init(void);
 //lv_obj_t *ui_SleepScreen = 0;
 
-void ui_BlankScreen_screen_init(void);
+// void ui_BlankScreen_screen_init(void);
 
 lv_obj_t *ui____initial_actions0;
 
@@ -195,13 +195,15 @@ void loadSleepScreen() {
     ui_SleepScreen_screen_init();
     // ui_sleep_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_sleep_screen.screen.self){
-        ILOG(TAG, "[%s] load to screen", __func__);
-        lv_scr_load(ui_sleep_screen.screen.self);
+#if (C_LOG_LEVEL < 3)
+            ILOG(TAG, "[%s] load to screen", __func__);
+#endif
+            lv_scr_load(ui_sleep_screen.screen.self);
     }
     print_lv_mem_mon();
 }
 
-void loadInfoScreen() {
+int loadInfoScreen(info_scr_mode_t mode) {
     ILOG(TAG, "[%s]", __func__);
     if (ui_info_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
@@ -212,16 +214,24 @@ void loadInfoScreen() {
         ui_info_screen.font.info = &ui_font_OswaldRegular16p4;
 #endif
     }
-    ui_InfoScreen_screen_init();
+    int ret = ui_InfoScreen_screen_init();
     // ui_info_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_info_screen.screen.self);
+        ret = 1;
+    }
+    if(mode != ui_info_screen.info_screen_mode) {
+        ui_info_screen.info_screen_mode = mode;
+        ret = 1;
     }
     print_lv_mem_mon();
+    return ret;
 }
 
-void loadInitScreen() {
+int loadInitScreen(init_scr_mode_t mode) {
     ILOG(TAG, "[%s]", __func__);
     if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
@@ -230,12 +240,20 @@ void loadInitScreen() {
         ui_init_screen.font.title = &ui_font_OswaldRegular24p4;
 #endif
     }
-    ui_InitScreen_screen_init();
+    int ret = ui_InitScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_init_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_init_screen.screen.self);
+        ret = 1;
+    }
+    if(mode != ui_info_screen.info_screen_mode) {
+        ui_info_screen.info_screen_mode = mode;
+        ret = 1;
     }
     print_lv_mem_mon();
+    return ret;
 }
 
 void loadRecordScreen() {
@@ -259,13 +277,15 @@ void loadRecordScreen() {
     }
     ui_RecordScreen_screen_init();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_record_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_record_screen.screen.self);
     }
     print_lv_mem_mon();
 }
 
-void loadSpeedScreen() {
+int loadSpeedScreen() {
     ILOG(TAG, "[%s]", __func__);
     if (ui_speed_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
@@ -302,13 +322,17 @@ void loadSpeedScreen() {
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p4;
 #endif
     }
-    ui_SpeedScreen_screen_init();
+    int ret = ui_SpeedScreen_screen_init();
     // ui_speed_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_speed_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_speed_screen.screen.self);
+        ret = 1;
     }
     print_lv_mem_mon();
+    return ret;
 }
 
 void loadStatsScreen(int rows, int cols) {
@@ -361,7 +385,9 @@ void loadStatsScreen(int rows, int cols) {
     ui_StatsScreen_screen_init(rows, cols);
     // ui_stats_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_stats_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_stats_screen.screen.self);
     }
     print_lv_mem_mon();
@@ -372,10 +398,60 @@ void load_BlankScreen(uint8_t invert) {
     ui_BlankScreen_screen_init();
     ui_blank_screen.invert = invert;
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_blank_screen.screen.self){
+#if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] load to screen", __func__);
+#endif
         lv_scr_load(ui_blank_screen.screen.self);
     }
     print_lv_mem_mon();
+}
+
+int set_screen_img(lv_obj_t * img, const lv_img_dsc_t *img_src, uint16_t angle) {
+    int ret = 0;
+    if(img) {
+        if(lv_img_get_src(img) != img_src) {
+            lv_img_set_src(img, img_src);
+            ret = 1;
+        }
+        if(lv_img_get_angle(img) != angle) {
+            lv_img_set_angle(img, angle);
+            ret = 2;
+        }
+    }
+    return ret;
+}
+
+int set_label_text_safe(lv_obj_t * lbl, const char * title, uint8_t enable_hide_lbl) {
+    if(!lbl) return 0;
+    int ret = 0;
+    if(title) {
+        if(!lv_label_get_text(lbl) || (strcmp(lv_label_get_text(lbl), title) != 0)) {
+#if (C_LOG_LEVEL < 2)
+            ILOG(TAG,"[%s] set info label text %s", __func__, title);
+#endif
+            lv_label_set_text(lbl, title);
+            ret =1;
+            if(enable_hide_lbl && lv_obj_has_flag(lbl, LV_OBJ_FLAG_HIDDEN))
+                lv_obj_clear_flag(lbl, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+    else if(enable_hide_lbl && lv_obj_has_flag(lbl, LV_OBJ_FLAG_HIDDEN) == false) {
+        lv_obj_add_flag(lbl, LV_OBJ_FLAG_HIDDEN);
+    }
+    return ret;
+}
+
+int invert_colors(lv_obj_t * panel, bool invert) {
+    if(!panel)  return 0;
+    if(invert) {
+        lv_obj_set_style_bg_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    else {
+        lv_obj_set_style_bg_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    }
+    return 1;
 }
 
 void showBlankScreen(uint8_t invert) {
@@ -388,202 +464,159 @@ void showSleepScreen() {
     loadSleepScreen();
 }
 
-void showRecordScreen(bool invert_colors) {
+void showRecordScreen(bool invert) {
     ILOG(TAG, "[%s]", __func__);
     loadRecordScreen();
     lv_obj_t* panel = ui_record_screen.screen.main_cnt;
     if(panel == 0)
         return;
-    if(invert_colors) {
-        lv_obj_set_style_bg_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-    }
-    else {
-        lv_obj_set_style_bg_color(panel, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(panel, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
-    }
+    invert_colors(panel, invert);
 }
 
 void showFwUpdateScreen(const char * title, const char * info, const char * desc) {
     ILOG(TAG, "[%s]", __func__);
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &update_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != 0)
-            lv_img_set_angle(img, 0);
+    int n = loadInfoScreen(INFO_MODE_FW_UPDATE);
+    if(n) {
+        set_screen_img(ui_info_screen.info_img, &update_48px, 0);
     }
-    set_info_screen_fields(&ui_info_screen, title, info, desc);
+    set_label_text_safe(ui_info_screen.info_lbl, title, 0);
+    set_label_text_safe(ui_info_screen.info_secondary_lbl, info, 0);
+    set_label_text_safe(ui_info_screen.info_third_lbl, desc, 0);
 }
 
 void showSettingsScreen(const char * title, const char * info, const char * desc) {
     ILOG(TAG, "[%s]", __func__);
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &settings_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != 0)
-            lv_img_set_angle(img, 0);
+    int n = loadInfoScreen(INFO_MODE_SETTINGS);
+    if(n) {
+        set_screen_img(ui_info_screen.info_img, &settings_48px, 0);
     }
-    set_info_screen_fields(&ui_info_screen, title, info, desc);
+    set_label_text_safe(ui_info_screen.info_lbl, title, 0);
+    set_label_text_safe(ui_info_screen.info_secondary_lbl, info, 0);
+    set_label_text_safe(ui_info_screen.info_third_lbl, desc, 0);
 }
 
-void showLowBatScreen() {
+void showLowBatScreen(const char * title) {
     ILOG(TAG, "[%s]", __func__);
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &battery_horiz_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_style_img_recolor(img, lv_color_hex(0xEECE44), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_img_recolor_opa(img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_y(img, lv_pct(-5));
-        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
+    int n = loadInitScreen(INIT_MODE_LOW_BAT);
+    if(n) {
+        set_screen_img(ui_init_screen.init_img, &battery_horiz_bold_48px, 0);
+#if !defined(CONFIG_LCD_IS_EPD)
+        lv_obj_set_style_img_recolor(ui_init_screen.init_img, lv_color_hex(0xEECE44), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_img_recolor_opa(ui_init_screen.init_img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+#endif
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-5));
     }
+    set_label_text_safe(ui_init_screen.init_lbl, title, 1);
 }
 
 void showPushScreen(int push, const char * title) {
     ILOG(TAG, "[%s]", __func__);
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = push==1 ? &radio_button_partial_24px : push==2 ? &radio_button_checked_24px : &radio_button_unchecked_24px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-5));
+    int n = loadInitScreen(INIT_MODE_PUSH_BUTTON);
+    set_screen_img(ui_init_screen.init_img, push==1 ? &radio_button_partial_24px : push==2 ? &radio_button_checked_24px : &radio_button_unchecked_24px, 0);
+    if(n) {
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-5));
     }
-    if(title){
-        lv_label_set_text(ui_init_screen.init_lbl, title);
-        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-    }
+    set_label_text_safe(ui_init_screen.init_lbl, title, 1);
 }
 
 void showGpsTroubleScreen() {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s]", __func__);
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &near_me_disabled_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-10));
-        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_label_set_text(ui_init_screen.init_lbl, "GPS Failure");
+#endif
+    int n = loadInitScreen(INIT_MODE_GPS_TROUBLE);
+    if(n) {
+        set_screen_img(ui_init_screen.init_img, &near_me_disabled_bold_48px, 0);
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-10));
+        set_label_text_safe(ui_init_screen.init_lbl, "GPS Failure", 1);
     }
 }
 
 void showSdTroubleScreen() {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s]", __func__);
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &sd_trouble_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        lv_obj_set_y(img, lv_pct(-10));
-        lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_label_set_text(ui_init_screen.init_lbl, "SD Failure");
+#endif
+    int n = loadInitScreen(INIT_MODE_SD_TROUBLE);
+    if(n) {
+        set_screen_img(ui_init_screen.init_img, &sd_trouble_bold_48px, 0);
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-10));
+        set_label_text_safe(ui_init_screen.init_lbl, "SD Failure", 1);
     }
 }
 
 void showBootScreen(const char* title) {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s] title: %s", __func__, title);
-    loadInitScreen();
-    lv_obj_t* img = ui_init_screen.init_img;
-    const lv_img_dsc_t *img_src = &espidf_logo_v2_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
+#endif
+    int n = loadInitScreen(INIT_MODE_BOOT);
+    if(n) {
+        set_screen_img(ui_init_screen.init_img, &espidf_logo_v2_48px, 0);
     }
     if (title){
-        if(lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
-            lv_obj_clear_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_y(img, lv_pct(-10));
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-10));
     } else {
-        if(!lv_obj_has_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN))
-            lv_obj_add_flag(ui_init_screen.init_lbl, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_y(img, lv_pct(-5));
+        lv_obj_set_y(ui_init_screen.init_img, lv_pct(-5));
     }
-    const char *lbl_txt = lv_label_get_text(ui_init_screen.init_lbl);
-    const char *new_txt = title;
-    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
-    {
-        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
-        lv_label_set_text(ui_init_screen.init_lbl, new_txt);
-    }
-}
-
-void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc) {
-    const char *lbl_txt = lv_label_get_text(scr->info_lbl);
-    const char *new_txt = title;
-    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
-    {
-        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
-        lv_label_set_text(scr->info_lbl, new_txt);
-    }
-    lbl_txt = lv_label_get_text(scr->info_secondary_lbl);
-    new_txt = info;
-    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
-    {
-        ILOG(TAG,"[%s] set info label text old:%s new:%s", __func__, lbl_txt, new_txt);
-        lv_label_set_text(scr->info_secondary_lbl, new_txt);   
-    }
-    lbl_txt = lv_label_get_text(scr->info_third_lbl);
-    new_txt = desc;
-    if(new_txt && (!lbl_txt || (lbl_txt && strcmp(lbl_txt, new_txt) != 0)))
-    {
-         ILOG(TAG,"[%s] set desc label text old:%s new:%s", __func__, lbl_txt, new_txt);
-        lv_label_set_text(scr->info_third_lbl, new_txt);
-    }
+    set_label_text_safe(ui_init_screen.init_lbl, title, 1);
 }
 
 void showSaveSessionScreen(const char * title, const char * info, const char * desc) {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s]", __func__);
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &save_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != 0)
-            lv_img_set_angle(img, 0);
+#endif
+    int n = loadInfoScreen(INFO_MODE_SAVE_SESSION);
+    if(n) {
+        set_screen_img(ui_info_screen.info_img, &save_bold_48px, 0);
     }
-    set_info_screen_fields(&ui_info_screen, title, info, desc);
+    set_label_text_safe(ui_info_screen.info_lbl, title, 0);
+    set_label_text_safe(ui_info_screen.info_secondary_lbl, info, 1);
+    set_label_text_safe(ui_info_screen.info_third_lbl, desc, 1);
 }
 
-void showWifiScreen(const char * title, const char * info, const char * desc) {
+int showWifiScreen() {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    const lv_img_dsc_t *img_src = &wifi_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != 0)
-            lv_img_set_angle(img, 0);
+#endif
+    int n = loadInfoScreen(INFO_MODE_WIFI);
+    if(n) {
+        set_screen_img(ui_info_screen.info_img, &wifi_bold_48px, 0);
+#if !defined(CONFIG_LCD_IS_EPD)
+        lv_obj_set_style_img_recolor(ui_info_screen.info_img, lv_color_hex(0x104951), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_img_recolor_opa(ui_info_screen.info_img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+#endif
+        lv_label_set_text(ui_info_screen.info_lbl, "WiFi");
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, "");
+        lv_label_set_text(ui_info_screen.info_third_lbl, "");
     }
-    set_info_screen_fields(&ui_info_screen, title, info, desc);
+    return n;
 }
 
-void showGpsScreen(const char* title, const char* info, const char * desc, const lv_img_dsc_t *img_src, int angle) {
+int showGpsScreen(uint16_t angle) {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
-    loadInfoScreen();
-    lv_obj_t* img = ui_info_screen.info_img;
-    if(!img_src)
-        img_src = &near_me_bold_48px;
-    if(lv_img_get_src(img) != img_src) {
-        lv_img_set_src(img, img_src);
-        if(lv_img_get_angle(img) != angle)
-            lv_img_set_angle(img, angle);
+#endif
+    int n = loadInfoScreen(INFO_MODE_GPS);
+    if(n || angle != lv_img_get_angle(ui_info_screen.info_img)) {
+        set_screen_img(ui_info_screen.info_img, &near_me_bold_48px, angle);
+        if(n) {
+            lv_label_set_text(ui_info_screen.info_lbl, "GPS");
+            lv_label_set_text(ui_info_screen.info_secondary_lbl, "");
+            lv_label_set_text(ui_info_screen.info_third_lbl, "");
+        }
     }
-    set_info_screen_fields(&ui_info_screen, title, info, desc);
+    return n;
 }
 
-void showSpeedScreen() {
+int showSpeedScreen() {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s]", __func__);
-    loadSpeedScreen();
+#endif
+    return loadSpeedScreen();
 }
 
 void showStatsScreen12() {
+#if (C_LOG_LEVEL < 2)
     ILOG(TAG, "[%s]", __func__);
+#endif
     loadStatsScreen(2,102);
 }
 

@@ -117,7 +117,8 @@ static void unload(void) {
     ui_info_screen.info_img = 0;
 }
 
-void ui_InfoScreen_screen_init(void) {
+int ui_InfoScreen_screen_init(void) {
+    int ret = 0;
     if(!ui_info_screen.screen.self){
         ui_info_screen.screen.has_status_cnt = 1;
         ui_info_screen.screen.status_viewmode = 0;
@@ -127,9 +128,12 @@ void ui_InfoScreen_screen_init(void) {
         ui_info_screen.screen.self = ui_common_screen_init(&ui_info_screen.screen);
     }
     ui_flush_screens(&ui_info_screen.screen);
-    if(ui_info_screen.screen.main_cnt == 0)
+    if(ui_info_screen.screen.main_cnt == 0){
         ui_info_screen.screen.main_cnt = load(ui_info_screen.screen.self);
+        ret = 1;
+    }
     lv_obj_set_x(ui_info_screen.screen.main_cnt, lv_pct(ui_info_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_info_screen.screen);
     update_dims();
+    return ret;
 }

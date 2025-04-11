@@ -435,17 +435,15 @@ static void unlock(void) {
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
-#define BIT_SET(a, b)       ((a) |= (1u << (b)))
-#define BIT_CLEAR(a, b)     ((a) &= ~(1u << (b)))
 static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y, lv_color_t color, lv_opa_t opa)
 {
     uint16_t byte_index = (x >> 3u) + (y * LCD_ROW_LEN);
     uint8_t bit_index = x & 0x07u;
 
     if (color.full) {
-        BIT_SET(buf[byte_index], 7 - bit_index);
+        SETBIT(buf[byte_index], 7 - bit_index);
     } else {
-        BIT_CLEAR(buf[byte_index], 7 - bit_index);
+        CLRBIT(buf[byte_index], 7 - bit_index);
     }
 }
 #endif

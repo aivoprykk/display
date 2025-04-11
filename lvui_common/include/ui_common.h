@@ -100,6 +100,7 @@ typedef struct ui_info_screen_s {
     lv_obj_t *info_secondary_lbl;
     lv_obj_t *info_third_lbl;
     lv_obj_t *info_img;
+    uint8_t info_screen_mode;
     struct {
         const lv_font_t *info;
         const lv_font_t *title;
@@ -110,6 +111,7 @@ typedef struct ui_init_screen_s {
     ui_screen_t screen;
     lv_obj_t *init_lbl;
     lv_obj_t *init_img;
+    uint8_t init_screen_mode;
     struct {
         const lv_font_t *title;
     } font;
@@ -298,13 +300,13 @@ void ui_status_panel_update();
 void ui_status_panel_update_dims(ui_screen_t *parent);
 
 // SCREEN: ui_SpeedScreen
-void ui_SpeedScreen_screen_init(void);
+int ui_SpeedScreen_screen_init(void);
 
 // SCREEN: ui_InfoScreen
-void ui_InfoScreen_screen_init(void);
+int ui_InfoScreen_screen_init(void);
 
 // SCREEN: ui_InitScreen
-void ui_InitScreen_screen_init(void);
+int ui_InitScreen_screen_init(void);
 
 // SCREEN: ui_RecordScreen
 void ui_RecordScreen_screen_init(void);
@@ -315,27 +317,50 @@ void ui_StatsScreen_screen_init(int rows, int cols);
 // SCREEN: ui_SleepScreen
 void ui_SleepScreen_screen_init(void);
 
-void ui_Blankeen_screen_init(void);
+void ui_BlankScreen_screen_init(void);
 
 void loadSleepScreen();
-void loadInfoScreen();
-void set_info_screen_fields(ui_info_screen_t * scr, const char * title, const char * info, const char * desc);
+
+typedef enum info_scr_mode_e {
+    INFO_MODE_NONE = 0,
+    INFO_MODE_GPS,
+    INFO_MODE_WIFI,
+    INFO_MODE_FW_UPDATE,
+    INFO_MODE_SETTINGS,
+    INFO_MODE_SAVE_SESSION,
+} info_scr_mode_t;
+
+int loadInfoScreen(info_scr_mode_t mode);
+int set_label_text_safe(lv_obj_t * lbl, const char * title, uint8_t enable_hide_lbl);
+int set_screen_img(lv_obj_t * scr, const lv_img_dsc_t *img_src, uint16_t angle);
+int invert_colors(lv_obj_t * panel, bool invert);
 void loadRecordScreen();
-void loadInitScreen();
-void loadSpeedScreen();
+
+typedef enum init_scr_mode_e {
+    INIT_MODE_NONE = 0,
+    INIT_MODE_BOOT,
+    INIT_MODE_SHUTDOWN,
+    INIT_MODE_PUSH_BUTTON,
+    INIT_MODE_LOW_BAT,
+    INIT_MODE_SD_TROUBLE,
+    INIT_MODE_GPS_TROUBLE,
+} init_scr_mode_t;
+
+int loadInitScreen(init_scr_mode_t mode);
+int loadSpeedScreen(void);
 void loadStatsScreen(int rows, int cols);
 void loadBlankScreen(uint8_t invert);
 
 void showFwUpdateScreen(const char * title, const char * info, const char * desc);
-void showSleepScreen();
-void showLowBatScreen();
-void showWifiScreen(const char * title, const char * info, const char * desc);
+void showSleepScreen(void);
+void showLowBatScreen(const char * title);
+int showWifiScreen(void);
 void showBootScreen(const char * title);
-void showGpsScreen(const char * title, const char * info, const char * desc, const lv_img_dsc_t *img_src, int angle);
+int showGpsScreen(uint16_t angle);
 void showGpsTroubleScreen();
 void showSdTroubleScreen();
 void showSaveSessionScreen(const char * title, const char * info, const char * desc);
-void showSpeedScreen();
+int showSpeedScreen();
 void showStatsScreen();
 void showStatsScreen12();
 void showStatsScreen22();

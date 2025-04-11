@@ -90,7 +90,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, int h, ui_cell_t *cell) {
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
     lv_obj_align(lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_label_set_text(lbl, "10S");
+    lv_label_set_text(lbl, "");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->info = lbl;
 
@@ -101,7 +101,7 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, int h, ui_cell_t *cell) {
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
     lv_obj_align(lbl, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(lbl, "--.--");
+    lv_label_set_text(lbl, "");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
     cell->title = lbl;
     return panel;
@@ -122,7 +122,7 @@ lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_set_width(main_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(main_lbl, LV_SIZE_CONTENT);  /// 1
     lv_obj_align(main_lbl, LV_ALIGN_CENTER, 0, lv_pct(15));
-    lv_label_set_text(main_lbl, "--.--");
+    lv_label_set_text(main_lbl, "_.__");
     lv_obj_set_style_text_font(main_lbl, ui_speed_screen.font.main, LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_speed_screen.speed = main_lbl;
 
@@ -177,7 +177,8 @@ void unload(void) {
     }
 }
 
-void ui_SpeedScreen_screen_init(void) {
+int ui_SpeedScreen_screen_init(void) {
+    int ret = 0;
     if(!ui_speed_screen.screen.self){
         ui_speed_screen.screen.has_status_cnt = 1;
         ui_speed_screen.screen.status_viewmode = 2;
@@ -187,9 +188,12 @@ void ui_SpeedScreen_screen_init(void) {
         ui_common_screen_init(&ui_speed_screen.screen);
     }
     ui_flush_screens(&ui_speed_screen.screen);
-    if(ui_speed_screen.screen.main_cnt == 0)
+    if(ui_speed_screen.screen.main_cnt == 0){
         ui_speed_screen.screen.main_cnt = load(ui_speed_screen.screen.self);
+        ret = 1;
+    }
     lv_obj_set_x(ui_speed_screen.screen.main_cnt, lv_pct(ui_speed_screen.screen.main_cnt_offset));
     ui_status_panel_load(&ui_speed_screen.screen);
     update_dims();
+    return ret;
 }

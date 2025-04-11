@@ -41,7 +41,8 @@ static void unload(void) {
     ui_init_screen.init_img = 0;
 }
 
-void ui_InitScreen_screen_init(void) {
+int ui_InitScreen_screen_init(void) {
+    int ret = 0;
     if(!ui_init_screen.screen.self){
         ui_init_screen.screen.load = load;
         ui_init_screen.screen.unload = unload;
@@ -49,7 +50,10 @@ void ui_InitScreen_screen_init(void) {
         ui_common_screen_init(&ui_init_screen.screen);
     }
     ui_flush_screens(&ui_init_screen.screen);
-    if(ui_init_screen.screen.main_cnt == 0)
+    if(ui_init_screen.screen.main_cnt == 0) {
         ui_init_screen.screen.main_cnt = load(ui_init_screen.screen.self);
+        ret = 1;
+    }
     lv_obj_set_x(ui_init_screen.screen.main_cnt, lv_pct(ui_init_screen.screen.main_cnt_offset));
+    return ret;
 }
