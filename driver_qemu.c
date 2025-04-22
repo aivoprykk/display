@@ -165,7 +165,7 @@ static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t 
 
 static void increase_lvgl_tick(void *arg) {
     /* Tell LVGL how many milliseconds has elapsed */
-    lv_tick_inc(L_LVGL_TICK_PERIOD_MS*1000);
+    lv_tick_inc(L_LVGL_TICK_PERIOD_MS);
 }
 
 bool lock_qemu(int timeout_ms) {
@@ -258,7 +258,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
         .name = "lvgl_tick"};
     esp_timer_handle_t lvgl_tick_timer = NULL;
     ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, L_LVGL_TICK_PERIOD_MS * 1000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, MS_TO_US(L_LVGL_TICK_PERIOD_MS)));
 }
 
 void display_lv_init() {

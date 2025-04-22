@@ -574,7 +574,7 @@ void showSaveSessionScreen(const char * title, const char * info, const char * d
 
 int showWifiScreen() {
 #if (C_LOG_LEVEL < 2)
-    ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
+    ILOG(TAG, "[%s]", __func__);
 #endif
     int n = loadInfoScreen(INFO_MODE_WIFI);
     if(n) {
@@ -584,7 +584,7 @@ int showWifiScreen() {
         lv_obj_set_style_img_recolor_opa(ui_info_screen.info_img, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 #endif
         lv_label_set_text(ui_info_screen.info_lbl, "WiFi");
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, "");
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, "init...");
         lv_label_set_text(ui_info_screen.info_third_lbl, "");
     }
     return n;
@@ -592,14 +592,14 @@ int showWifiScreen() {
 
 int showGpsScreen(uint16_t angle) {
 #if (C_LOG_LEVEL < 2)
-    ILOG(TAG, "[%s] title:%s info:%s", __func__, title, info);
+    ILOG(TAG, "[%s]", __func__);
 #endif
     int n = loadInfoScreen(INFO_MODE_GPS);
     if(n || angle != lv_img_get_angle(ui_info_screen.info_img)) {
         set_screen_img(ui_info_screen.info_img, &near_me_bold_48px, angle);
         if(n) {
             lv_label_set_text(ui_info_screen.info_lbl, "GPS");
-            lv_label_set_text(ui_info_screen.info_secondary_lbl, "");
+            lv_label_set_text(ui_info_screen.info_secondary_lbl, "init...");
             lv_label_set_text(ui_info_screen.info_third_lbl, "");
         }
     }

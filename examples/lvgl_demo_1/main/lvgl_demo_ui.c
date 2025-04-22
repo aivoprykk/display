@@ -5,6 +5,7 @@
 #include "esp_log.h"
 
 #include "logger_common.h"
+#include "display.h"
 #include "numstr.h"
 #include "adc.h"
 #include "button.h"
@@ -88,11 +89,12 @@ static void button_cb(int num, l_button_ev_t ev, uint64_t press_time) {
                 load_screen(2);
             }
             else if(count == MAX_SCREENS-1){
-                display_epd_request_fast_update();
+                display_set_rotation(rotation);
+                display_request_fast_refresh();
                 load_screen(0);
                 load_screen(1);
             }
-            else 
+        else 
                 load_screen(0);
             xSemaphoreGive(refreshing_sem);
         }
@@ -108,7 +110,7 @@ static void button_cb(int num, l_button_ev_t ev, uint64_t press_time) {
     case L_BUTTON_LONG_PRESS_START:
         if(num==0){
             if (xSemaphoreTake(refreshing_sem, portMAX_DELAY) == pdTRUE){
-                display_epd_ssd168x_set_rotation(rotation++%4);
+                display_set_rotation(rotation++%4);
                 // showPushScreen(1,"");
                 xSemaphoreGive(refreshing_sem);
             }
@@ -155,19 +157,6 @@ lv_obj_t * splashScreenLoad() {
         lv_img_set_src(img, img_full_l);
     lv_obj_align(img, LV_ALIGN_TOP_LEFT, 0, 0); 
     return splash;
-}
-
-lv_obj_t * blankScreenLoad(bool invert) {
-#if defined(DEBUG)
-    ESP_LOGI(TAG, "load blank screen with color %s", invert ? "black" : "white");
-#endif
-    // display_epd_request_full_update();
-    lv_obj_t * panel = lv_obj_create(0);
-    lv_scr_load(panel);
-    lv_obj_remove_style_all(panel);
-    lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
-    lv_obj_set_style_bg_color(panel, invert ? lv_color_black() : lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
-    return panel;
 }
 
 typedef struct sleep_scr_s {
@@ -226,8 +215,8 @@ static void load_screen(int noinc) {
     if (count == BLANK_SCREEN) {
         ESP_LOGI(TAG, "load blank screen");
         if(color > 1)
-            color = 1;
-        scr = blankScreenLoad(color++);
+            color = 0;
+        showBlankScreen(color);
     } else if(count == SLEEP_SCREEN) {
         ESP_LOGI(TAG, "load sleep screen");
         showSleepScreen();
@@ -254,7 +243,7 @@ static void load_screen(int noinc) {
 
     else if(count == LOW_BAT_SCREEN) {
         ESP_LOGI(TAG, "load low battery screen");
-         showLowBatScreen();
+         showLowBatScreen(0);
     }
 
     else if(count == GPS_FAIL_SCREEN) {
@@ -274,10 +263,10 @@ static void load_screen(int noinc) {
 
     else if(count == GPS_SCREEN) {
         ESP_LOGI(TAG, "load gps screen");
-        showGpsScreen("GPS", "gps test", "gps data", 0, angle);
-        // angle += 150;
-        // if(angle > 3500)
-        // angle = 0;
+        showGpsScreen(angle);
+        lv_label_set_text(ui_info_screen.info_lbl, "GPS");
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, "gps test");
+        lv_label_set_text(ui_info_screen.info_third_lbl, "GPS data");
     }
     else if(count == SPEED_SCREEN){
         ESP_LOGI(TAG, "load speed screen");
@@ -320,7 +309,10 @@ static void load_screen(int noinc) {
 
    else if(count == WIFI_SCREEN) {
         ESP_LOGI(TAG, "load wifi screen");
-        showWifiScreen("majasa","10.0.0.1", "password");
+        showWifiScreen();
+        lv_label_set_text(ui_info_screen.info_lbl, "majasa");
+        lv_label_set_text(ui_info_screen.info_secondary_lbl, "10.10.1.1");
+        lv_label_set_text(ui_info_screen.info_third_lbl, "password");
     }
     else if (count == SPLASH_SCREEN) {
         ESP_LOGI(TAG, "load splash screen");
@@ -352,7 +344,7 @@ static void timer_cb(lv_timer_t *timer) {
         //display_epd_request_full_update();
     }
     else if(count == 0) {
-        display_epd_request_fast_update();
+        display_request_fast_refresh();
         load_screen(1);
     }
     load_screen(1);
@@ -361,7 +353,7 @@ static void timer_cb(lv_timer_t *timer) {
 void ui_demo(void) {
     button_init();
     btns[0].cb = button_cb;
-    init_adc();
+    adc_init();
     ui_common_init();
     refreshing_sem = xSemaphoreCreateBinary();
     xSemaphoreGive(refreshing_sem);

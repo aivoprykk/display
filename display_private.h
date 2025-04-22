@@ -13,6 +13,8 @@ extern "C" {
 #endif
 #include "common_log.h"
 
+uint32_t display_drv_epd_get_flush_count();
+
 #ifdef __cplusplus
 }
 #endif

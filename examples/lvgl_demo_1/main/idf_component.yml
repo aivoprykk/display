@@ -12,4 +12,9 @@ dependencies:
     path: "../../../../logger_adc"
   logger_button:
     path: "../../../../logger_button"
-  lvgl/lvgl: "=9.*"
+  lvgl:
+    path: "../../../../lvgl"
+  ccan_json:
+    path: "../../../../ccan_json"
+  strutil:
+    path: "../../../../strutil"

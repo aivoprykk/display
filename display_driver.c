@@ -37,6 +37,20 @@ esp_err_t display_drv_epd_request_fast_update() {
     return display_drv_op->epd_request_fast_update();
 }
 
+esp_err_t display_drv_epd_request_partial_update() {
+    if(!display_drv_op->epd_request_partial_update) return ESP_ERR_NOT_SUPPORTED;
+    return display_drv_op->epd_request_partial_update();
+}
+
+uint32_t display_drv_epd_get_flush_count() {
+#if defined(CONFIG_LCD_IS_EPD)
+    if(!display_drv_op->epd_flush_count) return 0;
+    return display_drv_op->epd_flush_count();
+#else
+    return 0;
+#endif
+}
+
 void display_drv_bl_set(uint8_t brightness_percent) {
     if(display_drv_op->bl_set)
         display_drv_op->bl_set(brightness_percent);
@@ -72,6 +86,11 @@ esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle) {
     return display_drv_op->epd_turn_on(panel_handle);
 }
 
+esp_err_t display_drv_epd_turn_off(esp_lcd_panel_handle_t panel_handle) {
+    if(! display_drv_op->epd_turn_off) return ESP_ERR_NOT_SUPPORTED;
+    return display_drv_op->epd_turn_off(panel_handle);
+}
+
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
 lv_disp_drv_t * display_drv_get_driver() {
@@ -101,6 +120,7 @@ display_driver_op_t display_drv_ops = {
     .unlock = display_drv_unlock,
     .epd_refresh_and_turn_off = display_drv_epd_refresh_and_turn_off,
     .epd_turn_on = display_drv_epd_turn_on,
+    .epd_turn_off = display_drv_epd_turn_off,
     #ifdef CONFIG_DISPLAY_USE_LVGL
     #if (LVGL_VERSION_MAJOR < 9)
     .get_driver = display_drv_get_driver,

@@ -176,13 +176,13 @@ static esp_err_t _set_hw_rotation(int r) {
     if(!panel_handle)
         return ESP_ERR_INVALID_STATE;
     if(r == DISP_ROT_90 || r == DISP_ROT_270) {
-        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, false));
+        esp_lcd_panel_swap_xy(panel_handle, false);
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
         esp_lcd_panel_set_gap(panel_handle, LCD_V_GAP, LCD_H_GAP);
 #endif
     }
     else {
-        ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
+        esp_lcd_panel_swap_xy(panel_handle, true);
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
         esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif
@@ -254,7 +254,9 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
  */
 static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map) {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)drv->user_data;
-    ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map));
+    if(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map)){
+        ESP_LOGE(TAG, "[%s] draw bitmap failed", __func__);
+    }
 }
 
 static void increase_lvgl_tick(void *arg) {
@@ -329,8 +331,10 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
         .callback = &increase_lvgl_tick,
         .name = "lvgl_tick"};
     esp_timer_handle_t lvgl_tick_timer = NULL;
-    ESP_ERROR_CHECK(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, L_LVGL_TICK_PERIOD_MS * 1000));
+    if(!esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer))
+        esp_timer_start_periodic(lvgl_tick_timer, L_LVGL_TICK_PERIOD_MS * 1000);
+    else 
+        ESP_LOGE(TAG, "[%s] Failed to create timer", __func__);
 }
 
 static void _lv_init() {
@@ -346,8 +350,14 @@ static esp_lcd_panel_handle_t _new() {
     panel_refreshing_sem = xSemaphoreCreateRecursiveMutex();
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 
-    ESP_ERROR_CHECK(gpio_set_direction(CONFIG_DISPLAY_PWR, GPIO_MODE_OUTPUT));
-	ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_PWR, 1));
+    if(gpio_set_direction(CONFIG_DISPLAY_PWR, GPIO_MODE_OUTPUT)) {
+        ELOG(TAG, "Failed to set GPIO direction");
+        return NULL;
+    }
+	if(gpio_set_level(CONFIG_DISPLAY_PWR, 1)) {
+        ELOG(TAG, "Failed to set GPIO level");
+        return NULL;
+    }
     
     gpio_set_direction(CONFIG_DISPLAY_SPI_RD, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_DISPLAY_SPI_RD, 1);
@@ -373,7 +383,10 @@ static esp_lcd_panel_handle_t _new() {
         .psram_trans_align = PSRAM_DATA_ALIGNMENT, // PSRAM_DATA_ALIGNMENT,
         .sram_trans_align = 4,
     };
-    ESP_ERROR_CHECK(esp_lcd_new_i80_bus(&bus_config, &bus_handle));
+    if(esp_lcd_new_i80_bus(&bus_config, &bus_handle)) {
+        ELOG(TAG, "Failed to create I80 bus");
+        return NULL;
+    }
 
     esp_lcd_panel_io_i80_config_t io_config = {
         .cs_gpio_num = CONFIG_DISPLAY_SPI_CS,
@@ -391,7 +404,10 @@ static esp_lcd_panel_handle_t _new() {
             .dc_data_level = 1,
         },
     };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i80(bus_handle, &io_config, &io_handle));
+    if(esp_lcd_new_panel_io_i80(bus_handle, &io_config, &io_handle)) {
+        ELOG(TAG, "Failed to create panel io");
+        return NULL;
+    }
 
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = CONFIG_DISPLAY_SPI_RST,
@@ -399,10 +415,15 @@ static esp_lcd_panel_handle_t _new() {
         .bits_per_pixel = 16,
         .vendor_config = NULL
     };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
+    if(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle)) {
+        ELOG(TAG, "Failed to create panel");
+        return NULL;
+    }
     // --- Reset the display
     ESP_LOGI(TAG, "Resetting st7789 display...");
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
+    if(esp_lcd_panel_reset(panel_handle)) {
+        WLOG(TAG, "Failed to reset panel");
+    }
     // --- Initialize panel
     ESP_LOGI(TAG, "Initializing st7789 display...");
     //#define LCD_CMD_SLPOUT          0x11
@@ -418,7 +439,7 @@ static esp_lcd_panel_handle_t _new() {
         //#define LCD_CMD_RAMWRC          0x3c
         esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
     }
-    //ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
+    //esp_lcd_panel_init(panel_handle);
     //delay_ms(100);
     // --- Configurate the screen
     // NOTE: the configurations below are all FALSE by default
@@ -472,6 +493,7 @@ display_driver_op_t display_driver_st7789_op = {
     .epd_request_full_update = 0,
     .epd_refresh_and_turn_off = 0,
     .epd_turn_on = 0,
+    .epd_turn_off = 0,
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
     .get_driver = lv_get_driver,

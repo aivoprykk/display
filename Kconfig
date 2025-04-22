@@ -94,32 +94,6 @@ menu "Logger Display Module Options"
                 range -1 48
                 default 15
         endif
-        if DISPLAY_DRIVER_SSD168X
-            config DISPLAY_SPI_MOSI
-                int "GPIO for M0S1 (D1, DIN in epaper)"
-                range -1 48
-                default 23
-            config DISPLAY_SPI_DC
-                int "GPIO for DC (sometimes MISO in T5 epaper)"
-                range -1 48
-                default 17
-            config DISPLAY_SPI_CLK
-                int "GPIO for SPI Clock (D0, SCLK or SCK)"
-                range -1 48
-                default 18
-            config DISPLAY_SPI_CS
-                int "GPIO for Chip Select (CS)"
-                range -1 48
-                default 5
-            config DISPLAY_SPI_RST
-                int "GPIO for Reset (RST)"
-                range -1 48
-                default 16
-            config DISPLAY_SPI_BUSY
-                int "GPIO for Busy signal (BUSY)"
-                range -1 48
-                default 4
-        endif
         if DISPLAY_DRIVER_ST7789
             config DISPLAY_SPI_D0
                 int "GPIO for D0"
@@ -161,36 +135,12 @@ menu "Logger Display Module Options"
                 int "GPIO for Read"
                 range -1 48
                 default 9
-            config DISPLAY_SPI_DC
-                int "GPIO for Data Control (DC)"
-                range -1 48
-                default 7
-            config DISPLAY_SPI_CS
-                int "GPIO for Chip Select (CS)"
-                range -1 48
-                default 6
-            config DISPLAY_SPI_RST
-                int "GPIO for Reset (RST)"
-                range -1 48
-                default 5
         endif
         if DISPLAY_DRIVER_RM67162
             config DISPLAY_SPI_TE
                 int "GPIO for TE signal (TE)"
                 range -1 48
                 default 9
-            config DISPLAY_SPI_CS
-                int "GPIO for Chip Select (CS)"
-                range -1 48
-                default 6
-            config DISPLAY_SPI_A_RST
-                int "GPIO for Reset (RST)"
-                range -1 48
-                default 17
-            config DISPLAY_SPI_CLK
-                int "GPIO for SPI Clock (SCLK or SCK)"
-                range -1 48
-                default 47
             config DISPLAY_SPI_SD0
                 int "GPIO for SD0 signal (SD0)"
                 range -1 48
@@ -212,6 +162,40 @@ menu "Logger Display Module Options"
                 range -1 48
                 default 5
         endif
+        if DISPLAY_DRIVER_SSD168X
+            config DISPLAY_SPI_MOSI
+                int "GPIO for M0S1 (D1, DIN in epaper)"
+                range -1 48
+                default 23
+            config DISPLAY_SPI_BUSY
+                int "GPIO for Busy signal (BUSY)"
+                range -1 48
+                default 4
+        endif
+        if DISPLAY_DRIVER_ST7789 || DISPLAY_DRIVER_SSD168X
+            config DISPLAY_SPI_DC
+                int "GPIO for DC (sometimes MISO in T5 epaper)"
+                range -1 48
+                default 7 if DISPLAY_DRIVER_ST7789
+                default 17
+            config DISPLAY_SPI_CLK
+                int "GPIO for SPI Clock (D0, SCLK or SCK)"
+                range -1 48
+                default 47 if DISPLAY_DRIVER_ST7789
+                default 18
+        endif
+        config DISPLAY_SPI_CS
+            int "GPIO for Chip Select (CS)"
+            range -1 48
+            default 6 if DISPLAY_DRIVER_ST7789
+            default 6 if DISPLAY_DRIVER_RM67162
+            default 5
+        config DISPLAY_SPI_RST
+            int "GPIO for Reset (RST)"
+            range -1 48
+            default 5 if DISPLAY_DRIVER_ST7789
+            default 17 if DISPLAY_DRIVER_RM67162
+            default 16
     endmenu
     choice
         bool "Display Log verbosity"

@@ -6,13 +6,13 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 
-#include "esp_system.h"
+// #include "esp_system.h"
 #include "esp_timer.h"
 
 #include "display_private.h"
 
 #include "driver/gpio.h"
-#include "driver/spi_master.h"
+// #include "driver/spi_master.h"
 
 #include <esp_lcd_panel_ops.h>
 
@@ -51,7 +51,7 @@ static const char *TAG = "display_drv.ssd1680";
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-#define LVGL_TICK_PERIOD_MS    100
+#define LVGL_TICK_PERIOD_MS    10
 
 static SemaphoreHandle_t panel_refreshing_sem = NULL;
 
@@ -80,11 +80,13 @@ static esp_lcd_panel_io_handle_t io_handle = NULL;
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
 static uint8_t fast_refresh_lut[] = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;
 #else
-static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_KEEP;
+static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_O;
 #endif
 static bool init_requested = true;
 static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
 // const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
+uint32_t flush_count = 0;
+uint32_t last_flush_ms = 0;
 
 IRAM_ATTR bool _flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
 {
@@ -119,6 +121,13 @@ static esp_err_t _request_fast_update() {
     return ESP_OK;
 }
 
+static esp_err_t _request_partial_update() {
+    ILOG(TAG, "[%s]", __func__);
+    init_mode = INIT_MODE_PARTIAL;
+    init_requested = false;
+    return ESP_OK;
+}
+
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
 static lv_disp_drv_t * lv_get_driver() {
@@ -130,6 +139,16 @@ static lv_disp_t * lv_get() {
     return lv_disp;
 }
 #endif
+
+static uint32_t _flush_count() {
+    ILOG(TAG, "[%s]", __func__);
+    return flush_count;
+}
+
+static uint32_t _last_flush_ms() {
+    ILOG(TAG, "[%s]", __func__);
+    return last_flush_ms;
+}
 
 static esp_err_t _set_rotation(int r) {
     ILOG(TAG, "[%s] %d", __func__, r);
@@ -190,6 +209,13 @@ return lv_display_get_rotation(lv_disp);
 #endif
 }
 
+static esp_err_t _turn_off(esp_lcd_panel_handle_t panel_handle) {
+    ILOG(TAG, "[%s]", __func__);
+    if(epaper_panel_shut_down(panel_handle)) {
+        return ESP_FAIL;
+    }
+    return ESP_OK;
+}
 
 static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
     ILOG(TAG, "[%s]", __func__);
@@ -199,6 +225,11 @@ static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
 #if (C_LOG_LEVEL < 3)
         ILOG(TAG, "[%s] %s %s with init mode 0x%02x", "Reset/Init", __func__, x, init_mode);
 #endif
+        if(flush_count > 0) {
+            if(_turn_off(panel_handle)) {
+                return ESP_FAIL;
+            }
+        }
         if(esp_lcd_panel_reset(panel_handle)) {
             return ESP_FAIL;
         }
@@ -218,7 +249,9 @@ static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
             return ESP_FAIL;
         }
     }
-    if(init_requested) init_requested = false;
+    else {
+        init_requested = false;
+    }
     return ESP_OK;
 }
 
@@ -272,18 +305,21 @@ static esp_err_t _refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int 
     if(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map)) {
         return ESP_FAIL;
     }
+    if(epaper_panel_refresh_screen_ssd168x(panel_handle, 0xcf)) {
+        return ESP_FAIL;
+    }
     if(epaper_panel_set_bitmap_color_ssd168x(panel_handle, SSD168X_EPAPER_BITMAP_RED)) {
         return ESP_FAIL;
     }
     if(esp_lcd_panel_draw_bitmap(panel_handle,  area->x1,  area->y1, area->x2 + 1, area->y2 + 1, color_map)) {
         return ESP_FAIL;
     }
-    if(epaper_panel_refresh_screen_ssd168x(panel_handle, 0)) {
+    if(epaper_panel_update_full_screen_ssd168x(panel_handle)) {
         return ESP_FAIL;
     }
-    if(esp_lcd_panel_disp_on_off(panel_handle, false)) {
-        return ESP_FAIL;
-    }
+    // if(esp_lcd_panel_disp_on_off(panel_handle, false)) {
+    //         return ESP_FAIL;
+    // }
     return ESP_OK;
 }
 
@@ -380,13 +416,21 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 #if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] turn on, len x:%"MYINT_D", y:%"MYINT_D" bits: %"MYINT_D"", __func__, len_x, len_y, len_bits);
 #endif
+    bool ir = init_requested;
     _turn_on(panel_handle);
     // --- Draw bitmap
 #if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] refresh and turn off", __func__);
 #endif
     _refresh_and_turn_off(panel_handle, rotated, &((m_area_t) {offsetx1, offsety1, offsetx2, offsety2}), converted_buffer_black);
+    if(ir) {
+        _turn_on(panel_handle);
+        _refresh_and_turn_off(panel_handle, rotated, &((m_area_t) {offsetx1, offsety1, offsetx2, offsety2}), converted_buffer_black);
+    }
+
     // IMEAS_END(TAG, "[%s] area %d x %d flush took %llu us", __func__, len_x, len_y);
+    flush_count++;
+    last_flush_ms = get_millis();
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
 }
 
@@ -457,9 +501,9 @@ static void _init_cb(lv_disp_drv_t *disp_drv) {
     disp_drv->rotated = DISP_ROT_270;
     // NOTE: The ssd168x e-paper is monochrome and 1 byte represents 8 pixels
     // so full_refresh is MANDATORY because we cannot set position to bitmap at pixel level
-    disp_drv->full_refresh = true;
+    disp_drv->full_refresh = 1;
     disp_drv->direct_mode = 1;
-    disp_drv->sw_rotate = false;
+    disp_drv->sw_rotate = 0;
     disp_drv->user_data = panel_handle;
     // alloc bitmap buffer to draw
     //converted_buffer_black = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
@@ -537,7 +581,7 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     if(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer)) {
         return;
     }
-    if(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_PERIOD_MS * 1000)) {
+    if(esp_timer_start_periodic(lvgl_tick_timer, MS_TO_US(LVGL_TICK_PERIOD_MS))) {
         return;
     }
 }
@@ -695,8 +739,12 @@ display_driver_op_t display_driver_ssd168x_op = {
     .unlock = unlock,
     .epd_request_fast_update = _request_fast_update,
     .epd_request_full_update = _request_full_update,
+    .epd_request_partial_update = _request_partial_update,
     .epd_refresh_and_turn_off = _refresh_and_turn_off,
     .epd_turn_on = _turn_on,
+    .epd_turn_off = _turn_off,
+    .epd_flush_count = _flush_count,
+    .epd_last_flush_ms = _last_flush_ms,
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
     .get_driver = lv_get_driver,

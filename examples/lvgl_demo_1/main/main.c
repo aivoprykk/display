@@ -3,26 +3,15 @@
 
 #include <stdio.h>
 #include <esp_lcd_panel_ssd168x.h>
-#include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
-#include "esp_timer.h"
-#include "esp_lcd_panel_io.h"
-#include "esp_lcd_panel_vendor.h"
-#include "esp_lcd_panel_ops.h"
-#include "driver/gpio.h"
-#include "driver/spi_master.h"
-#include "esp_err.h"
 #include "esp_log.h"
-#include "lvgl.h"
 
-#include "logger_common.h"
 #include "driver_vendor.h"
 
-#include "img_bitmap.h"
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
 #include "../../../ssd1680_waveshare_2in13_lut.h"
-static const char *TAG = "display_drv.ssd1680";
+static const char *TAG = "example.ssd1680";
 #endif
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
 #include "../../../ssd1681_waveshare_1in54_lut.h"
@@ -38,7 +27,6 @@ static const char *TAG = "example.ssd1681";
 
 extern void example_lvgl_demo_ui(lv_disp_t *disp);
 extern void ui_demo(void);
-extern lv_obj_t *ui_InfoScreen;
 // static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 // static lv_disp_drv_t disp_drv;      // contains callback functions
 
@@ -80,7 +68,7 @@ extern lv_obj_t *ui_InfoScreen;
 void app_main(void)
 {
 
-    esp_lcd_panel_handle_t panel_handle = display_new();
+    esp_lcd_panel_handle_t panel_handle = display_drv_new();
     if (!panel_handle) {
         ESP_LOGE(TAG, "Failed to create LCD panel handle");
         return;

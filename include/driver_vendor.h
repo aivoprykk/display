@@ -46,8 +46,12 @@ typedef struct display_driver_op_s {
     void (*del)();
     esp_err_t (*epd_request_full_update)();
     esp_err_t (*epd_request_fast_update)();
+    esp_err_t (*epd_request_partial_update)();
     esp_err_t (*epd_refresh_and_turn_off)(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
     esp_err_t (*epd_turn_on)(esp_lcd_panel_handle_t panel_handle);
+    esp_err_t (*epd_turn_off)(esp_lcd_panel_handle_t panel_handle);
+    uint32_t (*epd_flush_count)(void);
+    uint32_t (*epd_last_flush_ms)(void);
     void (*bl_set)(uint8_t brightness_percent);
     esp_err_t (*set_rotation)(int r);
     int (*get_rotation)(void);
@@ -150,6 +154,10 @@ esp_lcd_panel_handle_t display_drv_new();
 void display_drv_del();
 esp_err_t display_drv_epd_request_full_update();
 esp_err_t display_drv_epd_request_fast_update();
+esp_err_t display_drv_epd_request_partial_update();
+esp_err_t display_drv_epd_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
+esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle);
+esp_err_t display_drv_epd_turn_off(esp_lcd_panel_handle_t panel_handle);
 void display_drv_bl_set(uint8_t brightness_percent);
 esp_err_t display_drv_set_rotation(int r);
 int display_drv_get_rotation(void);
@@ -157,8 +165,6 @@ bool display_drv_lock(int timeout_ms);
 void display_drv_unlock();
 #define _lvgl_lock(x) display_drv_lock(x)
 #define _lvgl_unlock() display_drv_unlock()
-esp_err_t display_drv_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
-esp_err_t display_drv_turn_on(esp_lcd_panel_handle_t panel_handle);
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
 lv_disp_drv_t * display_drv_get_driver();
