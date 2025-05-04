@@ -381,6 +381,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,display_get_rotation(dspl));
 #endif
     memset(converted_buffer_black, 0x00, (len_bits / 8));
+    // esp_event_post(UI_EVENT, UI_EVENT_FLUSH_START, 0, 0, portMAX_DELAY);
     for (MYINT i = len_bits-1, i8, j=0; i >=0; i--,j++) {
         i8 = i / 8;
         uint8_t bit_index = i % 8;

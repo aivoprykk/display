@@ -42,7 +42,7 @@ menu "Logger Display Module Options"
     config DISPLAY_TASK_STACK_SIZE
         int "Display Task Stack Size"
         default 5632 if !DISPLAY_DRIVER_SSD168X
-        default 5132
+        default 3840
     config DISPLAY_USE_LVGL
         bool
         default y

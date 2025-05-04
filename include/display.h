@@ -20,6 +20,8 @@ typedef struct display_s {
     uint32_t task_fast_refresh_on_time;
     uint32_t task_full_refresh_on_time;
     bool task_full_refresh_on_time_force;
+    uint8_t first_flush_done;
+    uint8_t last_flush_when_paused;
 } display_t;
 
 struct display_s *display_init(struct display_s *me, struct display_op_s *op);
@@ -44,6 +46,10 @@ uint32_t display_get_buf_update_count();
 uint16_t display_get_offscreen_counter();
 uint32_t display_get_flush_count();
 void display_shut_down();
+void display_start_task_pause_seq();
+void display_cancel_task_pause_seq();
+void display_timer_set_period(uint16_t period);
+uint16_t get_display_timer_period();
 
 #ifdef __cplusplus
 }

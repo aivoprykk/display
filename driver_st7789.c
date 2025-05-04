@@ -290,6 +290,10 @@ static void display_init_cb(lv_disp_drv_t *disp_drv) {
     disp_drv->rotated = DISP_ROT_NONE; // fake value to force initial rotation
 }
 
+const char * msg[] = {
+    "Failed to"
+};
+
 /**
  * @brief Initialize the screen
  * 
@@ -334,7 +338,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     if(!esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer))
         esp_timer_start_periodic(lvgl_tick_timer, L_LVGL_TICK_PERIOD_MS * 1000);
     else 
-        ESP_LOGE(TAG, "[%s] Failed to create timer", __func__);
+        ELOG(TAG, "[%s] %s create timer", __func__, msg[0]);
 }
 
 static void _lv_init() {
@@ -351,11 +355,11 @@ static esp_lcd_panel_handle_t _new() {
     xSemaphoreGiveRecursive(panel_refreshing_sem);
 
     if(gpio_set_direction(CONFIG_DISPLAY_PWR, GPIO_MODE_OUTPUT)) {
-        ELOG(TAG, "Failed to set GPIO direction");
+        ELOG(TAG, "%s set GPIO direction", msg[0]);
         return NULL;
     }
 	if(gpio_set_level(CONFIG_DISPLAY_PWR, 1)) {
-        ELOG(TAG, "Failed to set GPIO level");
+        ELOG(TAG, "%s set GPIO level", msg[0]);
         return NULL;
     }
     
@@ -384,7 +388,7 @@ static esp_lcd_panel_handle_t _new() {
         .sram_trans_align = 4,
     };
     if(esp_lcd_new_i80_bus(&bus_config, &bus_handle)) {
-        ELOG(TAG, "Failed to create I80 bus");
+        ELOG(TAG, "%s create I80 bus", msg[0]);
         return NULL;
     }
 
@@ -405,7 +409,7 @@ static esp_lcd_panel_handle_t _new() {
         },
     };
     if(esp_lcd_new_panel_io_i80(bus_handle, &io_config, &io_handle)) {
-        ELOG(TAG, "Failed to create panel io");
+        ELOG(TAG, "%s create panel io", msg[0]);
         return NULL;
     }
 
@@ -416,13 +420,13 @@ static esp_lcd_panel_handle_t _new() {
         .vendor_config = NULL
     };
     if(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle)) {
-        ELOG(TAG, "Failed to create panel");
+        ELOG(TAG, "%s create panel", msg[0]);
         return NULL;
     }
     // --- Reset the display
     ESP_LOGI(TAG, "Resetting st7789 display...");
     if(esp_lcd_panel_reset(panel_handle)) {
-        WLOG(TAG, "Failed to reset panel");
+        WLOG(TAG, "%s reset panel", msg[0]);
     }
     // --- Initialize panel
     ESP_LOGI(TAG, "Initializing st7789 display...");

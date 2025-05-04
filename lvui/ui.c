@@ -161,7 +161,7 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
     }
 }
 
-#if (C_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL < 3)
 static void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
