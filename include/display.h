@@ -40,7 +40,7 @@ void display_request_fast_refresh();
 void display_request_partial_refresh();
 void display_task_cancel_req_full_refresh();
 void display_task_cancel_req_fast_refresh();
-void display_set_rotation(uint8_t rotation);
+void display_set_rotation(int8_t rotation);
 void display_incr_buf_update_count();
 uint32_t display_get_buf_update_count();
 uint16_t display_get_offscreen_counter();

@@ -1,4 +1,6 @@
 #include "../display_private.h"
+#include "core/lv_obj_pos.h"
+#include "draw/lv_draw_rect.h"
 
 #if defined(CONFIG_DISPLAY_ENABLED)
 #include "ui_common.h"
@@ -191,6 +193,18 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         lv_label_set_text(l, ""); // temp
         ui_status_panel.temp_label = l;
     
+        l = lv_obj_create(panel);
+        lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+        static lv_style_t style;
+        lv_style_init(&style);
+        lv_style_set_radius(&style, LV_RADIUS_CIRCLE);
+        lv_style_set_bg_color(&style, lv_color_hex(0xE32424));
+        lv_obj_add_style(l, &style, 0);
+        lv_obj_set_size(l, 6, 6);
+        lv_obj_set_y(l, 0);
+        ui_status_panel.recoding_image = l;
+
         l = lv_label_create(panel);
         lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
@@ -313,9 +327,6 @@ lv_obj_t * ui_common_screen_init(ui_screen_t * screen) {
     if(screen->has_status_cnt) {
         if(!screen->status_cnt) {
             lv_obj_t *panel = ui_common_panel_init(scr, 100, 18);
-#ifdef CONFIG_SSD168X_PANEL_SSD1680
-            lv_obj_set_y(panel, -4); // for SSD1680, visible height is 128-6=122
-#endif
             lv_obj_set_align(panel, LV_ALIGN_BOTTOM_LEFT);
             screen->status_cnt = panel;
         }

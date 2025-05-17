@@ -33,7 +33,7 @@ typedef struct ui_status_panel_s {
     lv_obj_t *time_label;
     lv_obj_t *temp_label;
     lv_obj_t *gps_image;
-    // lv_obj_t *sdcard_image;
+    lv_obj_t *recoding_image;
     lv_obj_t *bat_image;
     lv_obj_t *bat_label;
     // lv_obj_t *left_panel;
@@ -94,13 +94,19 @@ typedef struct ui_speed_screen_s {
     } font;
 } ui_speed_screen_t;
 
+enum {
+  UI_INFO_SCREEN_TITLE_LBL = 0,
+  UI_INFO_SCREEN_ROW_2_LBL,
+  UI_INFO_SCREEN_ROW_3_LBL,
+  UI_INFO_SCREEN_ROW_4_LBL,
+  UI_INFO_SCREEN_ROWS,
+};
 typedef struct ui_info_screen_s {
     ui_screen_t screen;
-    lv_obj_t *info_lbl;
-    lv_obj_t *info_secondary_lbl;
-    lv_obj_t *info_third_lbl;
+    lv_obj_t *info_rows[UI_INFO_SCREEN_ROWS];
     lv_obj_t *info_img;
     uint8_t info_screen_mode;
+    uint8_t info_screen_label_count;
     struct {
         const lv_font_t *info;
         const lv_font_t *title;
@@ -208,11 +214,13 @@ LV_FONT_DECLARE(ui_font_OpenSansBold30p2);
 LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OswaldRegular100p2); // speed big
 #else
+LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OpenSansBold24p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold28p2);
 #endif
-#if !defined(CONFIG_SSD168X_PANEL_SSD1681)
+#if !defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OswaldRegular60p2); // speed big
+LV_FONT_DECLARE(ui_font_OswaldRegular84p2); // speed big
 #endif
 #if defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OpenSansBold36p2); // record screen
@@ -303,7 +311,7 @@ void ui_status_panel_update_dims(ui_screen_t *parent);
 int ui_SpeedScreen_screen_init(void);
 
 // SCREEN: ui_InfoScreen
-int ui_InfoScreen_screen_init(void);
+int ui_InfoScreen_screen_init(int rows);
 
 // SCREEN: ui_InitScreen
 int ui_InitScreen_screen_init(void);
@@ -345,6 +353,8 @@ typedef enum init_scr_mode_e {
     INIT_MODE_SD_TROUBLE,
     INIT_MODE_GPS_TROUBLE,
 } init_scr_mode_t;
+
+const lv_font_t * get_speed_title_font();
 
 int loadInitScreen(init_scr_mode_t mode);
 int loadSpeedScreen(void);

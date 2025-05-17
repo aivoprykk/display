@@ -59,10 +59,10 @@
 #if LV_MEM_CUSTOM == 0
     /*Size of the memory available for `lv_mem_alloc()` in bytes (>= 2kB)*/
 #if CONFIG_IDF_TARGET_ESP32S3
-    #define LV_MEM_SIZE (16U * 1024U)          /*[bytes]*/
+    #define LV_MEM_SIZE (33U * 512U)          /*[bytes]*/
 #else
 #if defined(CONFIG_DISPLAY_DRIVER_SSD168X)
-    #define LV_MEM_SIZE (25U * 512U)          /*[bytes]*/
+    #define LV_MEM_SIZE (26U * 512U)          /*[bytes]*/
 #else
     #define LV_MEM_SIZE (48U * 1024U)          /*[bytes]*/
 #endif

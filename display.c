@@ -208,11 +208,13 @@ static uint32_t _ui_screen_draw() {
     return task_delay_ms;
 };
 
-void display_set_rotation(uint8_t rotation) {
+void display_set_rotation(int8_t rotation) {
     WLOG(TAG, "[%s] %d", __func__, rotation);
     if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
-        if(display_drv_get_rotation() != rotation) {
+        if(rotation != display_priv.rotation) {
             display_priv.rotation = rotation;
+        }
+        if(display_drv_get_rotation() != rotation) {
             display_drv_set_rotation(rotation);
         }
         display_refresh_unlock();
@@ -240,7 +242,9 @@ static void _ui_start(int8_t rotation) {
 }
 
 static void _ui_task(void *args) {
-    ILOG(TAG, "[%s] starting", __FUNCTION__);
+#if (C_LOG_LEVEL < 3)
+    ILOG(TAG, "[%s] starting %hhd", __FUNCTION__, display_priv.rotation);
+#endif
     _ui_start(display_priv.rotation);
     uint32_t task_delay_ms = _lv_timer_handler();
     while (display_priv.task_is_running) {
@@ -475,10 +479,16 @@ void display_task_pause() {
 }
 
 void display_start_task_pause_seq() {
+#if (C_LOG_LEVEL < 3)
+    ILOG(TAG, "[%s] pause state: %hhu", __func__, display_priv.start_task_pause_seq);
+#endif
     ++display_priv.start_task_pause_seq;
 }
 
 void display_cancel_task_pause_seq() {
+#if (C_LOG_LEVEL < 3)
+    ILOG(TAG, "[%s] pause state: %hhu", __func__, display_priv.start_task_pause_seq);
+#endif
     display_priv.start_task_pause_seq = 0;
 }
 

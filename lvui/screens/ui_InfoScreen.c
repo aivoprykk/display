@@ -1,55 +1,64 @@
 
 #include "../ui.h"
 #include "driver_vendor.h"
+#include "logger_common.h"
+#include "ui_common.h"
 
 ui_info_screen_t ui_info_screen = {0};
 // static const char * TAG = "ui_info_screen";
 
-static void update_dims() {
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
-    lv_coord_t col_2_x = 33, col_1_x = 4;
+static lv_coord_t col_2_x = 33, col_1_x = 4;
 #elif defined(CONFIG_SSD168X_PANEL_SSD1680)
-    lv_coord_t col_2_x = 27, col_1_x = 6;
+static lv_coord_t col_2_x = 27, col_1_x = 6;
 #else
-    lv_coord_t col_2_x = 35, col_1_x = 12;
+static lv_coord_t col_2_x = 35, col_1_x = 12;
 #endif
-#if !defined(CONFIG_LCD_IS_EPD)
-    bool is_l = (display_drv_get_width(display_drv_get())>170);
+#if defined(CONFIG_SSD168X_PANEL_SSD1680)
+#define SCR_H 128
 #else
-    bool is_l = (display_drv_get_width(display_drv_get())>128);
+#define SCR_H 170
 #endif
-    lv_obj_t *obj = ui_info_screen.info_lbl;
-    if(obj) {
-        if(is_l) {
-            lv_obj_set_x(obj, lv_pct(col_2_x));
-            lv_obj_set_y(obj, lv_pct(-14));
-        } 
-        else {
-            lv_obj_set_x(obj, lv_pct(col_1_x));
-            lv_obj_set_y(obj, lv_pct(-10));
-        }
+static int get_pct(int i, int count_labels, bool is_not_l) {
+#ifndef CONFIG_SSD168X_PANEL_SSD1681
+    if(is_not_l) {
+        if(count_labels > 3)
+            return (i==UI_INFO_SCREEN_TITLE_LBL) ? -10 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 5 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 15 : 25;
+        else
+            return (i==UI_INFO_SCREEN_TITLE_LBL) ? -10 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 5 : 15;
     }
-    obj = ui_info_screen.info_secondary_lbl;
-    if(obj) {
-        if(is_l) {
-            lv_obj_set_x(obj, lv_pct(col_2_x));
-            lv_obj_set_y(obj, lv_pct(11));
-        } 
-        else {
-            lv_obj_set_x(obj, lv_pct(col_1_x));
-            lv_obj_set_y(obj, lv_pct(8));
-        }
+#else 
+    UNUSED_PARAMETER(is_not_l);
+#endif
+    if(count_labels > 3) {
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -19 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 0 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 15 : 30;
+#else
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -20 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 4 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 23 : 40;
+#endif
+    } else {
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -14 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 5 : 20;
+#else
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -14 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 9 : 30;
+#endif
     }
-    obj = ui_info_screen.info_third_lbl;
-    if(obj) {
+}
+
+static void update_dims() {
+    bool is_l = (display_drv_get_width(display_drv_get())>SCR_H);
+    lv_obj_t *obj;
+    int i=0, count_labels = ui_info_screen.info_screen_label_count + 1 > UI_INFO_SCREEN_ROWS ? UI_INFO_SCREEN_ROWS : ui_info_screen.info_screen_label_count + 1;
+    for (; i < count_labels; ++i) {
+        obj = ui_info_screen.info_rows[i];
+        // r1 - 25 - r2 -19 - r3 - 19 - r4
         if(is_l) {
             lv_obj_set_x(obj, lv_pct(col_2_x));
-            lv_obj_set_y(obj, lv_pct(30));
-        } 
+        }
         else {
             lv_obj_set_x(obj, lv_pct(col_1_x));
-            lv_obj_set_y(obj, lv_pct(22));
         }
+        lv_obj_set_y(obj, lv_pct(get_pct(i, count_labels, !is_l)));
     }
     obj = ui_info_screen.info_img;
     if(obj) {
@@ -62,13 +71,6 @@ static void update_dims() {
 }
 
 static lv_obj_t * load(lv_obj_t *parent) {
-#ifdef CONFIG_SSD168X_PANEL_SSD1681
-    lv_coord_t col_2_x = 33, col_1_x = 4;
-#elif defined(CONFIG_SSD168X_PANEL_SSD1680)
-    lv_coord_t col_2_x = 27, col_1_x = 6;
-#else
-    lv_coord_t col_2_x = 35, col_1_x = 12;
-#endif
     lv_obj_t *panel = ui_common_panel_init(parent, 100, 80);
 
     lv_obj_t *ui_MainImage = lv_img_create(panel);
@@ -81,28 +83,26 @@ static lv_obj_t * load(lv_obj_t *parent) {
     ui_info_screen.info_img = ui_MainImage;
 
     lv_obj_t *label;
-    label = lv_label_create(panel);
-    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_align(label, LV_ALIGN_LEFT_MID, lv_pct(col_2_x), lv_pct(-14));
-    lv_obj_set_style_text_font(label, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
-    ui_info_screen.info_lbl = label;
-
-    label = lv_label_create(panel);
-    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_align(label, LV_ALIGN_LEFT_MID, lv_pct(col_2_x), lv_pct(11));
-    lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text(label, "");
-    ui_info_screen.info_secondary_lbl = label;
-
-    label = lv_label_create(panel);
-    lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
-    lv_obj_align(label, LV_ALIGN_LEFT_MID, lv_pct(col_2_x), lv_pct(30));
-    lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text(label, "");
-    ui_info_screen.info_third_lbl = label;
+    
+    int i=0, count_labels = ui_info_screen.info_screen_label_count + 1 > UI_INFO_SCREEN_ROWS ? UI_INFO_SCREEN_ROWS : ui_info_screen.info_screen_label_count + 1;
+    for (; i < count_labels; ++i) {
+        // r1 - 25 - r2 -19 - r3 - 19 - r4
+        if(ui_info_screen.info_rows[i]) {
+            label = ui_info_screen.info_rows[i];
+        }
+        else {
+            label = lv_label_create(panel);
+            lv_obj_set_width(label, LV_SIZE_CONTENT);   /// 1
+            lv_obj_set_height(label, LV_SIZE_CONTENT);  /// 1
+        }
+        lv_obj_align(label, LV_ALIGN_LEFT_MID, lv_pct(col_2_x), lv_pct(get_pct(i, count_labels, 1)));
+        if(i == 0)
+            lv_obj_set_style_text_font(label, ui_info_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+        else
+            lv_obj_set_style_text_font(label, ui_info_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_label_set_text(label, "");
+        ui_info_screen.info_rows[i] = label;
+    }
     // update_dims();
     return panel;
 }
@@ -112,12 +112,13 @@ static void unload(void) {
     lv_obj_clean(ui_info_screen.screen.main_cnt);
     lv_obj_del(ui_info_screen.screen.main_cnt);
     ui_info_screen.screen.main_cnt = 0;
-    ui_info_screen.info_lbl = 0;
-    ui_info_screen.info_secondary_lbl = 0;
+    for (int i = 0; i < UI_INFO_SCREEN_ROWS; ++i) {
+        ui_info_screen.info_rows[i] = 0;
+    }
     ui_info_screen.info_img = 0;
 }
 
-int ui_InfoScreen_screen_init(void) {
+int ui_InfoScreen_screen_init(int rows) {
     int ret = 0;
     if(!ui_info_screen.screen.self){
         ui_info_screen.screen.has_status_cnt = 1;
@@ -128,7 +129,11 @@ int ui_InfoScreen_screen_init(void) {
         ui_info_screen.screen.self = ui_common_screen_init(&ui_info_screen.screen);
     }
     ui_flush_screens(&ui_info_screen.screen);
+    if(rows != ui_info_screen.info_screen_label_count) {
+        unload();
+    }
     if(ui_info_screen.screen.main_cnt == 0){
+        ui_info_screen.info_screen_label_count = rows;
         ui_info_screen.screen.main_cnt = load(ui_info_screen.screen.self);
         ret = 1;
     }

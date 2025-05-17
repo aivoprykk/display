@@ -5,6 +5,20 @@
 ui_speed_screen_t ui_speed_screen = {0};
 // static const char *TAG = "ui_speed_screen";
 
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+#define SCR_LABEL_Y_OFFSET -1
+#define SCR_TOP_HEIGHT 35
+#define SCR_BAR_Y_OFFSET SCR_TOP_HEIGHT
+#elif CONFIG_DISPLAY_DRIVER_ST7789
+#define SCR_LABEL_Y_OFFSET 10
+#define SCR_TOP_HEIGHT 35
+#define SCR_BAR_Y_OFFSET SCR_TOP_HEIGHT-1
+#else
+#define SCR_LABEL_Y_OFFSET 14
+#define SCR_TOP_HEIGHT 34
+#define SCR_BAR_Y_OFFSET SCR_TOP_HEIGHT-3
+#endif
+
 static void update_dims() {
 #if !defined(CONFIG_LCD_IS_EPD)
     bool is_l = (display_drv_get_width(display_drv_get())>170);
@@ -13,23 +27,28 @@ static void update_dims() {
 #endif
     lv_obj_t *obj = ui_speed_screen.speed;
     if(obj) {
-        lv_obj_align(obj, LV_ALIGN_CENTER, 0, lv_pct(15));
-        if(is_l)
+        if(is_l){
             lv_obj_set_style_text_font(obj, ui_speed_screen.font.main, LV_PART_MAIN | LV_STATE_DEFAULT);
-        else
+#ifndef CONFIG_SSD168X_PANEL_SSD1681
+            lv_obj_set_y(obj, lv_pct(SCR_LABEL_Y_OFFSET));
+#endif
+        }
+        else {
             lv_obj_set_style_text_font(obj, ui_speed_screen.font.main_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_y(obj, lv_pct(-12));
+        }
     }
     obj = ui_speed_screen.bar;
     if(obj) {
         if(is_l)
-            lv_obj_set_y(obj, lv_pct(30));
+            lv_obj_set_y(obj, lv_pct(SCR_BAR_Y_OFFSET));
         else
             lv_obj_set_y(obj, lv_pct(45));
     }
     obj = ui_speed_screen.top;
     if(obj) {
         if(is_l) {
-            lv_obj_set_height(obj, lv_pct(32));
+            lv_obj_set_height(obj, lv_pct(SCR_TOP_HEIGHT));
             lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
         } else {
             lv_obj_set_height(obj, lv_pct(40));
@@ -53,7 +72,7 @@ static void update_dims() {
                 if(is_l) {
                     obj = lv_obj_get_parent(obj);
                     lv_obj_align(obj, LV_ALIGN_LEFT_MID, 0, 0);
-                    lv_obj_set_width(obj, lv_pct(22));
+                    lv_obj_set_width(obj, lv_pct(24));
                     lv_obj_set_x(obj, 0);
                     lv_obj_set_style_pad_bottom(obj, 6, LV_PART_MAIN | LV_STATE_DEFAULT);
                 } else {
@@ -121,9 +140,11 @@ lv_obj_t * load(lv_obj_t *parent) {
     lv_obj_t *main_lbl = lv_label_create(panel);
     lv_obj_set_width(main_lbl, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(main_lbl, LV_SIZE_CONTENT);  /// 1
-    lv_obj_align(main_lbl, LV_ALIGN_CENTER, 0, lv_pct(15));
-    lv_label_set_text(main_lbl, "_.__");
+    lv_obj_align(main_lbl, LV_ALIGN_BOTTOM_MID, 0, lv_pct(SCR_LABEL_Y_OFFSET));
+    lv_label_set_text(main_lbl, "");
     lv_obj_set_style_text_font(main_lbl, ui_speed_screen.font.main, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // lv_obj_set_style_border_width(main_lbl, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // lv_obj_set_style_text_color(main_lbl, lv_color_hex(0x00000), LV_PART_MAIN | LV_STATE_DEFAULT);
     ui_speed_screen.speed = main_lbl;
 
     // top container
@@ -132,7 +153,7 @@ lv_obj_t * load(lv_obj_t *parent) {
     ui_speed_screen.top = top_cnt;
     lv_obj_align(top_cnt, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_width(top_cnt, lv_pct(100));
-    lv_obj_set_height(top_cnt, lv_pct(32));
+    lv_obj_set_height(top_cnt, lv_pct(SCR_TOP_HEIGHT));
     lv_obj_set_flex_flow(top_cnt, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(top_cnt, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
     lv_obj_clear_flag(top_cnt, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);  /// Flags
