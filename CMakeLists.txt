@@ -38,6 +38,8 @@ idf_component_register(SRCS ${LSRCS} ${SRCS} ${SOURCES} ${FONTS} ${IMAGES}
     PRIV_REQUIRES driver esp_timer logger_common
 )
 
+# set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_FLAGS "-save-temps=obj")
+
 idf_build_set_property(LV_CONF_PATH ${LV_CONF_PATH})
 
 if(CONFIG_DISPLAY_ENABLED)

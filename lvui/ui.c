@@ -69,40 +69,42 @@ const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p2;
 const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p2;
 #else
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
+const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p4;
 #endif
 
 void ui_status_panel_rearrange(ui_screen_t *parent) {
     assert(parent);
-    ILOG(TAG, "[%s] vm:%hhu", __func__, parent->status_viewmode);
+    ILOG(TAG, "[%s] vm:%hhu", __func__,ui_status_panel.viewmode);
     if (ui_status_panel.self == NULL) return;
     lv_obj_t *l;
-    if (parent->status_viewmode == 0)  {
-        l = ui_status_panel.temp_label;
-        if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)) {
-            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
-        }
+    if (ui_status_panel.viewmode == STATUS_VIEWMODE_DEFAULT)  {
         l = ui_status_panel.bat_image;
         if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)){
             lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
         }
     }
     else {
-        l = ui_status_panel.temp_label;
-        if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
-            lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         l = ui_status_panel.bat_image;
         if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
             lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
     }
     l = ui_status_panel.gps_image;
-    if (parent->status_viewmode == 0 || parent->status_viewmode == 2) {
+    if (ui_status_panel.viewmode == STATUS_VIEWMODE_DEFAULT || ui_status_panel.viewmode == STATUS_VIEWMODE_SPEED) {
         if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)){
+            lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
+        }
+        l = ui_status_panel.sat_info_label;
+        if(lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN)) {
             lv_obj_clear_flag(l, LV_OBJ_FLAG_HIDDEN);
         }
     }
     else {
         if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
             lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+        l = ui_status_panel.sat_info_label;
+        if(!lv_obj_has_flag(l, LV_OBJ_FLAG_HIDDEN))
+            lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
+
     }
     ui_status_panel_update_dims(parent);
 }
@@ -162,22 +164,34 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
         // lv_obj_set_style_text_color(parent->status_cnt, lv_color_hex(0x00000), LV_PART_MAIN | LV_STATE_DEFAULT);
 
         if(is_l) { /// landscape || ssd1681
-            lv_obj_set_height(parent->main_cnt, lv_pct((parent->status_viewmode == 0) ? MAIN_CNT_H : MAIN_CNT_H_SM));
-            lv_obj_set_height(parent->status_cnt, lv_pct((parent->status_viewmode == 0) ? STATUS_CNT_H : STATUS_CNT_H_SM));
+            lv_obj_set_height(parent->main_cnt, lv_pct((ui_status_panel.viewmode == STATUS_VIEWMODE_DEFAULT) ? MAIN_CNT_H : MAIN_CNT_H_SM));
+            lv_obj_set_height(parent->status_cnt, lv_pct((ui_status_panel.viewmode == STATUS_VIEWMODE_DEFAULT) ? STATUS_CNT_H : STATUS_CNT_H_SM));
             lv_obj_set_style_text_font(obj, parent->status_font ? parent->status_font : ui_status_font_default, LV_PART_MAIN | LV_STATE_DEFAULT);
 #ifdef CONFIG_SSD168X_PANEL_SSD1680
             lv_obj_set_y(parent->status_cnt, -5); // for SSD1680, visible height is 128-6=122
 #endif
             obj = ui_status_panel.recoding_image;
-            if(obj) {
+            if(obj && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)) {
 #ifndef CONFIG_SSD168X_PANEL_SSD1681
                 lv_obj_set_x(obj, lv_pct(-45));
 #else
                 lv_obj_set_x(obj, lv_pct(-49));
 #endif
             }
+            obj = ui_status_panel.sat_info_label;
+            if(obj && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)) {
+                lv_obj_set_style_text_font(obj, parent->status_font_portrait ? parent->status_font_portrait : ui_status_font_default_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+                if (parent && ui_status_panel.viewmode == STATUS_VIEWMODE_SPEED) {
+                    lv_obj_set_x(obj, lv_pct(22));
+                }
+                else {
+                    lv_obj_set_x(obj, lv_pct(25));
+                }
+#endif
+            }
             obj = ui_status_panel.gps_image;
-            if(obj) {
+            if(obj && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)) {
 #ifndef CONFIG_SSD168X_PANEL_SSD1681
                 lv_obj_set_x(obj, lv_pct(-35));
 #else
@@ -185,7 +199,7 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
 #endif
             }
             obj = ui_status_panel.bat_image;
-            if(obj){
+            if(obj && !lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN)){
 #ifndef CONFIG_SSD168X_PANEL_SSD1681
                 lv_obj_set_x(obj, lv_pct(-20));
 #else
@@ -210,7 +224,7 @@ void ui_status_panel_update_dims(ui_screen_t *parent) {
 }
 
 #if (C_LOG_LEVEL < 3)
-static void print_lv_mem_mon() {
+void print_lv_mem_mon() {
     lv_mem_monitor_t mon;
     lv_mem_monitor(&mon);
 #if LVGL_VERSION_MAJOR < 9
@@ -223,7 +237,7 @@ static void print_lv_mem_mon() {
             (int)mon.free_biggest_size);
 }
 #else
-#define print_lv_mem_mon() do{}while(0)
+inline void print_lv_mem_mon() {}
 #endif
 
 void loadSleepScreen() {
@@ -238,6 +252,7 @@ void loadSleepScreen() {
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p4;
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p4;
         ui_sleep_screen.screen.status_font = &ui_font_OswaldRegular14p4;
+        ui_sleep_screen.screen.status_font_portrait = &ui_font_OswaldRegular14p4;
 #endif
     }
     ui_SleepScreen_screen_init();
@@ -248,7 +263,9 @@ void loadSleepScreen() {
 #endif
             lv_scr_load(ui_sleep_screen.screen.self);
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
 }
 
 int loadInfoScreen(info_scr_mode_t mode) {
@@ -262,7 +279,11 @@ int loadInfoScreen(info_scr_mode_t mode) {
         ui_info_screen.font.info = &ui_font_OswaldRegular16p4;
 #endif
     }
-    int rows = mode == INFO_MODE_GPS ||  mode == INFO_MODE_WIFI ? 3 : 2;
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    int rows = mode == INFO_MODE_GPS || mode == INFO_MODE_WIFI ? 3 : 2;
+#else
+    int rows = mode == INFO_MODE_GPS ? 3 : 2;
+#endif
     int ret = ui_InfoScreen_screen_init(rows);
     // ui_info_screen.screen.update_dims();
     if(lv_disp_get_scr_act(lv_disp_get_default()) != ui_info_screen.screen.self){
@@ -276,7 +297,9 @@ int loadInfoScreen(info_scr_mode_t mode) {
         ui_info_screen.info_screen_mode = mode;
         ret = 1;
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
     return ret;
 }
 
@@ -301,7 +324,9 @@ int loadInitScreen(init_scr_mode_t mode) {
         ui_info_screen.info_screen_mode = mode;
         ret = 1;
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
     return ret;
 }
 
@@ -319,7 +344,7 @@ void loadRecordScreen() {
         ui_record_screen.font.info = &ui_font_OswaldRegular24p4;
 #if !defined(CONFIG_LCD_IS_EPD)
         ui_record_screen.font.title = &ui_font_OswaldRegular48p4;
-#lse
+#else
         ui_record_screen.font.title = &ui_font_OpenSansBold36p4;
 #endif
 #endif
@@ -331,7 +356,9 @@ void loadRecordScreen() {
 #endif
         lv_scr_load(ui_record_screen.screen.self);
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
 }
 
 const lv_font_t * get_speed_title_font() {
@@ -349,29 +376,41 @@ int loadSpeedScreen() {
         ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular96p2;
         ui_speed_screen.font.title = &ui_font_OswaldRegular36p2;
         ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p2;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular24p2;
 #elif !defined(CONFIG_LCD_IS_EPD)
         ui_speed_screen.font.main = &ui_font_OswaldRegular100p2;
         ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular84p2;
         ui_speed_screen.font.title = &ui_font_OswaldRegular48p2;
         ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular48p2;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular36p2;
 #else
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p2;
         ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular48p2;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p2;
         ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p2;
+        ui_speed_screen.font.title_tms = &ui_font_OpenSansBold24p2;
 #endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p2;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p2;
 #else
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
-        ui_speed_screen.font.main = &ui_font_OswaldRegular84p4;
+        ui_speed_screen.font.main = &ui_font_OswaldRegular96p4;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular96p4;
         ui_speed_screen.font.title = &ui_font_OswaldRegular36p4;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p4;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular24p4;
 #elif !defined(CONFIG_LCD_IS_EPD)
         ui_speed_screen.font.main = &ui_font_OswaldRegular100p4;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular84p4;
         ui_speed_screen.font.title = &ui_font_OswaldRegular48p4;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular48p4;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular36p4;
 #else
         ui_speed_screen.font.main = &ui_font_OpenSansBold84p4;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular48p4;
         ui_speed_screen.font.title = &ui_font_OpenSansBold36p4;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p4;
+        ui_speed_screen.font.title_tms = &ui_font_OpenSansBold24p4;
 #endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p4;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p4;
@@ -386,7 +425,9 @@ int loadSpeedScreen() {
         lv_scr_load(ui_speed_screen.screen.self);
         ret = 1;
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
     return ret;
 }
 
@@ -403,7 +444,7 @@ void loadStatsScreen(int rows, int cols) {
         ui_stats_screen.font.title = &ui_font_OswaldRegular48p2;
 #else
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p2;
-        ui_stats_screen.font.title = &ui_font_OpenSansBold28p2;
+        ui_stats_screen.font.title = &ui_font_OpenSansBold30p2;
 #endif
 
 #if !defined(CONFIG_LCD_IS_EPD)
@@ -411,9 +452,7 @@ void loadStatsScreen(int rows, int cols) {
 #else
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p2;
 #endif
-
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p2;
-
 #else
 
 #if defined(CONFIG_SSD168X_PANEL_SSD1681)
@@ -432,7 +471,6 @@ void loadStatsScreen(int rows, int cols) {
 #else
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p4;
 #endif
-
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p4;
 #endif
 
@@ -445,7 +483,9 @@ void loadStatsScreen(int rows, int cols) {
 #endif
         lv_scr_load(ui_stats_screen.screen.self);
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
 }
 
 void load_BlankScreen(uint8_t invert) {
@@ -458,7 +498,9 @@ void load_BlankScreen(uint8_t invert) {
 #endif
         lv_scr_load(ui_blank_screen.screen.self);
     }
+#if (C_LOG_LEVEL < 3)
     print_lv_mem_mon();
+#endif
 }
 
 int set_screen_img(lv_obj_t * img, const lv_img_dsc_t *img_src, uint16_t angle) {

@@ -144,14 +144,14 @@ void ui_create_styles(void) {
 
 #if defined(STATUS_PANEL_V1)
 ui_status_panel_t ui_status_panel = {0};
-void ui_status_panel_load(ui_screen_t* parent) {
+void ui_status_panel_load(ui_screen_t* parent, enum status_viewmode_e viewmode) {
     ILOG(TAG, "[%s]", __func__);
     if(!parent->has_status_cnt)
         return;
     // if(ui_status_panel.self != NULL && (parent->status_viewmode != ui_status_panel.viewmode)) {
     //     ui_status_panel_delete();
     // }
-    ui_status_panel.viewmode = parent->status_viewmode;
+    ui_status_panel.viewmode = viewmode;
     if (ui_status_panel.self == NULL)
         ui_status_panel_init(parent);
     else {
@@ -187,11 +187,11 @@ lv_obj_t* ui_status_panel_create(lv_obj_t* parent) {
         lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_width(l, LV_SIZE_CONTENT);   /// 1
         lv_obj_set_height(l, LV_SIZE_CONTENT);  /// 1
-        lv_obj_set_align(l, LV_ALIGN_RIGHT_MID);
+        lv_obj_set_align(l, LV_ALIGN_LEFT_MID);
         lv_obj_set_y(l, 0);
-        lv_obj_set_x(l, lv_pct(-48));
-        lv_label_set_text(l, ""); // temp
-        ui_status_panel.temp_label = l;
+        lv_obj_set_x(l, lv_pct(23));
+        lv_label_set_text(l, "");
+        ui_status_panel.sat_info_label = l;
     
         l = lv_obj_create(panel);
         lv_obj_add_flag(l, LV_OBJ_FLAG_HIDDEN);

@@ -60,10 +60,10 @@ static SemaphoreHandle_t panel_refreshing_sem = NULL;
 #if (LVGL_VERSION_MAJOR < 9)
 static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv;      // contains callback functions
-lv_color_t buf1[LBUFSZ] = {0};
+// lv_color_t buf1[LBUFSZ] = {0};
 #else
 #define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_I1)) /*will be 2 for RGB565 */
-uint8_t buf1[LBUFSZ] = {0};
+// uint8_t buf1[LBUFSZ] = {0};
 #endif
 static lv_disp_t *lv_disp = NULL;
 static bool is_initialized_lvgl = false;
@@ -549,11 +549,16 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     // alloc draw buffers used by LVGL
     // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
     size_t bufsz = LBUFSZ;
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Allocate %dkb memory for LVGL buffers" , (bufsz/1024));
+#if (C_LOG_LEVEL < 4)
+    WLOG(TAG, "Allocate %dKb memory for LVGL buffers" , (bufsz>>10)); // bufsz is in bytes, so we divide by 1024 to get Kb
 #endif
+    static lv_color_t *buf[2] = {NULL, NULL};
+	for (int i = 0; i < 1; i++) {
+		buf[i] = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
+		assert(buf[i] != NULL);
+	}
 #if (LVGL_VERSION_MAJOR < 9)
-    lv_disp_draw_buf_init(&disp_buf, buf1, 0, bufsz);
+    lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], bufsz);
     lv_disp_drv_init(&disp_drv);
     disp_drv.draw_buf = &disp_buf;
     cb(&disp_drv);
@@ -565,7 +570,7 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     ESP_LOGI(TAG, "Create display for LVGL");
     lv_disp = lv_display_create(LCD_H_RES, LCD_V_RES);
     cb(lv_disp);
-    lv_display_set_buffers(lv_disp, buf1, NULL, bufsz, LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_buffers(lv_disp, buf[0], buf[1], bufsz, LV_DISPLAY_RENDER_MODE_FULL);
     
 #endif
     is_initialized_lvgl = true;

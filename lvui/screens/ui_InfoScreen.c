@@ -34,13 +34,13 @@ static int get_pct(int i, int count_labels, bool is_not_l) {
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
         return (i==UI_INFO_SCREEN_TITLE_LBL) ? -19 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 0 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 15 : 30;
 #else
-        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -20 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 4 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 23 : 40;
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -20 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 4 : (i==UI_INFO_SCREEN_ROW_3_LBL) ? 22 : 40;
 #endif
     } else {
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
         return (i==UI_INFO_SCREEN_TITLE_LBL) ? -14 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 5 : 20;
 #else
-        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -14 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 9 : 30;
+        return (i==UI_INFO_SCREEN_TITLE_LBL) ? -14 : (i==UI_INFO_SCREEN_ROW_2_LBL) ? 11 : 30;
 #endif
     }
 }
@@ -122,7 +122,7 @@ int ui_InfoScreen_screen_init(int rows) {
     int ret = 0;
     if(!ui_info_screen.screen.self){
         ui_info_screen.screen.has_status_cnt = 1;
-        ui_info_screen.screen.status_viewmode = 0;
+        // ui_info_screen.screen.status_viewmode = STATUS_VIEWMODE_DEFAULT;
         ui_info_screen.screen.load = load;
         ui_info_screen.screen.unload = unload;
         ui_info_screen.screen.update_dims = update_dims;
@@ -138,7 +138,7 @@ int ui_InfoScreen_screen_init(int rows) {
         ret = 1;
     }
     lv_obj_set_x(ui_info_screen.screen.main_cnt, lv_pct(ui_info_screen.screen.main_cnt_offset));
-    ui_status_panel_load(&ui_info_screen.screen);
+    ui_status_panel_load(&ui_info_screen.screen, STATUS_VIEWMODE_DEFAULT);
     update_dims();
     return ret;
 }

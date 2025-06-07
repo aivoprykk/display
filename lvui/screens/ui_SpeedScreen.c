@@ -51,7 +51,7 @@ static void update_dims() {
             lv_obj_set_height(obj, lv_pct(SCR_TOP_HEIGHT));
             lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
         } else {
-            lv_obj_set_height(obj, lv_pct(40));
+            lv_obj_set_height(obj, lv_pct(42));
             lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_COLUMN);
         }
     }
@@ -69,14 +69,21 @@ static void update_dims() {
             }
             obj = ui_speed_screen.cells[i][j].info;
             if(obj) {
+                obj = lv_obj_get_parent(obj);
+                if(j == 0 || !is_l) {
+#if !defined(CONFIG_LCD_IS_EPD)
+                    lv_obj_set_style_pad_left(obj, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+#else
+                    lv_obj_set_style_pad_left(obj, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+#endif
+                }
                 if(is_l) {
-                    obj = lv_obj_get_parent(obj);
                     lv_obj_align(obj, LV_ALIGN_LEFT_MID, 0, 0);
-                    lv_obj_set_width(obj, lv_pct(24));
+                    lv_obj_set_width(obj, lv_pct(23));
+
                     lv_obj_set_x(obj, 0);
                     lv_obj_set_style_pad_bottom(obj, 6, LV_PART_MAIN | LV_STATE_DEFAULT);
                 } else {
-                    obj = lv_obj_get_parent(obj);
                     lv_obj_align(obj, LV_ALIGN_TOP_LEFT, 10, 0);
                     lv_obj_set_width(obj, lv_pct(40));
                     lv_obj_set_x(obj, 4);
@@ -85,11 +92,19 @@ static void update_dims() {
             }
             obj = ui_speed_screen.cells[i][j].title;
             if(obj) {
-                if(is_l)
+                if(is_l) {
                     lv_obj_set_style_text_font(obj, ui_speed_screen.font.title, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    obj = lv_obj_get_parent(obj);
+// #if defined(CONFIG_LCD_IS_EPD)
+//                     if(j == 1) {
+//                         lv_obj_set_x(obj, lv_pct(4));
+//                     }
+// #endif
+                    lv_obj_set_width(obj, lv_pct(80));
+                }
                 else
                     lv_obj_set_style_text_font(obj, ui_speed_screen.font.title_portrait, LV_PART_MAIN | LV_STATE_DEFAULT);
-                }
+            }
         }
     }
     // ui_status_panel_update_dims(&ui_speed_screen.screen);
@@ -102,19 +117,23 @@ static lv_obj_t *ui_Cell(lv_obj_t *parent, int w, int h, ui_cell_t *cell) {
 
     cnt =  ui_common_panel_init(panel, 22, 100);
     lv_obj_align(cnt, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_obj_set_style_pad_left(cnt, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_pad_bottom(cnt, 6, LV_PART_MAIN | LV_STATE_DEFAULT);
-    
+    // lv_obj_set_style_border_width(cnt, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // lv_obj_set_style_border_side(cnt, LV_BORDER_SIDE_FULL, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lbl = lv_label_create(cnt);
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
     lv_obj_set_height(lbl, LV_SIZE_CONTENT);
     lv_obj_align(lbl, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     lv_label_set_text(lbl, "");
     lv_obj_set_style_text_font(lbl, ui_speed_screen.font.info, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     cell->info = lbl;
 
     cnt =  ui_common_panel_init(panel, 80, 100);
     lv_obj_set_align(cnt, LV_ALIGN_RIGHT_MID);
+    // lv_obj_set_style_border_width(cnt, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+    // lv_obj_set_style_border_side(cnt, LV_BORDER_SIDE_FULL, LV_PART_MAIN | LV_STATE_DEFAULT);
     
     lbl = lv_label_create(cnt);
     lv_obj_set_width(lbl, LV_SIZE_CONTENT);
@@ -202,7 +221,7 @@ int ui_SpeedScreen_screen_init(void) {
     int ret = 0;
     if(!ui_speed_screen.screen.self){
         ui_speed_screen.screen.has_status_cnt = 1;
-        ui_speed_screen.screen.status_viewmode = 2;
+        // ui_speed_screen.screen.status_viewmode = STATUS_VIEWMODE_SPEED;
         ui_speed_screen.screen.load = load;
         ui_speed_screen.screen.unload = unload;
         ui_speed_screen.screen.update_dims = update_dims;
@@ -214,7 +233,7 @@ int ui_SpeedScreen_screen_init(void) {
         ret = 1;
     }
     lv_obj_set_x(ui_speed_screen.screen.main_cnt, lv_pct(ui_speed_screen.screen.main_cnt_offset));
-    ui_status_panel_load(&ui_speed_screen.screen);
+    ui_status_panel_load(&ui_speed_screen.screen, STATUS_VIEWMODE_SPEED);
     update_dims();
     return ret;
 }

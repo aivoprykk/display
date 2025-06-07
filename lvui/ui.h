@@ -12,6 +12,8 @@ extern lv_obj_t *ui____initial_actions0;
 void ui_init(void);
 void ui_deinit();
 
+void print_lv_mem_mon();
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

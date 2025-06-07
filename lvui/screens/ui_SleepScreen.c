@@ -180,7 +180,7 @@ static void unload() {
 void ui_SleepScreen_screen_init(void) {
     if(!ui_sleep_screen.screen.self) {
         ui_sleep_screen.screen.has_status_cnt = 1;
-        ui_sleep_screen.screen.status_viewmode = 1;
+        // ui_sleep_screen.screen.status_viewmode = STATUS_VIEWMODE_SLEEP;
         ui_sleep_screen.screen.load = load;
         ui_sleep_screen.screen.unload = unload;
         ui_sleep_screen.screen.update_dims = update_dims;
@@ -189,6 +189,6 @@ void ui_SleepScreen_screen_init(void) {
     ui_flush_screens(&ui_sleep_screen.screen);
     if(ui_sleep_screen.screen.main_cnt == NULL)
         ui_sleep_screen.screen.main_cnt = load(ui_sleep_screen.screen.self);
-    ui_status_panel_load(&ui_sleep_screen.screen);
+    ui_status_panel_load(&ui_sleep_screen.screen, STATUS_VIEWMODE_SLEEP);
     update_dims();
 }

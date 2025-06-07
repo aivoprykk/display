@@ -25,20 +25,26 @@ extern "C" {
 
 #include "ui_events.h"
 
+enum status_viewmode_e {
+    STATUS_VIEWMODE_DEFAULT = 0, // default view mode
+    STATUS_VIEWMODE_SLEEP,
+    STATUS_VIEWMODE_SPEED,
+};
+
 #define STATUS_PANEL_V1 1
 #if defined(STATUS_PANEL_V1)
 typedef struct ui_status_panel_s {
     struct ui_screen_s *parent;
     lv_obj_t *self;
     lv_obj_t *time_label;
-    lv_obj_t *temp_label;
+    lv_obj_t *sat_info_label;
     lv_obj_t *gps_image;
     lv_obj_t *recoding_image;
     lv_obj_t *bat_image;
     lv_obj_t *bat_label;
     // lv_obj_t *left_panel;
     // lv_obj_t *right_panel;
-    uint8_t viewmode;
+    enum status_viewmode_e viewmode;
 } ui_status_panel_t;
 #else
 #include "lv_comp_statusbar.h"
@@ -58,7 +64,7 @@ typedef struct ui_screen_s {
     bool has_status_cnt;
     const lv_font_t *status_font;
     const lv_font_t *status_font_portrait;
-    uint8_t status_viewmode;
+    // enum status_viewmode_e status_viewmode;
     void (*init)(struct ui_screen_s*);
     void (*show)(struct ui_screen_s*);
     void (*unload)(void);
@@ -91,6 +97,8 @@ typedef struct ui_speed_screen_s {
         const lv_font_t *info;
         const lv_font_t *title;
         const lv_font_t *title_portrait;
+        const lv_font_t *title_tms;
+        const lv_font_t *title_tms_portrait;
     } font;
 } ui_speed_screen_t;
 
@@ -216,7 +224,7 @@ LV_FONT_DECLARE(ui_font_OswaldRegular100p2); // speed big
 #else
 LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OpenSansBold24p2);
-LV_FONT_DECLARE(ui_font_OpenSansBold28p2);
+LV_FONT_DECLARE(ui_font_OpenSansBold30p2);
 #endif
 #if !defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OswaldRegular60p2); // speed big
@@ -302,7 +310,7 @@ lv_obj_t * ui_common_panel_init(lv_obj_t * parent, uint8_t w, uint8_t h);
 lv_obj_t * ui_status_panel_create(lv_obj_t *parent);
 void ui_status_panel_rearrange(ui_screen_t *parent);
 void ui_status_panel_init(ui_screen_t * parent);
-void ui_status_panel_load(ui_screen_t *parent);
+void ui_status_panel_load(ui_screen_t *parent, enum status_viewmode_e viewmode);
 void ui_status_panel_delete(void);
 void ui_status_panel_update();
 void ui_status_panel_update_dims(ui_screen_t *parent);
