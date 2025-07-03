@@ -124,8 +124,7 @@ extern display_driver_op_t display_driver_ssd168x_op;
 #define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
 #define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
 
-#define BYTE_PADDING(w) (((w + 7u) / 8 ) * 8) // Align to nearest 8 bits
-#define LCD_PIXELS_MEM_ALIGNED (BYTE_PADDING(LCD_H_RES) * BYTE_PADDING(LCD_V_RES) / 8)
+#define LCD_PIXELS_MEM_ALIGNED (ROUND_UP_TO_8(LCD_H_RES) * ROUND_UP_TO_8(LCD_V_RES) / 8)
 
 #define H_NORM_PX_VISIBLE(h_scr_percent) ((int16_t)((LCD_H_VISIBLE / 100.0) * (h_scr_percent)))
 #define V_NORM_PX(v_scr_percent) ((int16_t)((LCD_V_RES / 100.0) * (v_scr_percent)))

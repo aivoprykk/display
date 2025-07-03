@@ -382,8 +382,9 @@ void ui_flush_screens(ui_screen_t * screen) {
 }
 
 void ui_set_main_cnt_offset(ui_screen_t * screen, int8_t off) {
-    assert(screen);
-    screen->main_cnt_offset = off;
+    if(screen){
+        screen->main_cnt_offset = off;
+    }
 }
 
 static void ui_invalidate_screen(ui_screen_t * screen) {

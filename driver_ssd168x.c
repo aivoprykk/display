@@ -367,10 +367,10 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 #endif
 #endif
 #if defined(CONFIG_SSD168X_PANEL_SSD1680)
-    if(rotated==DISP_ROT_270 || rotated==DISP_ROT_90) len_y = BYTE_PADDING(len_y);
-    else len_x = BYTE_PADDING(len_x);
+    if(rotated==DISP_ROT_270 || rotated==DISP_ROT_90) len_y = ROUND_UP_TO_8(len_y);
+    else len_x = ROUND_UP_TO_8(len_x);
 #endif
-    // else len_x = BYTE_PADDING(len_x);
+    // else len_x = ROUND_UP_TO_8(len_x);
     // --- Convert buffer from color to monochrome bitmap
     MYINT len_bits = (len_x * len_y);
 #if (LVGL_VERSION_MAJOR < 9)
@@ -555,7 +555,9 @@ static void init_screen(void (*cb)(lv_display_t*)) {
     static lv_color_t *buf[2] = {NULL, NULL};
 	for (int i = 0; i < 1; i++) {
 		buf[i] = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-		assert(buf[i] != NULL);
+		if(buf[i] == NULL) {
+            ESP_LOGE(TAG, "[%s] Failed to allocate memory for LVGL buffer %d", __func__, i);
+        }
 	}
 #if (LVGL_VERSION_MAJOR < 9)
     lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], bufsz);

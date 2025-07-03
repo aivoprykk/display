@@ -130,7 +130,7 @@ static const uint8_t bl_steps = 16;
 
 static void _bl_set(uint8_t brightness_percent) {
 #if defined(BL_IS_PWM)
-    uint32_t duty_cycle = (1 << 8U) / (100 / brightness_percent); // 8-bit resolution
+    uint32_t duty_cycle = BIT(8) / (100 / brightness_percent); // 8-bit resolution
     ILOG(TAG, "[%s] backlight brightness to %hhu eq duty %lu", __func__, brightness_percent, duty_cycle);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_cycle);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);

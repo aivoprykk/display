@@ -67,13 +67,16 @@ void ui_deinit() {
 #if defined(USE_2BPP_FONT)
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p2;
 const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p2;
+#elif defined(USE_1BPP_FONT)
+const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p1;
+const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p1;
 #else
 const lv_font_t * ui_status_font_default = &ui_font_OswaldRegular20p4;
 const lv_font_t * ui_status_font_default_portrait = &ui_font_OswaldRegular14p4;
 #endif
 
 void ui_status_panel_rearrange(ui_screen_t *parent) {
-    assert(parent);
+    if(!parent) return;
     ILOG(TAG, "[%s] vm:%hhu", __func__,ui_status_panel.viewmode);
     if (ui_status_panel.self == NULL) return;
     lv_obj_t *l;
@@ -248,6 +251,11 @@ void loadSleepScreen() {
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p2;
         ui_sleep_screen.screen.status_font = &ui_font_OswaldRegular14p2;
         ui_sleep_screen.screen.status_font_portrait = &ui_font_OswaldRegular14p2;
+#elif defined(USE_1BPP_FONT)
+        ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p1;
+        ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p1;
+        ui_sleep_screen.screen.status_font = &ui_font_OswaldRegular14p1;
+        ui_sleep_screen.screen.status_font_portrait = &ui_font_OswaldRegular14p1;
 #else
         ui_sleep_screen.font.normal = &ui_font_OpenSansSemiBold16p4;
         ui_sleep_screen.font.title = &ui_font_SFDistantGalaxyRegular16p4;
@@ -274,6 +282,9 @@ int loadInfoScreen(info_scr_mode_t mode) {
 #if defined(USE_2BPP_FONT)
         ui_info_screen.font.title = &ui_font_OswaldRegular24p2;
         ui_info_screen.font.info = &ui_font_OswaldRegular16p2;
+#elif defined(USE_1BPP_FONT)
+        ui_info_screen.font.title = &ui_font_OswaldRegular24p1;
+        ui_info_screen.font.info = &ui_font_OswaldRegular16p1;
 #else
         ui_info_screen.font.title = &ui_font_OswaldRegular24p4;
         ui_info_screen.font.info = &ui_font_OswaldRegular16p4;
@@ -308,6 +319,8 @@ int loadInitScreen(init_scr_mode_t mode) {
     if (ui_init_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
         ui_init_screen.font.title = &ui_font_OswaldRegular24p2;
+#elif defined(USE_1BPP_FONT)
+        ui_init_screen.font.title = &ui_font_OswaldRegular24p1;
 #else
         ui_init_screen.font.title = &ui_font_OswaldRegular24p4;
 #endif
@@ -339,6 +352,13 @@ void loadRecordScreen() {
         ui_record_screen.font.title = &ui_font_OswaldRegular48p2;
 #else
         ui_record_screen.font.title = &ui_font_OpenSansBold36p2;
+#endif
+#elif defined(USE_1BPP_FONT)
+        ui_record_screen.font.info = &ui_font_OswaldRegular24p1;
+#if !defined(CONFIG_LCD_IS_EPD)
+        ui_record_screen.font.title = &ui_font_OswaldRegular48p1;
+#else
+        ui_record_screen.font.title = &ui_font_OpenSansBold36p1;
 #endif
 #else
         ui_record_screen.font.info = &ui_font_OswaldRegular24p4;
@@ -392,6 +412,28 @@ int loadSpeedScreen() {
 #endif
         ui_speed_screen.font.info = &ui_font_OswaldRegular16p2;
         ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p2;
+#elif defined(USE_1BPP_FONT)
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+        ui_speed_screen.font.main = &ui_font_OswaldRegular96p1;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular96p1;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular36p1;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p1;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular24p1;
+#elif !defined(CONFIG_LCD_IS_EPD)
+        ui_speed_screen.font.main = &ui_font_OswaldRegular100p1;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular84p1;
+        ui_speed_screen.font.title = &ui_font_OswaldRegular48p1;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular48p1;
+        ui_speed_screen.font.title_tms = &ui_font_OswaldRegular36p1;
+#else
+        ui_speed_screen.font.main = &ui_font_OpenSansBold84p1;
+        ui_speed_screen.font.main_portrait = &ui_font_OswaldRegular48p1;
+        ui_speed_screen.font.title = &ui_font_OpenSansBold36p1;
+        ui_speed_screen.font.title_portrait = &ui_font_OswaldRegular36p1;
+        ui_speed_screen.font.title_tms = &ui_font_OpenSansBold24p1;
+#endif
+        ui_speed_screen.font.info = &ui_font_OswaldRegular16p1;
+        ui_speed_screen.screen.status_font = &ui_font_OswaldRegular14p1;
 #else
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
         ui_speed_screen.font.main = &ui_font_OswaldRegular96p4;
@@ -435,7 +477,6 @@ void loadStatsScreen(int rows, int cols) {
     ILOG(TAG, "[%s]", __func__);
     if (ui_stats_screen.screen.self == 0) {
 #if defined(USE_2BPP_FONT)
-
 #if defined(CONFIG_SSD168X_PANEL_SSD1681)
         ui_stats_screen.font.title_small = &ui_font_OpenSansBold30p2;
         ui_stats_screen.font.title = &ui_font_OswaldRegular36p2;
@@ -453,6 +494,24 @@ void loadStatsScreen(int rows, int cols) {
         ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p2;
 #endif
         ui_stats_screen.font.info = &ui_font_OswaldRegular16p2;
+#elif defined(USE_1BPP_FONT)
+#if defined(CONFIG_SSD168X_PANEL_SSD1681)
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold30p1;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular36p1;
+#elif !defined(CONFIG_LCD_IS_EPD)
+        ui_stats_screen.font.title_small = &ui_font_OswaldRegular36p1;
+        ui_stats_screen.font.title = &ui_font_OswaldRegular48p1;
+#else
+        ui_stats_screen.font.title_small = &ui_font_OpenSansBold24p1;
+        ui_stats_screen.font.title = &ui_font_OpenSansBold30p1;
+#endif
+
+#if !defined(CONFIG_LCD_IS_EPD)
+        ui_stats_screen.font.title_big = &ui_font_OswaldRegular60p1;
+#else
+        ui_stats_screen.font.title_big = &ui_font_OpenSansBold60p1;
+#endif
+        ui_stats_screen.font.info = &ui_font_OswaldRegular16p1;
 #else
 
 #if defined(CONFIG_SSD168X_PANEL_SSD1681)

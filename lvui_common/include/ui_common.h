@@ -206,9 +206,50 @@ LV_IMG_DECLARE( jp_48px);
 
 extern const lv_img_dsc_t * const board_logo_img [];
 
+#if defined(CONFIG_LCD_IS_EPD)
+#define USE_1BPP_FONT 1
+#else
 #define USE_2BPP_FONT 1
+#endif
 
-#if defined(USE_2BPP_FONT)
+#if defined(USE_1BPP_FONT)
+
+LV_FONT_DECLARE(ui_font_OswaldRegular14p1); // sleep screen
+LV_FONT_DECLARE(ui_font_OswaldRegular16p1);
+LV_FONT_DECLARE(ui_font_OswaldRegular20p1); // statusbar
+LV_FONT_DECLARE(ui_font_OswaldRegular24p1);
+LV_FONT_DECLARE(ui_font_OswaldRegular36p1);
+
+#if defined (CONFIG_SSD168X_PANEL_SSD1681)
+LV_FONT_DECLARE(ui_font_OpenSansBold30p1);
+#elif !defined(CONFIG_SSD168X_PANEL_SSD1680)
+LV_FONT_DECLARE(ui_font_OswaldRegular48p1); // speed top row, record screen
+LV_FONT_DECLARE(ui_font_OswaldRegular100p1); // speed big
+#else
+LV_FONT_DECLARE(ui_font_OswaldRegular48p1); // speed top row, record screen
+LV_FONT_DECLARE(ui_font_OpenSansBold24p1);
+LV_FONT_DECLARE(ui_font_OpenSansBold30p1);
+#endif
+
+#if defined(CONFIG_LCD_IS_EPD)
+LV_FONT_DECLARE(ui_font_OpenSansBold36p1); // record screen
+LV_FONT_DECLARE(ui_font_OpenSansBold60p1);
+#else
+LV_FONT_DECLARE(ui_font_OswaldRegular60p1); // speed big
+LV_FONT_DECLARE(ui_font_OswaldRegular84p1); // speed big
+#endif
+
+#if defined (CONFIG_SSD168X_PANEL_SSD1681)
+LV_FONT_DECLARE(ui_font_OswaldRegular96p1);
+#else
+LV_FONT_DECLARE(ui_font_OpenSansBold84p1);
+#endif
+
+LV_FONT_DECLARE(ui_font_OpenSansSemiBold16p1);
+// LV_FONT_DECLARE(ui_font_SFDistantGalaxyRegular14p1);
+LV_FONT_DECLARE(ui_font_SFDistantGalaxyRegular16p1);
+
+#elif defined(USE_2BPP_FONT)
 
 LV_FONT_DECLARE(ui_font_OswaldRegular14p2); // sleep screen
 LV_FONT_DECLARE(ui_font_OswaldRegular16p2);
@@ -218,7 +259,7 @@ LV_FONT_DECLARE(ui_font_OswaldRegular36p2);
 
 #if defined (CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OpenSansBold30p2);
-#elif !defined(CONFIG_LCD_IS_EPD)
+#elif !defined(CONFIG_SSD168X_PANEL_SSD1680)
 LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OswaldRegular100p2); // speed big
 #else
@@ -226,15 +267,14 @@ LV_FONT_DECLARE(ui_font_OswaldRegular48p2); // speed top row, record screen
 LV_FONT_DECLARE(ui_font_OpenSansBold24p2);
 LV_FONT_DECLARE(ui_font_OpenSansBold30p2);
 #endif
-#if !defined(CONFIG_LCD_IS_EPD)
-LV_FONT_DECLARE(ui_font_OswaldRegular60p2); // speed big
-LV_FONT_DECLARE(ui_font_OswaldRegular84p2); // speed big
-#endif
+
 #if defined(CONFIG_LCD_IS_EPD)
 LV_FONT_DECLARE(ui_font_OpenSansBold36p2); // record screen
 LV_FONT_DECLARE(ui_font_OpenSansBold60p2);
+#else
+LV_FONT_DECLARE(ui_font_OswaldRegular60p2); // speed big
+LV_FONT_DECLARE(ui_font_OswaldRegular84p2); // speed big
 #endif
-
 
 #if defined (CONFIG_SSD168X_PANEL_SSD1681)
 LV_FONT_DECLARE(ui_font_OswaldRegular96p2);
@@ -243,11 +283,8 @@ LV_FONT_DECLARE(ui_font_OpenSansBold84p2);
 #endif
 
 LV_FONT_DECLARE(ui_font_OpenSansSemiBold16p2);
-
 // LV_FONT_DECLARE(ui_font_SFDistantGalaxyRegular14p2);
 LV_FONT_DECLARE(ui_font_SFDistantGalaxyRegular16p2);
-
-// #endif
 
 #else
 

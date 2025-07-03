@@ -1,21 +1,13 @@
 /*******************************************************************************
  * Size: 14 px
  * Bpp: 4
- * Opts: --bpp 4 --size 14 --font /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/Oswald-Regular.ttf -o /home/aivo/Downloads/squareline/squareline_proj_2_13_01/assets/ui_font_OswaldRegular14p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
+ * Opts: --bpp 4 --size 14 --font ../../srcfonts/Oswald-Regular.ttf -o ./ui_font_OswaldRegular14p4.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
-#ifdef __has_include
-    #if __has_include("lvgl.h")
-        #ifndef LV_LVGL_H_INCLUDE_SIMPLE
-            #define LV_LVGL_H_INCLUDE_SIMPLE
-        #endif
-    #endif
-#endif
-
-#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
-    #include "lvgl.h"
+#ifdef LV_LVGL_H_INCLUDE_SIMPLE
+#include "lvgl.h"
 #else
-    #include "lvgl/lvgl.h"
+#include "lvgl/lvgl.h"
 #endif
 
 #ifndef UI_FONT_OSWALDREGULAR14P4
@@ -57,7 +49,7 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
 
     /* U+0025 "%" */
     0xb, 0xfe, 0x40, 0xf, 0x50, 0x0, 0x5f, 0x2a,
-    0xc0, 0x4f, 0x0, 0x0, 0x7e, 0x7, 0xe0, 0x8c,
+    0xc0, 0x4f, 0x0, 0x0, 0x7e, 0x7, 0xe0, 0x8b,
     0x0, 0x0, 0x7e, 0x7, 0xe0, 0xd7, 0x0, 0x0,
     0x5f, 0x1a, 0xc1, 0xf2, 0x0, 0x0, 0xc, 0xff,
     0x56, 0xe0, 0x9e, 0xd4, 0x0, 0x10, 0xa, 0x94,
@@ -473,7 +465,7 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
     0x35, 0xf3, 0x6, 0xf0, 0x2f, 0x30, 0x4f, 0x24,
     0xf1, 0x0, 0xcf, 0xf9, 0x0, 0x3e, 0x21, 0x0,
     0x3, 0xff, 0xfc, 0x30, 0x4c, 0x34, 0xbb, 0xa,
-    0xc3, 0x3a, 0xb0, 0x3c, 0xff, 0xc2, 0x0,
+    0xc3, 0x3a, 0xa0, 0x3c, 0xff, 0xc2, 0x0,
 
     /* U+0068 "h" */
     0x3f, 0x40, 0x0, 0x3f, 0x40, 0x0, 0x3f, 0x40,
@@ -1591,9 +1583,12 @@ static const lv_font_fmt_txt_kern_pair_t kern_pairs =
  *  ALL CUSTOM DATA
  *--------------------*/
 
-#if LVGL_VERSION_MAJOR <= 8
+#if LVGL_VERSION_MAJOR == 8
 /*Store all the custom data of the font*/
 static  lv_font_fmt_txt_glyph_cache_t cache;
+#endif
+
+#if LVGL_VERSION_MAJOR >= 8
 static const lv_font_fmt_txt_dsc_t font_dsc = {
 #else
 static lv_font_fmt_txt_dsc_t font_dsc = {
@@ -1607,10 +1602,11 @@ static lv_font_fmt_txt_dsc_t font_dsc = {
     .bpp = 4,
     .kern_classes = 0,
     .bitmap_format = 0,
-#if LVGL_VERSION_MAJOR <= 8
+#if LVGL_VERSION_MAJOR == 8
     .cache = &cache
 #endif
 };
+
 
 
 /*-----------------
@@ -1634,7 +1630,11 @@ lv_font_t ui_font_OswaldRegular14p4 = {
     .underline_position = -1,
     .underline_thickness = 1,
 #endif
-    .dsc = &font_dsc           /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
+    .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
+#if LV_VERSION_CHECK(8, 2, 0) || LVGL_VERSION_MAJOR >= 9
+    .fallback = NULL,
+#endif
+    .user_data = NULL,
 };
 
 
