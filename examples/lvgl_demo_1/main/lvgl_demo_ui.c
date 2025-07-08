@@ -47,22 +47,7 @@ static uint8_t index_speed = 0;
 //     lv_img_set_angle(img, v);
 // }
 enum screen_e {
-    BOOT_SCREEN = 0,
-    BLANK_SCREEN,
     SPLASH_SCREEN,
-    SLEEP_SCREEN,
-    WIFI_SCREEN,
-    GPS_SCREEN,
-    SPEED_SCREEN,
-    RECORD_SCREEN,
-    STATS_SCREEN_3,
-    STATS_SCREEN_4,
-    STATS_SCREEN_5,
-    STATS_SCREEN_6,
-    OFF_SCREEN,
-    LOW_BAT_SCREEN,
-    GPS_FAIL_SCREEN,
-    SD_FAIL_SCREEN,
     MAX_SCREENS
 };
 
@@ -212,109 +197,7 @@ static void load_screen(int noinc) {
         // lv_obj_invalidate(lv_scr_act());
     }
 
-    if (count == BLANK_SCREEN) {
-        ESP_LOGI(TAG, "load blank screen");
-        if(color > 1)
-            color = 0;
-        showBlankScreen(color);
-    } else if(count == SLEEP_SCREEN) {
-        ESP_LOGI(TAG, "load sleep screen");
-        showSleepScreen();
-        ui_status_panel_t * statusbar = &ui_status_panel;
-        lv_label_set_text(statusbar->time_label, "12:00 2024-01-01");
-        lv_label_set_text(statusbar->bat_label, "97%");
-        for(int i = 0; i < 6; i++) {
-            for(int j = 0; j < 2; j++) {
-                f2_to_char(sleep_scr_info_fields[j][i].data, p);
-                lv_label_set_text(ui_sleep_screen.cells[i][j].title, p);
-                lv_label_set_text(ui_sleep_screen.cells[i][j].info, sleep_scr_info_fields[j][i].info);
-            }
-        }
-    }
-    else if (count == RECORD_SCREEN) {
-        ESP_LOGI(TAG, "load record screen");
-        showRecordScreen(0);
-    }
-    
-    else if(count == BOOT_SCREEN) {
-        ESP_LOGI(TAG, "load boot screen");
-         showBootScreen("Booting");
-    }
-
-    else if(count == LOW_BAT_SCREEN) {
-        ESP_LOGI(TAG, "load low battery screen");
-         showLowBatScreen(0);
-    }
-
-    else if(count == GPS_FAIL_SCREEN) {
-        ESP_LOGI(TAG, "load gps fail screen");
-         showGpsTroubleScreen();
-    }
-
-    else if(count == SD_FAIL_SCREEN) {
-        ESP_LOGI(TAG, "load sd fail screen");
-         showSdTroubleScreen();
-    }
-
-    else if(count == OFF_SCREEN) {
-        ESP_LOGI(TAG, "load off screen");
-        showSaveSessionScreen("Saving session", "Please wait", "Saving data");
-    }
-
-    else if(count == GPS_SCREEN) {
-        ESP_LOGI(TAG, "load gps screen");
-        showGpsScreen(angle);
-        lv_label_set_text(ui_info_screen.info_lbl, "GPS");
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, "gps test");
-        lv_label_set_text(ui_info_screen.info_third_lbl, "GPS data");
-    }
-    else if(count == SPEED_SCREEN){
-        ESP_LOGI(TAG, "load speed screen");
-        showSpeedScreen();
-        lv_label_set_text(ui_speed_screen.speed, "199.9");
-        lv_label_set_text(ui_speed_screen.cells[0][0].title, "00.00");
-        lv_label_set_text(ui_speed_screen.cells[0][1].title, "00.00");
-    }
-    
-    else if(count == STATS_SCREEN_3) {
-        ESP_LOGI(TAG, "load stats screen");
-        loadStatsScreen(3,1);
-        f2_to_char(last_speed, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].info, "500M");
-    }
-
-    else if(count == STATS_SCREEN_4) {
-        ESP_LOGI(TAG, "load stats screen");
-        loadStatsScreen(4,1);
-        f2_to_char(last_speed, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
-    }
-    else if(count == STATS_SCREEN_5) {
-        ESP_LOGI(TAG, "load stats screen");
-        loadStatsScreen(5,1);
-        f2_to_char(last_speed, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].info, "MILE");
-    }
-
-    else if(count == STATS_SCREEN_6) {
-        ESP_LOGI(TAG, "load stats screen");
-        loadStatsScreen(6,1);
-        f2_to_char(last_speed, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].title, p);
-        lv_label_set_text(ui_stats_screen.cells[0][0].info, "AVG");
-    }
-
-   else if(count == WIFI_SCREEN) {
-        ESP_LOGI(TAG, "load wifi screen");
-        showWifiScreen();
-        lv_label_set_text(ui_info_screen.info_lbl, "majasa");
-        lv_label_set_text(ui_info_screen.info_secondary_lbl, "10.10.1.1");
-        lv_label_set_text(ui_info_screen.info_third_lbl, "password");
-    }
-    else if (count == SPLASH_SCREEN) {
+    if (count == SPLASH_SCREEN) {
         ESP_LOGI(TAG, "load splash screen");
         scr = splashScreenLoad();
     }
@@ -325,7 +208,7 @@ static void load_screen(int noinc) {
             scr = 0;
         lv_obj_del(lscr);
     }
-    if (_lvgl_lock(-1)) {
+    if (_drv_lock(-1)) {
         lv_timer_handler();
         _lvgl_unlock();
     }

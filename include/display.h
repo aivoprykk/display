@@ -10,6 +10,8 @@ extern "C" {
 
 typedef struct display_op_s {
     uint32_t (*screen_cb)(void*);
+    void (*ui_init)(void);
+    void (*ui_deinit)(void);
 } display_op_t;
 
 typedef struct display_s {

@@ -14,6 +14,18 @@
 #include "ui_events.h"
 #include "numstr.h"
 
+#ifdef CONFIG_SSD168X_PANEL_SSD1680
+LV_IMG_DECLARE(speed_250x122_v23);
+LV_IMG_DECLARE(speed_122x250_v23);
+const lv_img_dsc_t * img_full_l = &speed_250x122_v23;
+const lv_img_dsc_t * img_full_p = &speed_122x250_v23;
+#endif
+#ifdef CONFIG_SSD168X_PANEL_SSD1681
+LV_IMG_DECLARE(speed_raw_200x200);
+const lv_img_dsc_t * img_full_l = &speed_raw_200x200;
+const lv_img_dsc_t * img_full_p = &speed_raw_200x200;
+#endif
+
 static struct display_s display = {0};
 static uint8_t screen_auto_refresh = 0;
 static const char *TAG = "lvgl_demo";
@@ -54,26 +66,24 @@ float randomFloat() {
     return f * 127;                          // Scale to the range 0-127
 }
 
+lv_obj_t * splashScreenLoad() {
+    lv_obj_t * splash = ui_common_panel_init(NULL, 0, 0);
+    lv_scr_load(splash);
+    lv_obj_t *img = lv_img_create(splash);
+    lv_obj_set_size(img, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    if(rotation % 2)
+        lv_img_set_src(img, img_full_p);
+    else
+        lv_img_set_src(img, img_full_l);
+    lv_obj_align(img, LV_ALIGN_TOP_LEFT, 0, 0); 
+    return splash;
+}
+
+static lv_obj_t * scr = 0;
+
 static uint32_t show_screen(int full) {
-    if(display_get_buf_update_count() >= times) {
-        showBlankScreen(0);
-        screen = 1;
-    }
-    else{
-        if(full) {
-            showSpeedScreen();
-            //showSleepScreen();
-        }
-        char spd[8] = {0};
-        float spd_f = randomFloat();
-        if(spd_f >= 100) {
-            f1_to_char(spd_f, &spd[0]);
-        }
-        else {
-            f2_to_char(spd_f, &spd[0]);
-        }
-        lv_label_set_text(ui_speed_screen.speed, spd);
-    }
+    scr = splashScreenLoad();
+    screen = 1;
     return 50; // Delay
 }
 

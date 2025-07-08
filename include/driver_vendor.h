@@ -17,10 +17,11 @@ extern "C" {
 #include <stdint.h>
 
 #include "esp_lcd_panel_vendor.h"
+#include "logger_common.h"
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #include "lvgl.h"
-#include "ui.h"
+// #include "ui.h"
 #if (LVGL_VERSION_MAJOR < 9)
 #define lv_display_t lv_disp_t
 #define lv_image_dsc_t lv_img_dsc_t
@@ -42,39 +43,23 @@ typedef enum m_rot_e {
 } m_rot_t;
 
 typedef struct display_driver_op_s {
-    esp_lcd_panel_handle_t (*new)();
-    void (*del)();
-    esp_err_t (*epd_request_full_update)();
-    esp_err_t (*epd_request_fast_update)();
-    esp_err_t (*epd_request_partial_update)();
+    esp_lcd_panel_handle_t (*new)(void);
+    void (*del)(void);
+    esp_err_t (*set_rotation)(int r);
+    void (*d_init)(void); 
+#if defined(CONFIG_LCD_IS_EPD)
+    esp_err_t (*epd_request_full_update)(void);
+    esp_err_t (*epd_request_fast_update)(void);
+    esp_err_t (*epd_request_partial_update)(void);
     esp_err_t (*epd_refresh_and_turn_off)(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
     esp_err_t (*epd_turn_on)(esp_lcd_panel_handle_t panel_handle);
     esp_err_t (*epd_turn_off)(esp_lcd_panel_handle_t panel_handle);
     uint32_t (*epd_flush_count)(void);
     uint32_t (*epd_last_flush_ms)(void);
+#else
     void (*bl_set)(uint8_t brightness_percent);
-    esp_err_t (*set_rotation)(int r);
-    int (*get_rotation)(void);
-    bool (*lock)(int timeout_ms);
-    void (*unlock)();
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-    lv_disp_drv_t * (*get_driver)();
-#endif
-    lv_disp_t * (*get)();
-    void (*lv_init)(); 
 #endif
 } display_driver_op_t;
-
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-inline int display_drv_get_width(lv_disp_t * disp) { return lv_disp_get_hor_res(disp); }
-inline int display_drv_get_height(lv_disp_t * disp) { return lv_disp_get_ver_res(disp); }
-#else
-inline int display_drv_get_width(lv_disp_t * disp) { return lv_display_get_horizontal_resolution(disp); }
-inline int display_drv_get_height(lv_disp_t * disp) { return lv_display_get_vertical_resolution(disp); }
-#endif
-#endif
 
 #if defined(CONFIG_DISPLAY_DRIVER_ST7789)
 #define LCD_H_RES (320)               // horizontal
@@ -124,7 +109,8 @@ extern display_driver_op_t display_driver_ssd168x_op;
 #define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
 #define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
 
-#define LCD_PIXELS_MEM_ALIGNED (ROUND_UP_TO_8(LCD_H_RES) * ROUND_UP_TO_8(LCD_V_RES) / 8)
+#define LCD_PIXELS_ALIGNED (ROUND_UP_TO_8(LCD_H_RES) * ROUND_UP_TO_8(LCD_V_RES))
+#define LCD_PIXELS_MEM_ALIGNED (LCD_PIXELS_ALIGNED / 8)
 
 #define H_NORM_PX_VISIBLE(h_scr_percent) ((int16_t)((LCD_H_VISIBLE / 100.0) * (h_scr_percent)))
 #define V_NORM_PX(v_scr_percent) ((int16_t)((LCD_V_RES / 100.0) * (v_scr_percent)))
@@ -151,27 +137,26 @@ extern display_driver_op_t display_driver_ssd168x_op;
 
 esp_lcd_panel_handle_t display_drv_new();
 void display_drv_del();
+#if defined(CONFIG_LCD_IS_EPD)
 esp_err_t display_drv_epd_request_full_update();
 esp_err_t display_drv_epd_request_fast_update();
 esp_err_t display_drv_epd_request_partial_update();
 esp_err_t display_drv_epd_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map);
 esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle);
 esp_err_t display_drv_epd_turn_off(esp_lcd_panel_handle_t panel_handle);
+#else
 void display_drv_bl_set(uint8_t brightness_percent);
+#endif
 esp_err_t display_drv_set_rotation(int r);
 int display_drv_get_rotation(void);
 bool display_drv_lock(int timeout_ms);
 void display_drv_unlock();
-#define _lvgl_lock(x) display_drv_lock(x)
-#define _lvgl_unlock() display_drv_unlock()
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-lv_disp_drv_t * display_drv_get_driver();
-#endif
-lv_disp_t * display_drv_get();
-void display_drv_lv_init();
 
+#ifdef CONFIG_DISPLAY_USE_LVGL
+int display_drv_get_width();
+int display_drv_get_height();
 #endif
+void display_drv_init();
 
 #ifdef __cplusplus
 }

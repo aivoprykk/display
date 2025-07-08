@@ -4,8 +4,21 @@
 #include "display.h"
 #include "driver_vendor.h"
 #include "logger_common.h"
+#include "ui_events.h"
 
 static const char *TAG = "display";
+
+ESP_EVENT_DEFINE_BASE(UI_EVENT);
+
+#if (C_LOG_LEVEL < 2)
+static const char * _ui_event_strings[] = { UI_EVENT_LIST(STRINGIFY)};
+const char * ui_event_strings(int id) {
+    return _ui_event_strings[id];
+}
+#else
+const char * ui_event_strings(int id) {return "UI_EVENT";}
+#endif
+
 #define LCD_UI_TIMER_PERIOD_S 60
 #define DISPLAY_TIMER_TASK_DELAY_MS 10
 
@@ -93,9 +106,9 @@ static uint32_t _lv_timer_handler() {
     DLOG(TAG, "[%s] %ld\n", __func__, display_priv.self->buf_update_count);
 #endif
     uint32_t task_delay_ms = L_LVGL_TASK_MAX_DELAY_MS;
-    if (_lvgl_lock(-1)) {
+    if (display_drv_lock(-1)) {
         task_delay_ms = lv_timer_handler(); 
-        _lvgl_unlock();
+        display_drv_unlock();
     }
     if (task_delay_ms > L_LVGL_TASK_MAX_DELAY_MS) {
         task_delay_ms = L_LVGL_TASK_MAX_DELAY_MS;
@@ -133,8 +146,8 @@ static uint32_t _ui_screen_draw() {
 #if (C_LOG_LEVEL < 2)
     DMEAS_START();
 #endif
-    _lvgl_lock(0);
-    _lvgl_unlock();
+    display_drv_lock(0);
+    display_drv_unlock();
 #if defined(CONFIG_LCD_IS_EPD)
     if(display_priv.start_task_pause_seq > 1) {
         display_task_pause();
@@ -225,9 +238,9 @@ static void _ui_start(int8_t rotation) {
 #if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s]", __func__);
 #endif
-    display_drv_lv_init();
+    display_drv_init();
     display_set_rotation(rotation);
-    ui_init();
+    display_priv.self->op->ui_init();
 #if defined(CONFIG_LCD_IS_EPD)
     /// delete default display refr timer
     lv_disp_t * disp = lv_disp_get_default();
@@ -602,7 +615,7 @@ static void _ui_stop() {
         display_priv.timer = 0;
     }
 
-    ui_deinit();
+    display_priv.self->op->ui_deinit();
 #if (C_LOG_LEVEL < 2)
     DMEAS_END(TAG, "[%s] %hu 150 ms loops, total %llu us ",  __FUNCTION__, i);
 #endif

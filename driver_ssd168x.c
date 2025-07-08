@@ -15,7 +15,7 @@
 // #include "driver/spi_master.h"
 
 #include <esp_lcd_panel_ops.h>
-
+#include <string.h>
 #include "ui_events.h"
 #include "logger_common.h"
 #include "esp_lcd_panel_ssd168x.h"
@@ -51,30 +51,6 @@ static const char *TAG = "display_drv.ssd1680";
 #define LCD_CMD_BITS           8
 #define LCD_PARAM_BITS         8
 
-#define LVGL_TICK_PERIOD_MS    10
-
-static SemaphoreHandle_t panel_refreshing_sem = NULL;
-
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#define LBUFSZ LCD_RESOLUTION
-#if (LVGL_VERSION_MAJOR < 9)
-static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
-static lv_disp_drv_t disp_drv;      // contains callback functions
-// lv_color_t buf1[LBUFSZ] = {0};
-#else
-#define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_I1)) /*will be 2 for RGB565 */
-// uint8_t buf1[LBUFSZ] = {0};
-#endif
-static lv_disp_t *lv_disp = NULL;
-static bool is_initialized_lvgl = false;
-// static uint32_t update_count = 0;
-#else
-static int rotated = DISP_ROT_90;
-#endif
-static uint8_t converted_buffer_black[LCD_PIXELS_MEM_ALIGNED] = {0};
-
-//static uint8_t *converted_buffer_red;
-
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_panel_io_handle_t io_handle = NULL;
 #ifdef CONFIG_SSD168X_PANEL_SSD1681
@@ -84,23 +60,22 @@ static uint8_t fast_refresh_lut[] = SSD1680_WAVESHARE_2IN13_V2_LUT_FAST_REFRESH_
 #endif
 static bool init_requested = true;
 static epaper_panel_init_mode_t init_mode = INIT_MODE_FULL_2;
-// const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
 uint32_t flush_count = 0;
 uint32_t last_flush_ms = 0;
+// const unsigned char clear_img[LCD_PIXELS_MEM_ALIGNED] = { [0 ... LCD_PIXELS_MEM_ALIGNED-1] = 0xFF };
 
-IRAM_ATTR bool _flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data)
-{
+IRAM_ATTR bool _flush_ready_callback(const esp_lcd_panel_handle_t handle, const void *edata, void *user_data) {
+    if(user_data) {
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
-    lv_disp_drv_t *disp_driver = (lv_disp_drv_t *) user_data;
-    lv_disp_flush_ready(disp_driver);
+        lv_disp_flush_ready((lv_disp_drv_t*)user_data);
 #else
-    lv_display_t *disp = (lv_display_t *) user_data;
-    lv_display_flush_ready(disp);
+        lv_display_flush_ready((lv_display_t*)user_data);
 #endif
 #endif
+    }
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    xSemaphoreGiveFromISR(panel_refreshing_sem, &xHigherPriorityTaskWoken);
+    xSemaphoreGiveFromISR(drv.sem, &xHigherPriorityTaskWoken);
     if (xHigherPriorityTaskWoken == pdTRUE) {
         return true;
     }
@@ -131,13 +106,16 @@ static esp_err_t _request_partial_update() {
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
 static lv_disp_drv_t * lv_get_driver() {
-    return &disp_drv;
+    return &drv.disp_drv;
+}
+static lv_disp_t * lv_get_disp() {
+    return drv.lv_disp;
+}
+#else
+static lv_disp_t * lv_get_driver() {
+    return drv.lv_disp;
 }
 #endif
-
-static lv_disp_t * lv_get() {
-    return lv_disp;
-}
 #endif
 
 static uint32_t _flush_count() {
@@ -148,65 +126,6 @@ static uint32_t _flush_count() {
 static uint32_t _last_flush_ms() {
     ILOG(TAG, "[%s]", __func__);
     return last_flush_ms;
-}
-
-static esp_err_t _set_rotation(int r) {
-    ILOG(TAG, "[%s] %d", __func__, r);
-    if(r > DISP_ROT_270)
-        return ESP_ERR_INVALID_ARG;
-#if defined(CONFIG_DISPLAY_USE_LVGL)
-#if (LVGL_VERSION_MAJOR < 9)
-    if(disp_drv.rotated != r) {
-        disp_drv.rotated = r;
-        if(lv_disp) {
-            lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-            if(lv_scr_act()) {
-                lv_obj_invalidate(lv_scr_act());
-            }
-        }
-    }
-#else
-    if(lv_disp && r!=lv_display_get_rotation(lv_disp)) {
-        lv_display_set_rotation(lv_disp, r);
-        // lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-        if(lv_scr_act()) {
-            lv_obj_invalidate(lv_scr_act());
-        }
-    }
-#endif
-
-#if (C_LOG_LEVEL < 2)
-    if(lv_disp) {
-        DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\n", __func__,
-#if (LVGL_VERSION_MAJOR < 9)
-            (int)r, disp_drv.rotated, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
-#else
-            (int)r, lv_display_get_rotation(lv_disp), lv_display_get_horizontal_resolution(lv_disp), lv_display_get_vertical_resolution(lv_disp));
-#endif
-    }
-#endif
-#else
-    if(r!=rotated) {
-        rotated = r;
-    }
-#if (C_LOG_LEVEL < 2)
-    DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d\n", __func__, (int)r, rotated);
-#endif
-#endif
-    return ESP_OK;
-}
-
-static int _get_rotation() {
-    ILOG(TAG, "[%s]", __func__);
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-    return disp_drv.rotated;
-#else
-return lv_display_get_rotation(lv_disp); 
-#endif
-#else
-    return rotated;
-#endif
 }
 
 static esp_err_t _turn_off(esp_lcd_panel_handle_t panel_handle) {
@@ -327,7 +246,7 @@ static esp_err_t _refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int 
 #if (LVGL_VERSION_MAJOR < 9)
 #define MYINT int
 #define MYINT_D "d"
-static void _lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
+static void _lvgl_flush_cb(lv_disp_drv_t *dspl, const lv_area_t *area, lv_color_t *color_map)
 #else
 static inline uint8_t LV_ATTRIBUTE_FAST_MEM get_bit(const uint8_t * buf, int32_t bit_idx)
 {
@@ -339,14 +258,14 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
 #endif
 {
 #if (C_LOG_LEVEL < 2)
-    DLOG(TAG, "[%s] display_drv_get_width(lv_get_driver()) %d\n", __func__, display_drv_get_width(display_drv_get()));
+    DLOG(TAG, "[%s] display_drv_get_width(lv_get_driver()) %d\n", __func__, display_drv_get_width());
 #endif
     // IMEAS_START();
 #if (LVGL_VERSION_MAJOR < 9)
 #if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s] x1:%hd y1:%hd, x2:%hd y2:%hd", __func__, area->x1, area->y1, area->x2, area->y2);
 #endif
-    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) drv->user_data;
+    esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) dspl->user_data;
 #else
     ILOG(TAG, "[%s] x1:%ld y1:%ld, x2:%ld y2:%ld", __func__, area->x1, area->y1, area->x2, area->y2);
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) lv_display_get_user_data(dspl);
@@ -358,7 +277,7 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     // Used to vertical traverse lvgl framebuffer
     MYINT len_x = abs(offsetx1 - offsetx2)+1;
     MYINT len_y = abs(offsety1 - offsety2)+1;
-    int rotated = _get_rotation();
+    int rotated = display_drv_get_rotation();
 #if (LVGL_VERSION_MAJOR >= 9)
 #if (LV_COLOR_DEPTH == 1)
     uint8_t * buf = color_map+8;
@@ -373,13 +292,14 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     // else len_x = ROUND_UP_TO_8(len_x);
     // --- Convert buffer from color to monochrome bitmap
     MYINT len_bits = (len_x * len_y);
-#if (LVGL_VERSION_MAJOR < 9)
 #if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,drv->rotated);
-#endif
+#if (LVGL_VERSION_MAJOR < 9)
+    ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__, dspl->rotated);
 #else
-    ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__,display_get_rotation(dspl));
+    ILOG(TAG, "[%s] turned on, next load buffer wit rotation %d", __func__, lv_display_get_rotation(dspl));
 #endif
+#endif
+    uint8_t * converted_buffer_black = drv.lv_mem_buf[LV_DRAW_BUF_SZ];
     memset(converted_buffer_black, 0x00, (len_bits / 8));
     // esp_event_post(UI_EVENT, UI_EVENT_FLUSH_START, 0, 0, portMAX_DELAY);
     for (MYINT i = len_bits-1, i8, j=0; i >=0; i--,j++) {
@@ -441,8 +361,8 @@ static void _lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
 static void _lvgl_wait_cb(lv_display_t *disp)
 #endif
 {
-    if(panel_refreshing_sem)
-        xSemaphoreTake(panel_refreshing_sem, portMAX_DELAY);
+    if(drv.sem)
+        xSemaphoreTake(drv.sem, portMAX_DELAY);
 }
 
 static unsigned long prior_tick_Millis=0;
@@ -456,29 +376,6 @@ static void handleTicks(void){
     //yield();
 }
 
-static void increase_lvgl_tick(void *arg)
-{
-    /* Tell LVGL how many milliseconds has elapsed */
-    lv_tick_inc(LVGL_TICK_PERIOD_MS);
-}
-
-#endif
-
-static bool lock(int timeout_ms) {
-    // Convert timeout in milliseconds to FreeRTOS ticks
-    // If `timeout_ms` is set to -1, the program will block until the condition is met
-    if(!panel_refreshing_sem)
-        return true;
-    const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    return xSemaphoreTake(panel_refreshing_sem, timeout_ticks) == pdTRUE;
-}
-
-static void unlock(void) {
-    if(panel_refreshing_sem)
-        xSemaphoreGive(panel_refreshing_sem);
-}
-
-#ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
 static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w, lv_coord_t x, lv_coord_t y, lv_color_t color, lv_opa_t opa)
 {
@@ -493,9 +390,12 @@ static void set_px_cb(lv_disp_drv_t * disp_drv, uint8_t * buf, lv_coord_t buf_w,
 }
 #endif
 
-#if (LVGL_VERSION_MAJOR < 9)
-static void _init_cb(lv_disp_drv_t *disp_drv) {
+static void _init_cb(void *dsp) {
+#if (C_LOG_LEVEL < 3)
     ILOG(TAG, "[%s]", __func__);
+#endif
+#if (LVGL_VERSION_MAJOR < 9)
+    lv_disp_drv_t *disp_drv = (lv_disp_drv_t *)dsp;
     // Set the callback functions
     disp_drv->hor_res = LCD_H_RES;
     disp_drv->ver_res = LCD_V_RES;
@@ -507,16 +407,12 @@ static void _init_cb(lv_disp_drv_t *disp_drv) {
     disp_drv->sw_rotate = 0;
     disp_drv->user_data = panel_handle;
     // alloc bitmap buffer to draw
-    //converted_buffer_black = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
-    //converted_buffer_red = heap_caps_malloc(LCD_PIXELS_MEM_ALIGNED, MALLOC_CAP_DMA);
     disp_drv->flush_cb = _lvgl_flush_cb;
     disp_drv->wait_cb = _lvgl_wait_cb;
     // disp_drv->set_px_cb = set_px_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
-}
 #else
-static void _init_cb(lv_display_t *disp) {
-    ILOG(TAG, "[%s]", __func__);
+    lv_display_t *disp = (lv_display_t *)dsp;
     lv_display_set_rotation(disp, DISP_ROT_270);
     // NOTE: The ssd168x e-paper is monochrome and 1 byte represents 8 pixels
     // so full_refresh is MANDATORY because we cannot set position to bitmap at pixel level
@@ -527,99 +423,38 @@ static void _init_cb(lv_display_t *disp) {
     lv_display_set_flush_cb(disp, _lvgl_flush_cb);
     lv_display_set_flush_wait_cb(disp, _lvgl_wait_cb);
     // lv_display_set_color_format(disp, LV_COLOR_FORMAT_I8);
+#endif
 }
 #endif
 
-/**
- * @brief Initialize the screen
- * 
- */
-#if (LVGL_VERSION_MAJOR < 9)
-static void init_screen(void (*cb)(lv_disp_drv_t *)) {
-#else
-static void init_screen(void (*cb)(lv_display_t*)) {
-#endif
+static void _d_init() {
     ILOG(TAG, "[%s]", __func__);
-    // --- Initialize LVGL
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Initialize LVGL library");
-#endif
-    lv_init();
-    // uint32_t fb_size = EPD_BUFFER_SIZE, pix_buf_size = LCD_H_RES * LCD_V_RES / 5;
-    // alloc draw buffers used by LVGL
-    // it's recommended to choose the size of the draw buffer(s) to be at least 1/10 screen sized
-    size_t bufsz = LBUFSZ;
-#if (C_LOG_LEVEL < 4)
-    WLOG(TAG, "Allocate %dKb memory for LVGL buffers" , (bufsz>>10)); // bufsz is in bytes, so we divide by 1024 to get Kb
-#endif
-    static lv_color_t *buf[2] = {NULL, NULL};
-	for (int i = 0; i < 1; i++) {
-		buf[i] = heap_caps_malloc(bufsz * sizeof(lv_color_t), MALLOC_CAP_DMA);
-		if(buf[i] == NULL) {
-            ESP_LOGE(TAG, "[%s] Failed to allocate memory for LVGL buffer %d", __func__, i);
-        }
-	}
+#ifdef CONFIG_DISPLAY_USE_LVGL
 #if (LVGL_VERSION_MAJOR < 9)
-    lv_disp_draw_buf_init(&disp_buf, buf[0], buf[1], bufsz);
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.draw_buf = &disp_buf;
-    cb(&disp_drv);
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Register display driver / create display to LVGL");
-#endif
-    lv_disp = lv_disp_drv_register(&disp_drv);
+    if(drv.disp_drv.user_data == NULL)
 #else
-    ESP_LOGI(TAG, "Create display for LVGL");
-    lv_disp = lv_display_create(LCD_H_RES, LCD_V_RES);
-    cb(lv_disp);
-    lv_display_set_buffers(lv_disp, buf[0], buf[1], bufsz, LV_DISPLAY_RENDER_MODE_FULL);
-    
+    if(lv_display_get_user_data(drv.lv_disp) == NULL)
 #endif
-    is_initialized_lvgl = true;
-
-    // init lvgl tick
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Install LVGL tick timer");
-#endif
-    const esp_timer_create_args_t lvgl_tick_timer_args = {
-        .callback = &increase_lvgl_tick,
-        .name = "lvgl_tick"
-    };
-    esp_timer_handle_t lvgl_tick_timer = NULL;
-    if(esp_timer_create(&lvgl_tick_timer_args, &lvgl_tick_timer)) {
-        return;
-    }
-    if(esp_timer_start_periodic(lvgl_tick_timer, MS_TO_US(LVGL_TICK_PERIOD_MS))) {
-        return;
-    }
-}
-#endif
-
-static void _lv_init() {
-    ILOG(TAG, "[%s]", __func__);
-    if(disp_drv.user_data == NULL) {
+    {
+        init_lv_screen(_init_cb);
         // --- Register the e-Paper refresh done callback
-    #ifdef CONFIG_DISPLAY_USE_LVGL
         epaper_panel_callbacks_t cbs = {
             .on_epaper_refresh_done = _flush_ready_callback
         };
-    #if (LVGL_VERSION_MAJOR < 9)
-        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &disp_drv);
-    #else
-        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, lv_disp);
-    #endif
-    #else
-        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, 0);
-        rotated = DISP_ROT_270;
-    #endif
-        init_screen(_init_cb);
+#if (LVGL_VERSION_MAJOR < 9)
+        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, &drv.disp_drv);
+#else
+        epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, drv.lv_disp);
+#endif
     }
+#else
+    epaper_panel_register_event_callbacks_ssd168x(panel_handle, &cbs, 0);
+    rotated = DISP_ROT_270;
+#endif
 }
 
 static esp_lcd_panel_handle_t _new() {
     ILOG(TAG, "[%s]", __func__);
-    panel_refreshing_sem = xSemaphoreCreateBinary();
-    xSemaphoreGive(panel_refreshing_sem);
 
     esp_err_t err = 0;
     // Initialize GPIOs direction & initial states
@@ -731,20 +566,19 @@ static void _del() {
     panel_handle = NULL;
     esp_lcd_panel_io_del(io_handle);
     io_handle = NULL;
-    // heap_caps_free(converted_buffer_black);
-    // converted_buffer_black = NULL;
-    // heap_caps_free(converted_buffer_red);
-    vSemaphoreDelete(panel_refreshing_sem);
-    panel_refreshing_sem = NULL;
+    for(uint8_t i = LV_DRAW_BUF_SZ; i < LV_DRAW_BUF_SZ + CONV_BUF_SZ; i++) {
+        if(drv.lv_mem_buf[i]) {
+            heap_caps_free(drv.lv_mem_buf[i]);
+            drv.lv_mem_buf[i] = NULL;
+        }
+    }
 }
 
 display_driver_op_t display_driver_ssd168x_op = {
     .new = _new,
     .del = _del,
-    .set_rotation = _set_rotation,
-    .get_rotation = _get_rotation,
-    .lock = lock,
-    .unlock = unlock,
+    .set_rotation = 0,
+    .d_init = _d_init,
     .epd_request_fast_update = _request_fast_update,
     .epd_request_full_update = _request_full_update,
     .epd_request_partial_update = _request_partial_update,
@@ -753,15 +587,6 @@ display_driver_op_t display_driver_ssd168x_op = {
     .epd_turn_off = _turn_off,
     .epd_flush_count = _flush_count,
     .epd_last_flush_ms = _last_flush_ms,
-#ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-    .get_driver = lv_get_driver,
-    #else
-    .get_driver = 0,
-    #endif
-    .get = lv_get,
-    .lv_init = _lv_init,
-#endif
 };
 
 #endif
