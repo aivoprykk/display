@@ -138,7 +138,7 @@ static void _bl_set(uint8_t brightness_percent) {
     uint8_t from = bl_steps - bl_level;
     uint8_t to = bl_steps - level;
     uint8_t num = (bl_steps + to - from) % bl_steps;
-    DLOG(TAG, "[%s] from %d, num %d, to %d\n", __func__, from, to, num);
+    DLOG(TAG, "[%s] from %d, num %d, to %d", __func__, from, to, num);
     for (uint8_t i = 0; i < num; i++) {
         gpio_set_level(CONFIG_DISPLAY_BL, 0);
         gpio_set_level(CONFIG_DISPLAY_BL, 1);

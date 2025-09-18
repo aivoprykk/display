@@ -21,7 +21,6 @@ extern "C" {
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #include "lvgl.h"
-// #include "ui.h"
 #if (LVGL_VERSION_MAJOR < 9)
 #define lv_display_t lv_disp_t
 #define lv_image_dsc_t lv_img_dsc_t

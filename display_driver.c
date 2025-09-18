@@ -10,6 +10,27 @@
 
 static const char *TAG = "display_drv";
 
+// Pre-calculated timeout values to avoid repeated pdMS_TO_TICKS calculations
+#define TIMEOUT_IMMEDIATE 0
+#define TIMEOUT_MAX portMAX_DELAY
+static const TickType_t timeout_100ms = pdMS_TO_TICKS(100);
+
+// Cached function capabilities to avoid repeated null checks
+typedef struct {
+    bool epd_request_full_update;
+    bool epd_request_fast_update; 
+    bool epd_request_partial_update;
+    bool epd_flush_count;
+    bool epd_refresh_and_turn_off;
+    bool epd_turn_on;
+    bool epd_turn_off;
+    bool bl_set;
+    bool set_rotation;
+    bool d_init;
+} driver_capabilities_t;
+
+static driver_capabilities_t capabilities = {0};
+
 display_driver_t drv = {
 #ifdef CONFIG_DISPLAY_USE_LVGL
     .lv_mem_buf = {0},
@@ -32,8 +53,23 @@ display_driver_t drv = {
 
 esp_lcd_panel_handle_t display_drv_new() {
     if(!drv.op->new) return NULL;
-    drv.sem = xSemaphoreCreateRecursiveMutex();
-    xSemaphoreGiveRecursive(drv.sem);
+    drv.sem = xSemaphoreCreateBinary();
+    xSemaphoreGive(drv.sem);
+    
+    // Cache function capabilities at initialization to avoid repeated null checks
+    capabilities.epd_request_full_update = (drv.op->epd_request_full_update != NULL);
+    capabilities.epd_request_fast_update = (drv.op->epd_request_fast_update != NULL);
+    capabilities.epd_request_partial_update = (drv.op->epd_request_partial_update != NULL);
+    capabilities.epd_flush_count = (drv.op->epd_flush_count != NULL);
+    capabilities.epd_refresh_and_turn_off = (drv.op->epd_refresh_and_turn_off != NULL);
+    capabilities.epd_turn_on = (drv.op->epd_turn_on != NULL);
+    capabilities.epd_turn_off = (drv.op->epd_turn_off != NULL);
+#if !defined(CONFIG_LCD_IS_EPD)
+    capabilities.bl_set = (drv.op->bl_set != NULL);
+#endif
+    capabilities.set_rotation = (drv.op->set_rotation != NULL);
+    capabilities.d_init = (drv.op->d_init != NULL);
+    
     return drv.op->new();
 }
 
@@ -51,13 +87,25 @@ static bool lock(int timeout_ms) {
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     if(!drv.sem)
         return true;
-    const TickType_t timeout_ticks = (timeout_ms == -1) ? portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    return xSemaphoreTakeRecursive(drv.sem, timeout_ticks) == pdTRUE;
+        
+    TickType_t timeout_ticks;
+    // Optimize common timeout values
+    if (timeout_ms == -1) {
+        timeout_ticks = TIMEOUT_MAX;
+    } else if (timeout_ms == 0) {
+        timeout_ticks = TIMEOUT_IMMEDIATE;
+    } else if (timeout_ms == 100) {
+        timeout_ticks = timeout_100ms;
+    } else {
+        timeout_ticks = pdMS_TO_TICKS(timeout_ms);
+    }
+    
+    return xSemaphoreTake(drv.sem, timeout_ticks) == pdTRUE;
 }
 
 static void unlock(void) {
     if(drv.sem)
-        xSemaphoreGiveRecursive(drv.sem);
+        xSemaphoreGive(drv.sem);
 }
 
 bool display_drv_lock(int timeout_ms) {
@@ -71,48 +119,47 @@ void display_drv_unlock() {
 #if defined(CONFIG_LCD_IS_EPD)
 
 esp_err_t display_drv_epd_request_full_update() {
-    if(!drv.op->epd_request_full_update) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_request_full_update();
+    return capabilities.epd_request_full_update ? 
+           drv.op->epd_request_full_update() : ESP_ERR_NOT_SUPPORTED;
 }
 
 esp_err_t display_drv_epd_request_fast_update() {
-    if(!drv.op->epd_request_fast_update) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_request_fast_update();
+    return capabilities.epd_request_fast_update ? 
+           drv.op->epd_request_fast_update() : ESP_ERR_NOT_SUPPORTED;
 }
 
 esp_err_t display_drv_epd_request_partial_update() {
-    if(!drv.op->epd_request_partial_update) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_request_partial_update();
+    return capabilities.epd_request_partial_update ? 
+           drv.op->epd_request_partial_update() : ESP_ERR_NOT_SUPPORTED;
 }
 
 uint32_t display_drv_epd_get_flush_count() {
 #if defined(CONFIG_LCD_IS_EPD)
-    if(!drv.op->epd_flush_count) return 0;
-    return drv.op->epd_flush_count();
+    return capabilities.epd_flush_count ? drv.op->epd_flush_count() : 0;
 #else
     return 0;
 #endif
 }
 
 esp_err_t display_drv_epd_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map) {
-    if(! drv.op->epd_refresh_and_turn_off) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_refresh_and_turn_off(panel_handle, rotated, area, color_map);
+    return capabilities.epd_refresh_and_turn_off ? 
+           drv.op->epd_refresh_and_turn_off(panel_handle, rotated, area, color_map) : ESP_ERR_NOT_SUPPORTED;
 }
 
 esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle) {
-    if(! drv.op->epd_turn_on) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_turn_on(panel_handle);
+    return capabilities.epd_turn_on ? 
+           drv.op->epd_turn_on(panel_handle) : ESP_ERR_NOT_SUPPORTED;
 }
 
 esp_err_t display_drv_epd_turn_off(esp_lcd_panel_handle_t panel_handle) {
-    if(! drv.op->epd_turn_off) return ESP_ERR_NOT_SUPPORTED;
-    return drv.op->epd_turn_off(panel_handle);
+    return capabilities.epd_turn_off ? 
+           drv.op->epd_turn_off(panel_handle) : ESP_ERR_NOT_SUPPORTED;
 }
 
 #else
 
 void display_drv_bl_set(uint8_t brightness_percent) {
-    if(drv.op->bl_set)
+    if(capabilities.bl_set)
         drv.op->bl_set(brightness_percent);
 }
 
@@ -124,38 +171,18 @@ static esp_err_t _set_rotation(int r) {
 #endif
     if(r > DISP_ROT_270)
         return ESP_ERR_INVALID_ARG;
-#if defined(CONFIG_DISPLAY_USE_LVGL)
-#if (LVGL_VERSION_MAJOR < 9)
-    if(drv.disp_drv.rotated != r) {
-        drv.disp_drv.rotated = r;
-        if(drv.lv_disp) {
-            lv_disp_drv_update(drv.lv_disp, &drv.disp_drv); //this is critical!
-            if(lv_scr_act()) {
-                lv_obj_invalidate(lv_scr_act());
-            }
-        }
+        
+#ifdef CONFIG_DISPLAY_USE_LVGL
+    DISPLAY_SET_ROTATION(drv.lv_disp, r);
+    if(lv_scr_act()) {
+        lv_obj_invalidate(lv_scr_act());
     }
-#else
-    if(drv.lv_disp && r!=lv_display_get_rotation(drv.lv_disp)) {
-        lv_display_set_rotation(drv.lv_disp, r);
-        // lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-        if(lv_scr_act()) {
-            lv_obj_invalidate(lv_scr_act());
-        }
-    }
-#endif
 
 #if (C_LOG_LEVEL < 2)
     if(drv.lv_disp) {
-#if (LVGL_VERSION_MAJOR < 9)
-        DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\n", __func__,
-            (int)r, drv.disp_drv.rotated, lv_disp_get_hor_res(drv.lv_disp), lv_disp_get_ver_res(drv.lv_disp)
+        DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d", __func__,
+            (int)r, DISPLAY_GET_ROTATION(), DISPLAY_GET_HOR_RES(), DISPLAY_GET_VER_RES()
         );
-#else
-        DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %ld, ver_res is: %ld\n", __func__,
-            (int)r, lv_display_get_rotation(drv.lv_disp), lv_display_get_horizontal_resolution(drv.lv_disp), lv_display_get_vertical_resolution(drv.lv_disp)
-        );
-#endif
     }
 #endif
 #else
@@ -163,7 +190,7 @@ static esp_err_t _set_rotation(int r) {
         drv.rotated = r;
     }
 #if (C_LOG_LEVEL < 2)
-    DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d\n", __func__, (int)r, drv.rotated);
+    DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d", __func__, (int)r, drv.rotated);
 #endif
 #endif
     return ESP_OK;
@@ -172,7 +199,7 @@ static esp_err_t _set_rotation(int r) {
 esp_err_t display_drv_set_rotation(int r) {
     int prev = display_drv_get_rotation();
     int ret = _set_rotation(r);
-    if(prev != r && drv.op->set_rotation) ret = drv.op->set_rotation(r);
+    if(prev != r && capabilities.set_rotation) ret = drv.op->set_rotation(r);
     return ret;
 }
 
@@ -181,35 +208,23 @@ int display_drv_get_rotation() {
     ILOG(TAG, "[%s]", __func__);
 #endif
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
-    return drv.disp_drv.rotated;
-#else
-    return lv_display_get_rotation(drv.lv_disp); 
-#endif
+    return DISPLAY_GET_ROTATION();
 #else
     return drv.rotated;
 #endif
 }
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#if (LVGL_VERSION_MAJOR < 9)
 
-int display_drv_get_width() { return lv_disp_get_hor_res(drv.lv_disp); }
-int display_drv_get_height() { return lv_disp_get_ver_res(drv.lv_disp); }
-
-#else
-
-int display_drv_get_width() { return lv_display_get_horizontal_resolution(drv.lv_disp); }
-int display_drv_get_height() { return lv_display_get_vertical_resolution(drv.lv_disp); }
-
-#endif
+int display_drv_get_width() { return DISPLAY_GET_HOR_RES(); }
+int display_drv_get_height() { return DISPLAY_GET_VER_RES(); }
 
 static void increase_lvgl_tick(void *arg) {
     /* Tell LVGL how many milliseconds has elapsed */
     lv_tick_inc(LVGL_TICK_PERIOD_MS);
 }
 
-void display_drv_init() { if(drv.op->d_init) drv.op->d_init(); }
+void display_drv_init() { if(capabilities.d_init) drv.op->d_init(); }
 
 esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uint8_t convbuf_num) {
     size_t bufsz;

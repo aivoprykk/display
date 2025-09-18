@@ -22,7 +22,7 @@ idf_component_register(SRCS ${SRCS}
 idf_build_set_property(LV_CONF_PATH ${LV_CONF_PATH})
 
 if(CONFIG_DISPLAY_ENABLED)
-    target_link_libraries(${COMPONENT_LIB} PUBLIC idf::lvgl)
+    # target_link_libraries(${COMPONENT_LIB} PUBLIC lvgl::lvgl)
     target_link_libraries(${COMPONENT_LIB} PUBLIC idf::esp_lcd)
 endif()
 
