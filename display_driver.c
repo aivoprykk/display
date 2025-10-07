@@ -83,6 +83,7 @@ void display_drv_del() {
 }
 
 static bool lock(int timeout_ms) {
+    FUNC_ENTRYD(TAG);
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
     if(!drv.sem)
@@ -104,6 +105,7 @@ static bool lock(int timeout_ms) {
 }
 
 static void unlock(void) {
+    FUNC_ENTRYD(TAG);
     if(drv.sem)
         xSemaphoreGive(drv.sem);
 }
@@ -166,9 +168,7 @@ void display_drv_bl_set(uint8_t brightness_percent) {
 #endif
 
 static esp_err_t _set_rotation(int r) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] %d", __func__, r);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " %d", r);
     if(r > DISP_ROT_270)
         return ESP_ERR_INVALID_ARG;
         
@@ -204,9 +204,7 @@ esp_err_t display_drv_set_rotation(int r) {
 }
 
 int display_drv_get_rotation() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s]", __func__);
-#endif
+    FUNC_ENTRY(TAG);
 #ifdef CONFIG_DISPLAY_USE_LVGL
     return DISPLAY_GET_ROTATION();
 #else
@@ -236,29 +234,26 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
 #endif
 		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_DMA);
 		if(drv.lv_mem_buf[i] == NULL) {
+            drv.lv_mem_buf_size[i] = 0;
             ELOG(TAG, "[%s] Failed to allocate memory for buffer %d", __func__, i);
             ret = ESP_ERR_NO_MEM;
+        }
+        else {
+            drv.lv_mem_buf_size[i] = bufsz;
         }
 	}
     return ret;
 }
 
 void init_lv_screen(void (*cb)(void *)) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s]", __func__);
-#endif
+    FUNC_ENTRY(TAG);
     // --- Initialize LVGL
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Initialize LVGL library");
-#endif
+    ILOG(TAG, "Initialize LVGL library");
     lv_init();
     size_t bufsz = LBUFSZ;
-    memset(drv.lv_mem_buf, 0, sizeof(drv.lv_mem_buf));
     init_draw_buffers(LBUFSZ, LV_DRAW_BUF_SZ, LCD_PIXELS_MEM_ALIGNED, CONV_BUF_SZ);
     uint8_t *buf[2] = {drv.lv_mem_buf[0], (LV_DRAW_BUF_SZ > 1 ? drv.lv_mem_buf[1] : NULL)};
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Register display driver / create display to LVGL");
-#endif
+    ILOG(TAG, "Register display driver / create display to LVGL");
 #if (LVGL_VERSION_MAJOR < 9)
     lv_disp_draw_buf_init(&drv.disp_buf, buf[0], buf[1], bufsz);
     lv_disp_drv_init(&drv.disp_drv);
@@ -273,9 +268,7 @@ void init_lv_screen(void (*cb)(void *)) {
     drv.is_initialized_lvgl = true;
 
     // init lvgl tick
-#if (C_LOG_LEVEL < 3)
-    ESP_LOGI(TAG, "Install LVGL tick timer");
-#endif
+    ILOG(TAG, "Install LVGL tick timer");
     const esp_timer_create_args_t lvgl_tick_timer_args = {
         .callback = &increase_lvgl_tick,
         .name = "lvgl_tick"

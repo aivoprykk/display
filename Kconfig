@@ -27,18 +27,6 @@ menu "Logger Display Module Options"
             help
                 Selected when QEMU driver present
     endif
-    if HAS_BOARD_LILYGO_EPAPER_T5
-        config DISPLAY_DRIVER_SSD168X
-            default y
-            bool
-            help
-                Selected when SSD168X driver present
-        config LCD_IS_EPD
-            bool
-            default y
-            help
-                Set EPD flag for Display
-    endif
     config DISPLAY_TASK_STACK_SIZE
         int "Display Task Stack Size"
         default 5632 if !DISPLAY_DRIVER_SSD168X

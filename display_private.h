@@ -91,6 +91,7 @@ typedef struct display_driver_s {
     #define BYTE_PER_PIXEL (LV_COLOR_FORMAT_GET_SIZE(LV_COLOR_FORMAT_I1)) /*will be 2 for RGB565 */
 #endif
     uint8_t *lv_mem_buf[LV_DRAW_BUF_SZ + CONV_BUF_SZ];
+    size_t lv_mem_buf_size[LV_DRAW_BUF_SZ + CONV_BUF_SZ];
     lv_disp_t *lv_disp;
     bool is_initialized_lvgl;
 #else

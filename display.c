@@ -82,6 +82,7 @@ typedef struct display_priv_s {
 struct display_priv_s display_priv = DISPLAY_PRIV_DEFAULTS();
 
 bool display_refresh_lock(int timeout) {
+    // FUNC_ENTRYD(TAG);
     if (!display_priv.refreshing_sem) return false;
     const TickType_t timeout_ticks = (timeout == -1) ? DISPLAY_TIMEOUT_MAX : 
                                      (timeout == 0) ? display_timeout_immediate : pdMS_TO_TICKS(timeout);
@@ -89,19 +90,22 @@ bool display_refresh_lock(int timeout) {
 }
 
 void display_refresh_unlock() {
+    // FUNC_ENTRYD(TAG);
     if (display_priv.refreshing_sem) {
         xSemaphoreGive(display_priv.refreshing_sem);
     }
 }
 
-static bool lock_timer(int timeout) {
+static bool display_timer_lock(int timeout) {
+    // FUNC_ENTRYD(TAG);
     if (!display_priv.timer_sem) return false;
     const TickType_t timeout_ticks = (timeout == -1) ? DISPLAY_TIMEOUT_MAX : 
                                      (timeout == 0) ? display_timeout_immediate : pdMS_TO_TICKS(timeout);
     return  xSemaphoreTake(display_priv.timer_sem, timeout_ticks) == pdTRUE;
 }
 
-static void unlock_timer() {
+static void display_timer_unlock() {
+    // FUNC_ENTRYD(TAG);
     if (display_priv.timer_sem) {
         xSemaphoreGive(display_priv.timer_sem);
     }
@@ -109,7 +113,7 @@ static void unlock_timer() {
 
 static uint32_t _lv_timer_handler() {
 #if (C_LOG_LEVEL < 2)
-    DLOG(TAG, "[%s] %ld", __func__, display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " %ld", display_priv.self->buf_update_count);
 #endif
     uint32_t task_delay_ms = L_LVGL_TASK_MAX_DELAY_MS;
     if (display_drv_lock(-1)) {
@@ -121,23 +125,19 @@ static uint32_t _lv_timer_handler() {
     } else if (task_delay_ms < L_LVGL_TASK_MIN_DELAY_MS) {
         task_delay_ms = L_LVGL_TASK_MIN_DELAY_MS;
     }
-#if (C_LOG_LEVEL < 2)
     DLOG(TAG, "[%s] done %ld, %lu", __func__, display_priv.self->buf_update_count, task_delay_ms);
-#endif
     return task_delay_ms;
 }
 
 void display_incr_buf_update_count() {
 #if (C_LOG_LEVEL < 2)
-    ILOG(TAG, "[%s] %ld", __func__, display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " %ld", display_priv.self->buf_update_count);
 #endif
     ++display_priv.self->buf_update_count;
 }
 
 uint16_t get_offscreen_counter() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] %hhu, %ld", __func__, display_priv.off_screen_count, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " %hhu, %ld", display_priv.off_screen_count, display_priv.self->buf_update_count);
     return display_priv.off_screen_count;
 }
 
@@ -146,9 +146,7 @@ uint16_t get_offscreen_counter() {
 // #define CONFIG_FULL_REFRESH_ON_THIRD_FLUSH
 
 static uint32_t _ui_screen_draw() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
 #if (C_LOG_LEVEL < 2)
     DMEAS_START();
 #endif
@@ -180,23 +178,17 @@ static uint32_t _ui_screen_draw() {
 #if defined(CONFIG_FULL_REFRESH_ON_SECOND_FLUSH) || defined(CONFIG_FULL_REFRESH_ON_THIRD_FLUSH)
         do_full_refresh:
 #endif
-#if (C_LOG_LEVEL < 2)
         DLOG(TAG, "[%s] Full ... count: %lu", __func__, display_priv.self->buf_update_count);
-#endif
         display_request_full_refresh(display_priv.self->task_full_refresh_on_time_force);
         display_task_cancel_req_fast_refresh();
     }
     else if(display_priv.self->task_fast_refresh_on_time == display_priv.self->buf_update_count) {
-#if (C_LOG_LEVEL < 2)
         DLOG(TAG, "[%s] Fast ... count: %lu", __func__, display_priv.self->buf_update_count);
-#endif
         display_request_fast_refresh();
         display_task_cancel_req_full_refresh();
     }
     else {
-#if (C_LOG_LEVEL < 2)
         DLOG(TAG, "[%s] Partial ... count: %lu", __func__, display_priv.self->buf_update_count);
-#endif
         display_drv_epd_request_partial_update();
     }
     }
@@ -229,7 +221,7 @@ static uint32_t _ui_screen_draw() {
 
 void display_set_rotation(int8_t rotation) {
     WLOG(TAG, "[%s] %d", __func__, rotation);
-    if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+    if(display_refresh_lock(1000)) {
         if(rotation != display_priv.rotation) {
             display_priv.rotation = rotation;
         }
@@ -241,9 +233,7 @@ void display_set_rotation(int8_t rotation) {
 }
 
 static void _ui_start(int8_t rotation) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s]", __func__);
-#endif
+    FUNC_ENTRY(TAG);
     display_drv_init();
     display_set_rotation(rotation);
     display_priv.self->op->ui_init();
@@ -261,13 +251,11 @@ static void _ui_start(int8_t rotation) {
 }
 
 static void _ui_task(void *args) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] starting %hhd", __FUNCTION__, display_priv.rotation);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " starting %hhd", display_priv.rotation);
     _ui_start(display_priv.rotation);
     uint32_t task_delay_ms = _lv_timer_handler();
     while (display_priv.task_is_running) {
-        if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+        if(display_refresh_lock(1000)) {
             display_refresh_unlock();
         }
         if(get_millis() > display_priv.ms) {
@@ -293,7 +281,7 @@ static void _ui_task(void *args) {
 #if defined(CONFIG_LCD_IS_EPD)
     display_drv_epd_turn_off(display_priv.dspl_drv);
 #endif
-    ILOG(TAG, "[%s] finishing", __FUNCTION__);
+    FUNC_ENTRY_ARGS(TAG, " finishing");
     display_priv.task_is_finished = 1;
     display_priv.task_handle = 0;
     vTaskDelete(NULL);
@@ -306,20 +294,16 @@ void display_request_partial_refresh() {
 }
 
 void display_shut_down() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
-    if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
+    if(display_refresh_lock(1000)) {
         display_drv_epd_turn_off(display_priv.dspl_drv);
         display_refresh_unlock();
     }
 }
 
 static void _task_req_fast_refresh(int8_t fast_refresh_time) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld fast_refresh_time: %hhd", __func__, display_priv.self->buf_update_count, fast_refresh_time);
-#endif
-    if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+    FUNC_ENTRY_ARGS(TAG, " count: %ld fast_refresh_time: %hhd", display_priv.self->buf_update_count, fast_refresh_time);
+    if(display_refresh_lock(1000)) {
         if(display_priv.self->task_fast_refresh_on_time < display_priv.self->buf_update_count && fast_refresh_time>=0) {
             display_priv.self->task_fast_refresh_on_time = display_priv.self->buf_update_count+fast_refresh_time;
             if(display_priv.self->task_fast_refresh_on_time == display_priv.self->task_full_refresh_on_time) {
@@ -331,21 +315,17 @@ static void _task_req_fast_refresh(int8_t fast_refresh_time) {
 }
 
 void display_request_fast_refresh() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_drv_epd_request_fast_update();
 }
 
 void display_task_cancel_req_fast_refresh() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_priv.self->task_fast_refresh_on_time = 0;
 }
 
 static void _task_req_full_refresh(int8_t full_refresh_time, bool full_refresh_force) {
-    if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+    if(display_refresh_lock(1000)) {
         if(display_priv.self->task_full_refresh_on_time < display_priv.self->buf_update_count && full_refresh_time >= 0) {
             display_priv.self->task_full_refresh_on_time = display_priv.self->buf_update_count + full_refresh_time;
             display_priv.self->task_full_refresh_on_time_force = full_refresh_force;
@@ -358,9 +338,7 @@ static void _task_req_full_refresh(int8_t full_refresh_time, bool full_refresh_f
 }
 
 void display_request_full_refresh(bool force) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld force: %d", __func__, display_priv.self->buf_update_count, force);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld force: %d", display_priv.self->buf_update_count, force);
     if(force || display_priv.self->buf_update_count < 1 || display_priv.self->buf_update_count < 5 || display_priv.count_last_full_refresh + 5  < display_priv.self->buf_update_count){
         display_drv_epd_request_full_update();
         display_priv.self->task_full_refresh_on_time = display_priv.self->buf_update_count;
@@ -368,19 +346,15 @@ void display_request_full_refresh(bool force) {
 }
 
 void display_task_cancel_req_full_refresh() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_priv.self->task_full_refresh_on_time = 0;
     display_priv.self->task_full_refresh_on_time_force = false;
 }
 
 static esp_err_t _task_resume_for_times_wo_timer(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force) {
-#if (C_LOG_LEVEL < 2)
-    DLOG(TAG, "[%s] count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", __FUNCTION__, display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
-#endif
+    FUNC_ENTRY_ARGSD(TAG, " count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
     if(display_priv.task_is_running) {
-        if(display_refresh_lock(portMAX_DELAY) == pdTRUE) {
+        if(display_refresh_lock(1000)) {
             //task_resumed_for_times += times;
             if(display_priv.self->task_resumed_for_times < times) {
                 display_priv.self->task_resumed_for_times = times;
@@ -404,28 +378,22 @@ static esp_err_t _task_resume_for_times_wo_timer(uint8_t times, int8_t fast_refr
 }
 
 static void _periodic_timer_stop() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
-    if (display_priv.timer_created && lock_timer(portMAX_DELAY) == pdTRUE) {
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
+    if (display_priv.timer_created && display_timer_lock(1000)) {
         if(esp_timer_is_active(display_priv.timer)) {
-#if (C_LOG_LEVEL < 2)
-            ILOG(TAG, "[%s] stop periodic timer count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+            FUNC_ENTRY_ARGSD(TAG, " stop periodic timer count: %ld", display_priv.self->buf_update_count);
             if(esp_timer_stop(display_priv.timer)) {
                 WLOG(TAG, "[%s] failed to stop periodic timer", __func__);
             }
         }
-        unlock_timer();
+        display_timer_unlock();
     }
 }
 
 static void _timer_cb(void*arg);
 
 static void _periodic_timer_start() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
 #if defined(CONFIG_LCD_IS_EPD)
     if(!display_priv.timer_created) {
         const esp_timer_create_args_t lcd_periodic_timer_args = {
@@ -439,25 +407,19 @@ static void _periodic_timer_start() {
      display_priv.timer_created = 1;
     }
 #endif
-    if(display_priv.timer_created && lock_timer(portMAX_DELAY) == pdTRUE) {
+    if(display_priv.timer_created && display_timer_lock(1000)) {
         if(!esp_timer_is_active(display_priv.timer)) {
-#if (C_LOG_LEVEL < 2)
-            ILOG(TAG, "[%s] start periodic timer count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+            DLOG(TAG, "[%s] start periodic timer count: %ld", __func__, display_priv.self->buf_update_count);
             esp_timer_start_periodic(display_priv.timer, SEC_TO_US(display_priv.periodic_timer_period ? display_priv.periodic_timer_period : LCD_UI_TIMER_PERIOD_S));
         }
-        unlock_timer();
+        display_timer_unlock();
     }
 }
 
 void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld times: %hhu, fast_refresh_time: %hhd, full_refresh_time: %hhd, full_refresh_force: %d", __func__, display_priv.self->buf_update_count, times, fast_refresh_time, full_refresh_time, full_refresh_force);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld times: %hhu, fast_refresh_time: %hhd, full_refresh_time: %hhd, full_refresh_force: %d", display_priv.self->buf_update_count, times, fast_refresh_time, full_refresh_time, full_refresh_force);
     if(display_priv.self->task_resumed_for_times>=times || display_priv.task_not_paused) {
-#if (C_LOG_LEVEL < 2)
-        ILOG(TAG, "[%s] already running times: %hhu, not_paused: %hhu", __func__, times, display_priv.task_not_paused);
-#endif
+        FUNC_ENTRY_ARGSD(TAG, " already running times: %hhu, not_paused: %hhu", times, display_priv.task_not_paused);
         return;
     }
 #if (C_LOG_LEVEL < 3)
@@ -475,9 +437,7 @@ void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8
 #endif
 
 void display_cancel_delay() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_priv.ms=0;
     display_priv.ms_cancelled = 1;
 }
@@ -492,9 +452,7 @@ uint32_t display_get_flush_count() {
 }
 
 static void _task_pause_wo_timer() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_task_cancel_req_full_refresh();
     if(display_priv.task_not_paused) {
         display_priv.task_not_paused = 0;
@@ -503,33 +461,25 @@ static void _task_pause_wo_timer() {
 }
 
 void display_task_pause() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     _task_pause_wo_timer();
     _periodic_timer_start();
 }
 
 void display_start_task_pause_seq() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] pause state: %hhu", __func__, display_priv.start_task_pause_seq);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " pause state: %hhu", display_priv.start_task_pause_seq);
     ++display_priv.start_task_pause_seq;
 }
 
 void display_cancel_task_pause_seq() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] pause state: %hhu", __func__, display_priv.start_task_pause_seq);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " pause state: %hhu", display_priv.start_task_pause_seq);
     display_priv.start_task_pause_seq = 0;
 }
 
 void display_timer_set_period(uint16_t period) {
     display_priv.periodic_timer_period = period;
     if(esp_timer_is_active(display_priv.timer)) {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] restart timers for run every %hu sec.", __func__, period);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " restart timers for run every %hu sec.", period);
         _periodic_timer_stop();
         _periodic_timer_start();
     }
@@ -540,23 +490,19 @@ uint16_t get_display_timer_period() {
 }
 
 void display_task_resume() {
-#if (C_LOG_LEVEL < 3)
-    ILOG(TAG, "[%s] count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+    FUNC_ENTRY_ARGS(TAG, " count: %ld", display_priv.self->buf_update_count);
     display_task_cancel_req_full_refresh();
     if(display_priv.start_task_pause_seq)
         display_priv.start_task_pause_seq = 0;
     if(!display_priv.task_not_paused)
         display_priv.task_not_paused = 1;
     display_priv.ms = 0;
-    if(lock_timer(portMAX_DELAY) == pdTRUE) {
+    if(display_timer_lock(1000)) {
         if(esp_timer_is_active(display_priv.timer)){
-#if (C_LOG_LEVEL < 2)
-            ILOG(TAG, "[%s] stop periodic timer at count: %ld", __func__, display_priv.self->buf_update_count);
-#endif
+            DLOG(TAG, "[%s] stop periodic timer at count: %ld", __func__, display_priv.self->buf_update_count);
             esp_timer_stop(display_priv.timer);
         }
-        unlock_timer();
+        display_timer_unlock();
     }
 }
 
@@ -565,13 +511,14 @@ bool display_task_is_paused() {
 }
 
 static void _timer_cb(void*arg) {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
     _task_resume_for_times_wo_timer(1, -1, -1, false); // one partial refresh
 }
 #endif
 
 void display_task_start() {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
+    if(display_priv.task_is_running && display_priv.task_handle && display_priv.displayOK) return;
     xTaskCreate(_ui_task, "lcd_ui_task", CONFIG_DISPLAY_TASK_STACK_SIZE, NULL, 5, &display_priv.task_handle);
 }
 
@@ -585,7 +532,7 @@ void display_task_start() {
 
 #if defined(CONFIG_LCD_IS_EPD)
 void display_wait_for_task() {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
     IMEAS_START();
     uint32_t delay = SHUT_DOWN_COUNTER_DELAY;
     _periodic_timer_stop();
@@ -593,9 +540,7 @@ void display_wait_for_task() {
     if(display_priv.task_is_running && !display_priv.task_not_paused) display_task_resume();
     display_priv.shutdown_counter_running = SHUT_DOWN_COUNTER_TIMES;
     while(!get_offscreen_counter() && display_priv.shutdown_counter_running) {
-#if (C_LOG_LEVEL < 2)
         DLOG(TAG, "[%s] left %hu times (*%lu ms) wait for off_screen drawn", __func__, display_priv.shutdown_counter_running, delay);
-#endif
         delay_ms(delay);
         --display_priv.shutdown_counter_running;
     }
@@ -607,8 +552,8 @@ void display_wait_for_task() {
 #undef SHUT_DOWN_COUNTER_DELAY
 
 static void _ui_stop() {
+    FUNC_ENTRY(TAG);
 #if (C_LOG_LEVEL < 2)
-    ILOG(TAG, "[%s]", __func__);
     DMEAS_START();
 #endif
 #if defined(CONFIG_LCD_IS_EPD)
@@ -623,17 +568,17 @@ static void _ui_stop() {
             if(display_priv.task_handle){
                 WLOG(TAG, "[%s] task not finished, deleting", __func__);
                 vTaskDelete(display_priv.task_handle);
+                display_priv.task_handle = 0;
             }
             break;
         }
         ++i;
     }
+    display_priv.task_is_finished = false;
     //delay_ms(4000);
 #if defined(CONFIG_LCD_IS_EPD)
     if(display_priv.timer){
-#if (C_LOG_LEVEL < 2)
         DLOG(TAG, "[%s] stop and delete periodic timer", __func__);
-#endif
         _periodic_timer_stop();
         ESP_ERROR_CHECK(esp_timer_delete(display_priv.timer));
         display_priv.timer = 0;
@@ -647,7 +592,7 @@ static void _ui_stop() {
 }
 
 struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
 #if defined(LOG_LOCAL_LEVEL)
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
 #endif
@@ -663,13 +608,13 @@ struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
     display_priv.refreshing_sem = xSemaphoreCreateBinary();
     display_refresh_unlock();
     display_priv.timer_sem = xSemaphoreCreateBinary();
-    unlock_timer();
+    display_timer_unlock();
 
     return me;
 }
 
 void display_uninit(struct display_s *me) {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
     if (display_priv.displayOK) {
         _ui_stop();
         display_drv_del();
@@ -684,6 +629,7 @@ void display_uninit(struct display_s *me) {
         memset(&display_priv, 0, sizeof(struct display_priv_s));
         memset(me, 0, sizeof(struct display_s));
     }
+    display_priv.displayOK = false;
 }
 
 #endif

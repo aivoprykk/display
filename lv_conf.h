@@ -62,7 +62,7 @@
     #define LV_MEM_SIZE (33U << 9)   // 33 * 512 = 16896 bytes
 #else
 #if defined(CONFIG_DISPLAY_DRIVER_SSD168X)
-    #define LV_MEM_SIZE (55U << 8)   // 55 * 256 = 14080 bytes
+    #define LV_MEM_SIZE (57U << 8)   // 57 * 256 = 14592 bytes
 #else
     #define LV_MEM_SIZE (48U << 10)   // 48 * 1024 = 49152 bytes
 #endif

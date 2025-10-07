@@ -20,7 +20,19 @@ extern "C" {
 #include "logger_common.h"
 
 #ifdef CONFIG_DISPLAY_USE_LVGL
-#include "lvgl.h"
+#ifdef __has_include
+    #if __has_include("lvgl.h")
+        #ifndef LV_LVGL_H_INCLUDE_SIMPLE
+            #define LV_LVGL_H_INCLUDE_SIMPLE
+        #endif
+    #endif
+#endif
+
+#if defined(LV_LVGL_H_INCLUDE_SIMPLE)
+    #include "lvgl.h"
+#else
+    #include "lvgl/lvgl.h"
+#endif
 #if (LVGL_VERSION_MAJOR < 9)
 #define lv_display_t lv_disp_t
 #define lv_image_dsc_t lv_img_dsc_t
@@ -86,7 +98,6 @@ extern display_driver_op_t display_driver_rm67162_op;
 
 #if defined(CONFIG_SSD168X_PANEL_SSD1681)
 #define LCD_H_RES (200)               // horizontal
-#define LCD_H_VISIBLE (200)           // vertical
 #define LCD_V_RES (200)               // vertical
 #define LCD_H_GAP (0)
 #define LCD_V_GAP (0)
@@ -94,11 +105,13 @@ extern display_driver_op_t display_driver_rm67162_op;
 
 #if defined(CONFIG_SSD168X_PANEL_SSD1680)
 #define LCD_H_RES (128)               // horizontal
-#define LCD_H_VISIBLE (122)           // vertical
 #define LCD_V_RES (250)               // vertical
 #define LCD_H_GAP (6)
 #define LCD_V_GAP (0)
 #endif
+
+#define LCD_H_VISIBLE (LCD_H_RES-LCD_H_GAP)           // vertical
+#define LCD_V_VISIBLE (LCD_V_RES-LCD_V_GAP)           // horizontal
 
 #if (CONFIG_SSD168X_PANEL_SSD1681) || (CONFIG_SSD168X_PANEL_SSD1680)
 extern display_driver_op_t display_driver_ssd168x_op;
