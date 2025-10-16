@@ -30,7 +30,7 @@ const lv_img_dsc_t * img_full_p = &speed_raw_200x200;
 #endif
 
 static void update_bat(uint8_t verbose) {
-    voltage_bat = volt_read();
+    voltage_bat = adc_get_cached_batt_volt();
 #if defined(DEBUG)
     if (verbose)
         ESP_LOGI(TAG, "[%s] Battery measured (computed:%.02f, required_min:%.02f)\n", __FUNCTION__, voltage_bat, MINIMUM_VOLTAGE);

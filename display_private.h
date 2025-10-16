@@ -16,7 +16,7 @@ extern "C" {
 #include <string.h>
 
 // Optimized logging macros for performance-critical display code
-#if (C_LOG_LEVEL < 1)
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM)
     #define DISPLAY_DLOG_SIMPLE(tag, msg) DLOG(tag, msg)
     #define DISPLAY_DLOG_1(tag, fmt, a) DLOG(tag, fmt, a) 
     #define DISPLAY_DLOG_2(tag, fmt, a, b) DLOG(tag, fmt, a, b)
@@ -28,7 +28,7 @@ extern "C" {
     #define DISPLAY_DLOG_3(tag, fmt, a, b, c) do { } while(0)
 #endif
 
-#if (C_LOG_LEVEL < 3)
+#if (C_LOG_LEVEL <= LOG_INFO_NUM)
     #define DISPLAY_ILOG_SIMPLE(tag, msg) ILOG(tag, msg)
     #define DISPLAY_ILOG_1(tag, fmt, a) ILOG(tag, fmt, a)
     #define DISPLAY_ILOG_2(tag, fmt, a, b) ILOG(tag, fmt, a, b)

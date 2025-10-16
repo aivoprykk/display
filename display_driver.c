@@ -11,12 +11,12 @@
 static const char *TAG = "display_drv";
 
 // Pre-calculated timeout values to avoid repeated pdMS_TO_TICKS calculations
-#define TIMEOUT_IMMEDIATE 0
+#define TIMEOUT_IMMEDIATE (TickType_t)0
 #define TIMEOUT_MAX portMAX_DELAY
-static const TickType_t timeout_100ms = pdMS_TO_TICKS(100);
 
 // Cached function capabilities to avoid repeated null checks
 typedef struct {
+#if defined(CONFIG_LCD_IS_EPD)
     bool epd_request_full_update;
     bool epd_request_fast_update; 
     bool epd_request_partial_update;
@@ -24,6 +24,7 @@ typedef struct {
     bool epd_refresh_and_turn_off;
     bool epd_turn_on;
     bool epd_turn_off;
+#endif
     bool bl_set;
     bool set_rotation;
     bool d_init;
@@ -53,10 +54,12 @@ display_driver_t drv = {
 
 esp_lcd_panel_handle_t display_drv_new() {
     if(!drv.op->new) return NULL;
-    drv.sem = xSemaphoreCreateBinary();
+    if(!drv.sem)
+        drv.sem = xSemaphoreCreateBinary();
     xSemaphoreGive(drv.sem);
     
     // Cache function capabilities at initialization to avoid repeated null checks
+#if defined(CONFIG_LCD_IS_EPD)
     capabilities.epd_request_full_update = (drv.op->epd_request_full_update != NULL);
     capabilities.epd_request_fast_update = (drv.op->epd_request_fast_update != NULL);
     capabilities.epd_request_partial_update = (drv.op->epd_request_partial_update != NULL);
@@ -64,7 +67,7 @@ esp_lcd_panel_handle_t display_drv_new() {
     capabilities.epd_refresh_and_turn_off = (drv.op->epd_refresh_and_turn_off != NULL);
     capabilities.epd_turn_on = (drv.op->epd_turn_on != NULL);
     capabilities.epd_turn_off = (drv.op->epd_turn_off != NULL);
-#if !defined(CONFIG_LCD_IS_EPD)
+#else
     capabilities.bl_set = (drv.op->bl_set != NULL);
 #endif
     capabilities.set_rotation = (drv.op->set_rotation != NULL);
@@ -95,8 +98,6 @@ static bool lock(int timeout_ms) {
         timeout_ticks = TIMEOUT_MAX;
     } else if (timeout_ms == 0) {
         timeout_ticks = TIMEOUT_IMMEDIATE;
-    } else if (timeout_ms == 100) {
-        timeout_ticks = timeout_100ms;
     } else {
         timeout_ticks = pdMS_TO_TICKS(timeout_ms);
     }
@@ -178,7 +179,7 @@ static esp_err_t _set_rotation(int r) {
         lv_obj_invalidate(lv_scr_act());
     }
 
-#if (C_LOG_LEVEL < 2)
+#if (C_LOG_LEVEL <= LOG_DEBUG_NUM)
     if(drv.lv_disp) {
         DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d", __func__,
             (int)r, DISPLAY_GET_ROTATION(), DISPLAY_GET_HOR_RES(), DISPLAY_GET_VER_RES()
@@ -189,9 +190,7 @@ static esp_err_t _set_rotation(int r) {
     if(r!=drv.rotated) {
         drv.rotated = r;
     }
-#if (C_LOG_LEVEL < 2)
     DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d", __func__, (int)r, drv.rotated);
-#endif
 #endif
     return ESP_OK;
 }
@@ -229,9 +228,7 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
     esp_err_t ret = ESP_OK;
     for (uint8_t i=0, j=lvbuf_num + convbuf_num; i < j; i++) {
         bufsz = i < lvbuf_num ? lvbuf : convbuf;
-#if (C_LOG_LEVEL < 4)
         WLOG(TAG, "Allocate %dKb memory for buf %d" , (bufsz>>10), i);
-#endif
 		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_DMA);
 		if(drv.lv_mem_buf[i] == NULL) {
             drv.lv_mem_buf_size[i] = 0;
