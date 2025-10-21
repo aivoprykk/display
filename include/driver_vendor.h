@@ -118,8 +118,12 @@ extern display_driver_op_t display_driver_ssd168x_op;
 #endif
 
 #define LCD_RESOLUTION  (LCD_H_RES * LCD_V_RES)
+#if ((CONFIG_DISPLAY_DRIVER_ST7789) || (CONFIG_DISPLAY_DRIVER_QEMU))
+#define LCD_PIXELS      (LCD_RESOLUTION)
+#else
 #define LCD_ROW_LEN     (LCD_H_RES / 8)           // gates for x resolution
 #define LCD_PIXELS      (LCD_V_RES * LCD_ROW_LEN) // total pixels
+#endif
 
 #define LCD_PIXELS_ALIGNED (ROUND_UP_TO_8(LCD_H_RES) * ROUND_UP_TO_8(LCD_V_RES))
 #define LCD_PIXELS_MEM_ALIGNED (LCD_PIXELS_ALIGNED / 8)

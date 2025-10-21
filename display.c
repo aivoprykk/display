@@ -145,7 +145,7 @@ uint16_t get_offscreen_counter() {
 // #define CONFIG_FULL_REFRESH_ON_THIRD_FLUSH
 
 static uint32_t _ui_screen_draw() {
-    FUNC_ENTRY_ARGS(TAG, " buf_update_buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, "update_count: %ld", display_priv.self->buf_update_count);
     DMEAS_START();
     display_drv_lock(0);
     display_drv_unlock();
@@ -210,12 +210,12 @@ static uint32_t _ui_screen_draw() {
 #endif
         task_delay_ms = timer_delay_ms;
     display_priv.ms = get_millis() + task_delay_ms;
-    DMEAS_END_ARGS(TAG, " ... done. %ld (delay %lu)", display_priv.self->buf_update_count, task_delay_ms);
+    DMEAS_END_ARGS(TAG, "... done. %ld (delay %lu)", display_priv.self->buf_update_count, task_delay_ms);
     return task_delay_ms;
 };
 
 void display_set_rotation(int8_t rotation) {
-    FUNC_ENTRY_ARGSW(TAG, " %d", rotation);
+    FUNC_ENTRY_ARGW(TAG, " %d", rotation);
     if(display_refresh_lock(1000)) {
         if(rotation != display_priv.rotation) {
             display_priv.rotation = rotation;
@@ -253,12 +253,14 @@ static void _ui_task(void *args) {
         if(display_refresh_lock(500)) {
             display_refresh_unlock();
         }
+        TLOG(TAG, "[%s] waiting ms: %lu", __func__, display_priv.ms);
         if(get_millis() > display_priv.ms) {
             uint8_t mode = display_priv.task_not_paused ? 2 
 #if defined(CONFIG_LCD_IS_EPD)
               : display_priv.self->task_resumed_for_times ? 1 
 #endif
               : 0;
+            TLOG(TAG, "[%s] mode: %hhu", __func__, mode);
             if (mode) {
                 task_delay_ms = _ui_screen_draw();
 #if defined(CONFIG_LCD_IS_EPD)

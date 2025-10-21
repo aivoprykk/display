@@ -80,7 +80,7 @@ static const lcd_cmd_t lcd_st7789v[] = {
 };
 
 static void bl_init() {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
 #if defined(BL_IS_PWM)
     const ledc_timer_config_t LCD_backlight_timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -207,12 +207,12 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
 static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map) {
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)drv->user_data;
     if(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map)){
-        ESP_LOGE(TAG, "[%s] draw bitmap failed", __func__);
+        ELOG(TAG, "[%s] draw bitmap failed", __func__);
     }
 }
 
 static void display_init_cb(void *dsp) {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
     lv_disp_drv_t *disp_drv = (lv_disp_drv_t *)dsp;
     // Set the callback functions
     disp_drv->hor_res = LCD_H_RES;
@@ -225,7 +225,7 @@ static void display_init_cb(void *dsp) {
 }
 
 static void _d_init() {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
     if(drv.disp_drv.user_data == NULL) {
         init_lv_screen(display_init_cb);
     }
@@ -236,7 +236,7 @@ const char * msg[] = {
 };
 
 static esp_lcd_panel_handle_t _new() {
-    ILOG(TAG, "[%s]", __func__);
+    FUNC_ENTRY(TAG);
 
     if(gpio_set_direction(CONFIG_DISPLAY_PWR, GPIO_MODE_OUTPUT)) {
         ELOG(TAG, "%s set GPIO direction", msg[0]);
@@ -267,7 +267,7 @@ static esp_lcd_panel_handle_t _new() {
             CONFIG_DISPLAY_SPI_D7,
         },
         .bus_width = 8,
-        .max_transfer_bytes = LCD_PIXELS * sizeof(uint16_t), // LVGL_LCD_BUF_SIZE * sizeof(uint16_t),
+        .max_transfer_bytes = LCD_V_RES * 100 * sizeof(uint16_t), // LVGL_LCD_BUF_SIZE * sizeof(uint16_t),
         .psram_trans_align = PSRAM_DATA_ALIGNMENT, // PSRAM_DATA_ALIGNMENT,
         .sram_trans_align = 4,
     };
@@ -308,25 +308,25 @@ static esp_lcd_panel_handle_t _new() {
         return NULL;
     }
     // --- Reset the display
-    ESP_LOGI(TAG, "Resetting st7789 display...");
+    ILOG(TAG, "Resetting st7789 display...");
     if(esp_lcd_panel_reset(panel_handle)) {
         WLOG(TAG, "%s reset panel", msg[0]);
     }
     // --- Initialize panel
-    ESP_LOGI(TAG, "Initializing st7789 display...");
+    ILOG(TAG, "Initializing st7789 display...");
     //#define LCD_CMD_SLPOUT          0x11
     esp_lcd_panel_io_tx_param(io_handle, 0x11, NULL, 0);
     //vTaskDelay(pdMS_TO_TICKS(100));
     // flush color before turn on the display
-    uint16_t image[800];
-    uint32_t sz = sizeof(image)/sizeof(image[0]);
-    for (uint16_t x = 0; x < sz; ++x) {
-            image[x] = (15 << 11) | (31 << 5) | 15;
-    }
-    for (uint16_t i = 0; i < LCD_H_RES; i++) {
-        //#define LCD_CMD_RAMWRC          0x3c
-        esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
-    }
+    // uint16_t image[800];
+    // uint32_t sz = sizeof(image)/sizeof(image[0]);
+    // for (uint16_t x = 0; x < sz; ++x) {
+    //         image[x] = (15 << 11) | (31 << 5) | 15;
+    // }
+    // for (uint16_t i = 0; i < LCD_H_RES; i++) {
+    //     //#define LCD_CMD_RAMWRC          0x3c
+    //     esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
+    // }
     //esp_lcd_panel_init(panel_handle);
     //delay_ms(100);
     // --- Configurate the screen
@@ -334,11 +334,11 @@ static esp_lcd_panel_handle_t _new() {
     esp_lcd_panel_invert_color(panel_handle, true);
     // esp_lcd_panel_swap_xy(panel_handle, true);
     // esp_lcd_panel_mirror(panel_handle, true, false);
-// #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
-//     //  the gap is LCD panel specific, even panels with the same driver IC, can
-//     //  have different gap value
-//     esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
-// #endif
+#if (LCD_H_GAP>0) || (LCD_V_GAP>0)
+    //  the gap is LCD panel specific, even panels with the same driver IC, can
+    //  have different gap value
+    esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
+#endif
 #if defined(LCD_MODULE_CMD_1)
     // send panel init commands
     for (uint8_t i = 0; i < (sizeof(lcd_st7789v) / sizeof(lcd_cmd_t)); i++) {
@@ -349,7 +349,7 @@ static esp_lcd_panel_handle_t _new() {
     //delay_ms(100);
 #endif
         // --- Turn on display
-    ESP_LOGI(TAG, "Turning st7789 display on...");
+    ILOG(TAG, "Turning st7789 display on...");
     // #define LCD_CMD_DISPON          0x29
     esp_lcd_panel_io_tx_param(io_handle, 0x29, NULL, 0);
      
@@ -360,9 +360,14 @@ static esp_lcd_panel_handle_t _new() {
 }
 
 static void _del() {
-    ILOG(TAG, "[%s]", __func__);
-
+    FUNC_ENTRY(TAG);
+#ifdef CONFIG_DISPLAY_USE_LVGL
+#if LV_MEM_CUSTOM == 0
     lv_deinit();
+#else
+    lv_mem_deinit();
+#endif
+#endif
     esp_lcd_panel_del(panel_handle);
     esp_lcd_panel_io_del(io_handle);
 }

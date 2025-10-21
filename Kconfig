@@ -159,6 +159,10 @@ menu "Logger Display Module Options"
                 int "GPIO for Busy signal (BUSY)"
                 range -1 48
                 default 4
+            config DISPLAY_SPI_CLK
+                int "GPIO for SPI Clock (D0, SCLK or SCK)"
+                range -1 48
+                default 18
         endif
         if DISPLAY_DRIVER_ST7789 || DISPLAY_DRIVER_SSD168X
             config DISPLAY_SPI_DC
@@ -166,11 +170,6 @@ menu "Logger Display Module Options"
                 range -1 48
                 default 7 if DISPLAY_DRIVER_ST7789
                 default 17
-            config DISPLAY_SPI_CLK
-                int "GPIO for SPI Clock (D0, SCLK or SCK)"
-                range -1 48
-                default 47 if DISPLAY_DRIVER_ST7789
-                default 18
         endif
         config DISPLAY_SPI_CS
             int "GPIO for Chip Select (CS)"

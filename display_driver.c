@@ -229,7 +229,8 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
     for (uint8_t i=0, j=lvbuf_num + convbuf_num; i < j; i++) {
         bufsz = i < lvbuf_num ? lvbuf : convbuf;
         WLOG(TAG, "Allocate %dKb memory for buf %d" , (bufsz>>10), i);
-		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_DMA);
+		// Allocate from DMA-capable internal DRAM memory for SPI transfers
+		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
 		if(drv.lv_mem_buf[i] == NULL) {
             drv.lv_mem_buf_size[i] = 0;
             ELOG(TAG, "[%s] Failed to allocate memory for buffer %d", __func__, i);

@@ -509,7 +509,7 @@ static esp_lcd_panel_handle_t _new() {
     gpio_set_pull_mode(PIN_NUM_EPD_BUSY, GPIO_PULLUP_ONLY);
 #endif
 
-    ESP_LOGI(TAG, "Initialize SPI bus");
+    ILOG(TAG, "Initialize SPI bus");
     spi_bus_config_t buscfg = {
         .sclk_io_num = PIN_NUM_SCLK,
         .mosi_io_num = PIN_NUM_MOSI,
@@ -523,7 +523,7 @@ static esp_lcd_panel_handle_t _new() {
         return NULL;
     }
 
-    ESP_LOGI(TAG, "Install panel IO");
+    ILOG(TAG, "Install panel IO");
     esp_lcd_panel_io_spi_config_t io_config = {
         .dc_gpio_num = PIN_NUM_EPD_DC,
         .cs_gpio_num = PIN_NUM_EPD_CS,
@@ -561,14 +561,14 @@ static esp_lcd_panel_handle_t _new() {
     }
 
     // // --- Reset the display
-    // ESP_LOGI(TAG, "Resetting e-Paper display...");
+    // ILOG(TAG, "Resetting e-Paper display...");
     // if(esp_lcd_panel_reset(panel_handle)) {
     //     ELOG(TAG, "Failed to reset panel");
     //     return NULL;
     // }
     // delay_ms(100);
     // // --- Initialize panel
-    // ESP_LOGI(TAG, "Initializing e-Paper display...");
+    // ILOG(TAG, "Initializing e-Paper display...");
     // if(esp_lcd_panel_init(panel_handle)) {
     //     ELOG(TAG, "Failed to init panel");
     //     return NULL;
@@ -585,7 +585,11 @@ static esp_lcd_panel_handle_t _new() {
 static void _del() {
     FUNC_ENTRY(TAG);
 #ifdef CONFIG_DISPLAY_USE_LVGL
+#if LV_MEM_CUSTOM == 0
     lv_deinit();
+#else
+    lv_mem_deinit();
+#endif
 #endif
     esp_lcd_panel_del(panel_handle);
     panel_handle = NULL;
