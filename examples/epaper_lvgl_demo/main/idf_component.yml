@@ -1,15 +1,9 @@
 dependencies:
   idf: ">=5.0"
+  lvgl/lvgl: ">8.3.0,<9.0.0"
   esp_lcd_panel_ssd1680: 
     path: "../../../../esp_lcd_panel_ssd1680"
-  logger_common: 
-    path: "../../../../logger_common"
-  logger_str: 
-    path: "../../../../logger_str"
   display:
     path: "../../../../display"
-  logger_adc:
-    path: "../../../../logger_adc"
-  logger_button:
-    path: "../../../../logger_button"
-  lvgl/lvgl: "=9.*"
+  logger_common:
+    path: "../../../../logger_common"

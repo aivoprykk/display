@@ -1,0 +1,20 @@
+dependencies:
+  idf: ">=5.0"
+  esp_lcd_panel_ssd1680: 
+    path: "../../../../esp_lcd_panel_ssd1680"
+  logger_common: 
+    path: "../../../../logger_common"
+  strutil: 
+    path: "../../../../strutil"
+  display:
+    path: "../../../../display"
+  logger_adc:
+    path: "../../../../logger_adc"
+  logger_button:
+    path: "../../../../logger_button"
+  lvgl:
+    path: "../../../../lvgl"
+  ccan_json:
+    path: "../../../../ccan_json"
+  strutil:
+    path: "../../../../strutil"

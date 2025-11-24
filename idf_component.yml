@@ -1,6 +1,7 @@
 dependencies:
-  idf:
-    version: '>=5.0'
+  idf: ">=5.1.0"
+  espressif/esp_lcd_qemu_rgb: ">=1.0.2"
+  lvgl/lvgl: ">8.3.0,<9.0.0"
 description: ESP GPS Logger display component for ESP-IDF
 url: https://github.com/aivoprykk/display.git
 version: 0.1.0

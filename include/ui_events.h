@@ -2,22 +2,26 @@
 #ifndef EC03C801_3582_4354_8FBE_98C773E9C9FF
 #define EC03C801_3582_4354_8FBE_98C773E9C9FF
 
-#include "esp_event.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "esp_event.h"
+#include "logger_common.h"
 
 // Declare an event base
 ESP_EVENT_DECLARE_BASE(UI_EVENT);        // declaration of the ADC_EVENT family
 
 // declaration of the specific events under the ADC_EVENT family
+#define UI_EVENT_LIST(l) \
+    l(UI_EVENT_FLUSH_START) \
+    l(UI_EVENT_FLUSH_DONE)
+
 enum {                                       
-    UI_EVENT_FLUSH_START,                  // battery level is low
-    UI_EVENT_FLUSH_DONE,             // battery level is critical
+    UI_EVENT_LIST(ENUM)
 };
 
-extern const char * ui_event_strings[];
+const char * ui_event_strings(int id);
 
 #ifdef __cplusplus
 } /*extern "C"*/

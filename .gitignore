@@ -6,3 +6,5 @@ managed_components
 local_components
 .dependencies.lock
 .old
+lvgl_demo_3
+lvgl_demo_4
