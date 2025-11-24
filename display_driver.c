@@ -12,10 +12,12 @@ static const char *TAG = "display_drv";
 
 // Pre-calculated timeout values to avoid repeated pdMS_TO_TICKS calculations
 #define TIMEOUT_IMMEDIATE (TickType_t)0
+#define TIMEOUT_IMMEDIATE (TickType_t)0
 #define TIMEOUT_MAX portMAX_DELAY
 
 // Cached function capabilities to avoid repeated null checks
 typedef struct {
+#if defined(CONFIG_LCD_IS_EPD)
 #if defined(CONFIG_LCD_IS_EPD)
     bool epd_request_full_update;
     bool epd_request_fast_update; 
@@ -24,6 +26,7 @@ typedef struct {
     bool epd_refresh_and_turn_off;
     bool epd_turn_on;
     bool epd_turn_off;
+#endif
 #endif
     bool bl_set;
     bool set_rotation;
@@ -56,9 +59,12 @@ esp_lcd_panel_handle_t display_drv_new() {
     if(!drv.op->new) return NULL;
     if(!drv.sem)
         drv.sem = xSemaphoreCreateBinary();
+    if(!drv.sem)
+        drv.sem = xSemaphoreCreateBinary();
     xSemaphoreGive(drv.sem);
     
     // Cache function capabilities at initialization to avoid repeated null checks
+#if defined(CONFIG_LCD_IS_EPD)
 #if defined(CONFIG_LCD_IS_EPD)
     capabilities.epd_request_full_update = (drv.op->epd_request_full_update != NULL);
     capabilities.epd_request_fast_update = (drv.op->epd_request_fast_update != NULL);
@@ -67,6 +73,7 @@ esp_lcd_panel_handle_t display_drv_new() {
     capabilities.epd_refresh_and_turn_off = (drv.op->epd_refresh_and_turn_off != NULL);
     capabilities.epd_turn_on = (drv.op->epd_turn_on != NULL);
     capabilities.epd_turn_off = (drv.op->epd_turn_off != NULL);
+#else
 #else
     capabilities.bl_set = (drv.op->bl_set != NULL);
 #endif

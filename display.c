@@ -11,6 +11,7 @@ static const char *TAG = "display";
 // Optimized timeout constants for common semaphore operations
 #define DISPLAY_TIMEOUT_MAX portMAX_DELAY
 #define DISPLAY_TIMEOUT_IMMEDIATE (TickType_t)0UL
+#define DISPLAY_TIMEOUT_IMMEDIATE (TickType_t)0UL
 
 ESP_EVENT_DEFINE_BASE(UI_EVENT);
 
@@ -29,10 +30,17 @@ const char * ui_event_strings(int id) {return "UI_EVENT";}
 #else
 #define DISPLAY_TIMER_TASK_DELAY_MS 10UL
 #endif
+#define LCD_UI_TIMER_PERIOD_S 60 // 1 minute periodic timer for UI updates
+#if defined(CONFIG_LCD_IS_EPD)
+#define DISPLAY_TIMER_TASK_DELAY_MS 10UL
+#else
+#define DISPLAY_TIMER_TASK_DELAY_MS 10UL
+#endif
 typedef struct display_priv_s {
     esp_lcd_panel_handle_t dspl_drv;
     display_t * self;
     int8_t rotation;
+    bool display_initialized;
     bool display_initialized;
     uint32_t count_last_full_refresh; 
     uint32_t count_last_fast_refresh;
@@ -63,6 +71,7 @@ typedef struct display_priv_s {
     .self = NULL, \
     .rotation = ROTATION_DEFAULT, \
     .display_initialized = false, \
+    .display_initialized = false, \
     .count_last_full_refresh = 0, \
     .count_last_fast_refresh = 0, \
     .off_screen_count = 0, \
@@ -89,6 +98,7 @@ bool display_refresh_lock(int timeout) {
     if (!display_priv.refreshing_sem) return false;
     const TickType_t timeout_ticks = (timeout == -1) ? DISPLAY_TIMEOUT_MAX : 
                                      (timeout == 0) ? DISPLAY_TIMEOUT_IMMEDIATE : pdMS_TO_TICKS(timeout);
+                                     (timeout == 0) ? DISPLAY_TIMEOUT_IMMEDIATE : pdMS_TO_TICKS(timeout);
     return  xSemaphoreTake(display_priv.refreshing_sem, timeout_ticks) == pdTRUE;
 }
 
@@ -104,6 +114,7 @@ static bool display_timer_lock(int timeout) {
     if (!display_priv.timer_sem) return false;
     const TickType_t timeout_ticks = (timeout == -1) ? DISPLAY_TIMEOUT_MAX : 
                                      (timeout == 0) ? DISPLAY_TIMEOUT_IMMEDIATE : pdMS_TO_TICKS(timeout);
+                                     (timeout == 0) ? DISPLAY_TIMEOUT_IMMEDIATE : pdMS_TO_TICKS(timeout);
     return  xSemaphoreTake(display_priv.timer_sem, timeout_ticks) == pdTRUE;
 }
 
@@ -116,7 +127,9 @@ static void display_timer_unlock() {
 
 static uint32_t _lv_timer_handler() {
     FUNC_ENTRY_ARGSD(TAG, " %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGSD(TAG, " %ld", display_priv.self->buf_update_count);
     uint32_t task_delay_ms = L_LVGL_TASK_MAX_DELAY_MS;
+    if (display_drv_lock(1000)) {
     if (display_drv_lock(1000)) {
         task_delay_ms = lv_timer_handler(); 
         display_drv_unlock();
@@ -132,10 +145,12 @@ static uint32_t _lv_timer_handler() {
 
 void display_incr_buf_update_count() {
     FUNC_ENTRY_ARGSD(TAG, " %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGSD(TAG, " %ld", display_priv.self->buf_update_count);
     ++display_priv.self->buf_update_count;
 }
 
 uint16_t get_offscreen_counter() {
+    FUNC_ENTRY_ARGSD(TAG, " %hhu, %ld", display_priv.off_screen_count, display_priv.self->buf_update_count);
     FUNC_ENTRY_ARGSD(TAG, " %hhu, %ld", display_priv.off_screen_count, display_priv.self->buf_update_count);
     return display_priv.off_screen_count;
 }
@@ -251,6 +266,7 @@ static void _ui_task(void *args) {
     uint32_t task_delay_ms = _lv_timer_handler();
     while (display_priv.task_is_running) {
         if(display_refresh_lock(500)) {
+        if(display_refresh_lock(500)) {
             display_refresh_unlock();
         }
         TLOG(TAG, "[%s] waiting ms: %lu", __func__, display_priv.ms);
@@ -289,6 +305,7 @@ void display_request_partial_refresh() {
 
 void display_shut_down() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     if(display_refresh_lock(1000)) {
         display_drv_epd_turn_off(display_priv.dspl_drv);
         display_refresh_unlock();
@@ -296,6 +313,7 @@ void display_shut_down() {
 }
 
 static void _task_req_fast_refresh(int8_t fast_refresh_time) {
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld fast_refresh_time: %hhd", display_priv.self->buf_update_count, fast_refresh_time);
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld fast_refresh_time: %hhd", display_priv.self->buf_update_count, fast_refresh_time);
     if(display_refresh_lock(1000)) {
         if(display_priv.self->task_fast_refresh_on_time < display_priv.self->buf_update_count && fast_refresh_time>=0) {
@@ -310,10 +328,12 @@ static void _task_req_fast_refresh(int8_t fast_refresh_time) {
 
 void display_request_fast_refresh() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_drv_epd_request_fast_update();
 }
 
 void display_task_cancel_req_fast_refresh() {
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_priv.self->task_fast_refresh_on_time = 0;
 }
@@ -327,9 +347,11 @@ static void _task_req_full_refresh(int8_t full_refresh_time, bool full_refresh_f
         display_refresh_unlock();
     }
     TLOG(TAG, "[%s] buf_update_count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", __FUNCTION__, display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
+    TLOG(TAG, "[%s] buf_update_count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", __FUNCTION__, display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
 }
 
 void display_request_full_refresh(bool force) {
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld force: %d", display_priv.self->buf_update_count, force);
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld force: %d", display_priv.self->buf_update_count, force);
     if(force || display_priv.self->buf_update_count < 1 || display_priv.self->buf_update_count < 5 || display_priv.count_last_full_refresh + 5  < display_priv.self->buf_update_count){
         display_drv_epd_request_full_update();
@@ -339,11 +361,13 @@ void display_request_full_refresh(bool force) {
 
 void display_task_cancel_req_full_refresh() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_priv.self->task_full_refresh_on_time = 0;
     display_priv.self->task_full_refresh_on_time_force = false;
 }
 
 static esp_err_t _task_resume_for_times_wo_timer(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force) {
+    FUNC_ENTRY_ARGSD(TAG, " buf_update_count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
     FUNC_ENTRY_ARGSD(TAG, " buf_update_count: %ld task_full_refresh_on_time: %ld, task_fast_refresh_on_time: %ld", display_priv.self->buf_update_count, display_priv.self->task_full_refresh_on_time, display_priv.self->task_fast_refresh_on_time);
     if(display_priv.task_is_running) {
         if(display_refresh_lock(1000)) {
@@ -371,8 +395,10 @@ static esp_err_t _task_resume_for_times_wo_timer(uint8_t times, int8_t fast_refr
 
 static void _periodic_timer_stop() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     if (display_priv.timer_created && display_timer_lock(1000)) {
         if(esp_timer_is_active(display_priv.timer)) {
+            FUNC_ENTRY_ARGSD(TAG, " stop periodic timer");
             FUNC_ENTRY_ARGSD(TAG, " stop periodic timer");
             if(esp_timer_stop(display_priv.timer)) {
                 WLOG(TAG, "[%s] failed to stop periodic timer", __func__);
@@ -386,6 +412,7 @@ static void _timer_cb(void*arg);
 
 static void _periodic_timer_start() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
 #if defined(CONFIG_LCD_IS_EPD)
     if(!display_priv.timer_created) {
         const esp_timer_create_args_t lcd_periodic_timer_args = {
@@ -393,6 +420,7 @@ static void _periodic_timer_start() {
             .name = "lcd_periodic",
         };
         if(esp_timer_create(&lcd_periodic_timer_args, &display_priv.timer)){
+            WLOG(TAG, "[%s] failed to create periodic timer.", __func__);
             WLOG(TAG, "[%s] failed to create periodic timer.", __func__);
             return;
         }
@@ -402,6 +430,7 @@ static void _periodic_timer_start() {
     if(display_priv.timer_created && display_timer_lock(1000)) {
         if(!esp_timer_is_active(display_priv.timer)) {
             DLOG(TAG, "[%s] start periodic timer.", __func__);
+            DLOG(TAG, "[%s] start periodic timer.", __func__);
             esp_timer_start_periodic(display_priv.timer, SEC_TO_US(display_priv.periodic_timer_period ? display_priv.periodic_timer_period : LCD_UI_TIMER_PERIOD_S));
         }
         display_timer_unlock();
@@ -410,21 +439,25 @@ static void _periodic_timer_start() {
 
 void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force) {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld times: %hhu, fast_refresh_time: %hhd, full_refresh_time: %hhd, full_refresh_force: %d", display_priv.self->buf_update_count, times, fast_refresh_time, full_refresh_time, full_refresh_force);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld times: %hhu, fast_refresh_time: %hhd, full_refresh_time: %hhd, full_refresh_force: %d", display_priv.self->buf_update_count, times, fast_refresh_time, full_refresh_time, full_refresh_force);
     if(display_priv.self->task_resumed_for_times>=times || display_priv.task_not_paused) {
         FUNC_ENTRY_ARGSD(TAG, " already running times: %hhu, not_paused: %hhu", times, display_priv.task_not_paused);
         return;
     }
+    DMEAS_START();
     DMEAS_START();
     if(!_task_resume_for_times_wo_timer(times,fast_refresh_time,full_refresh_time, full_refresh_force)){
         _periodic_timer_stop();
         _periodic_timer_start();
     }
     DMEAS_END(TAG);
+    DMEAS_END(TAG);
 }
 
 #endif
 
 void display_cancel_delay() {
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_priv.ms=0;
     display_priv.ms_cancelled = 1;
@@ -441,6 +474,7 @@ uint32_t display_get_flush_count() {
 
 static void _task_pause_wo_timer() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_task_cancel_req_full_refresh();
     if(display_priv.task_not_paused) {
         display_priv.task_not_paused = 0;
@@ -449,6 +483,7 @@ static void _task_pause_wo_timer() {
 }
 
 void display_task_pause() {
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     _task_pause_wo_timer();
     _periodic_timer_start();
@@ -479,6 +514,7 @@ uint16_t get_display_timer_period() {
 
 void display_task_resume() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self->buf_update_count);
     display_task_cancel_req_full_refresh();
     if(display_priv.start_task_pause_seq)
         display_priv.start_task_pause_seq = 0;
@@ -487,6 +523,7 @@ void display_task_resume() {
     display_priv.ms = 0;
     if(display_timer_lock(1000)) {
         if(esp_timer_is_active(display_priv.timer)){
+            DLOG(TAG, "[%s] stop periodic timer", __func__);
             DLOG(TAG, "[%s] stop periodic timer", __func__);
             esp_timer_stop(display_priv.timer);
         }
@@ -506,6 +543,7 @@ static void _timer_cb(void*arg) {
 
 void display_task_start() {
     FUNC_ENTRY(TAG);
+    if(display_priv.task_is_running && display_priv.task_handle && display_priv.display_initialized) return;
     if(display_priv.task_is_running && display_priv.task_handle && display_priv.display_initialized) return;
     xTaskCreate(_ui_task, "lcd_ui_task", CONFIG_DISPLAY_TASK_STACK_SIZE, NULL, 5, &display_priv.task_handle);
 }
@@ -533,6 +571,7 @@ void display_wait_for_task() {
         --display_priv.shutdown_counter_running;
     }
     _task_pause_wo_timer();
+    IMEAS_END(TAG);
     IMEAS_END(TAG);
 }
 #endif
@@ -573,12 +612,15 @@ static void _ui_stop() {
 
     display_priv.self->op->ui_deinit();
     DMEAS_END_ARGS(TAG, " %hu 150 ms loops", i);
+    DMEAS_END_ARGS(TAG, " %hu 150 ms loops", i);
 }
 
 struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
     FUNC_ENTRY(TAG);
    if (display_priv.display_initialized) return me;
+   if (display_priv.display_initialized) return me;
 #if defined(LOG_LOCAL_LEVEL)
+    esp_log_level_set(TAG, LOG_LOCAL_LEVEL);
     esp_log_level_set(TAG, LOG_LOCAL_LEVEL);
 #endif
     memset(me, 0, sizeof(struct display_s));
@@ -588,10 +630,15 @@ struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
 
     if(display_priv.dspl_drv)
         display_priv.display_initialized = true;
+        display_priv.display_initialized = true;
 
     if(!display_priv.refreshing_sem)
         display_priv.refreshing_sem = xSemaphoreCreateBinary();
+    if(!display_priv.refreshing_sem)
+        display_priv.refreshing_sem = xSemaphoreCreateBinary();
     display_refresh_unlock();
+    if(!display_priv.timer_sem)
+        display_priv.timer_sem = xSemaphoreCreateBinary();
     if(!display_priv.timer_sem)
         display_priv.timer_sem = xSemaphoreCreateBinary();
     display_timer_unlock();
@@ -601,6 +648,7 @@ struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
 
 void display_uninit(struct display_s *me) {
     FUNC_ENTRY(TAG);
+    if (display_priv.display_initialized) {
     if (display_priv.display_initialized) {
         _ui_stop();
         display_drv_del();
@@ -615,6 +663,7 @@ void display_uninit(struct display_s *me) {
         memset(&display_priv, 0, sizeof(struct display_priv_s));
         memset(me, 0, sizeof(struct display_s));
     }
+    display_priv.display_initialized = false;
     display_priv.display_initialized = false;
 }
 
