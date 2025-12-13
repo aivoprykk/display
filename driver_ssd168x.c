@@ -100,12 +100,12 @@ static esp_err_t _request_partial_update() {
 }
 
 static uint32_t _flush_count() {
-    FUNC_ENTRY(TAG);
+    FUNC_ENTRYT(TAG);
     return flush_count;
 }
 
 static uint32_t _last_flush_ms() {
-    FUNC_ENTRY(TAG);
+    FUNC_ENTRYT(TAG);
     return last_flush_ms;
 }
 
@@ -274,11 +274,11 @@ static uint8_t lvgl_pixel_convert_cb(const unsigned char *src_data, esp_lcd_ssd1
 #if (LVGL_VERSION_MAJOR < 9)
 #define MYINT int
 #define MYINT_D "d"
-static void _lvgl_flush_cb(lv_disp_drv_t *dspl, const lv_area_t *area, lv_color_t *color_map)
+static void _flush_cb(lv_disp_drv_t *dspl, const lv_area_t *area, lv_color_t *color_map)
 #else  
 #define MYINT int32_t
 #define MYINT_D PRId32
-static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *color_map)
+static void _flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *color_map)
 #endif
 {
     FUNC_ENTRY_ARGS(TAG, " x1:%"MYINT_D" y1:%"MYINT_D", x2:%"MYINT_D" y2:%"MYINT_D"", 
@@ -378,13 +378,14 @@ static void _lvgl_flush_cb(lv_display_t *dspl, const lv_area_t *area, uint8_t *c
     // Update statistics and notify completion
     flush_count++;
     last_flush_ms = get_millis();
+    FUNC_ENTRY_ARGSD(TAG, "flush done count: %lu", flush_count);
     esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, portMAX_DELAY);
 }
 
 #if (LVGL_VERSION_MAJOR < 9)
-static void _lvgl_wait_cb(struct _lv_disp_drv_t *disp_drv)
+static void _wait_cb(struct _lv_disp_drv_t *disp_drv)
 #else
-static void _lvgl_wait_cb(lv_display_t *disp)
+static void _wait_cb(lv_display_t *disp)
 #endif
 {
     if(drv.sem)
@@ -433,8 +434,8 @@ static void _init_cb(void *dsp) {
     disp_drv->sw_rotate = 0;
     disp_drv->user_data = panel_handle;
     // alloc bitmap buffer to draw
-    disp_drv->flush_cb = _lvgl_flush_cb;
-    disp_drv->wait_cb = _lvgl_wait_cb;
+    disp_drv->flush_cb = _flush_cb;
+    disp_drv->wait_cb = _wait_cb;
     // disp_drv->set_px_cb = set_px_cb;
     // disp_drv->drv_update_cb = epaper_lvgl_port_update_callback;
 #else
@@ -446,8 +447,8 @@ static void _init_cb(void *dsp) {
     // lv_disp_set_direct_mode(disp, 1);
     // lv_disp_set_sw_rotate(disp, false);
     lv_display_set_user_data(disp, panel_handle);
-    lv_display_set_flush_cb(disp, _lvgl_flush_cb);
-    lv_display_set_flush_wait_cb(disp, _lvgl_wait_cb);
+    lv_display_set_flush_cb(disp, _flush_cb);
+    lv_display_set_flush_wait_cb(disp, _wait_cb);
     // lv_display_set_color_format(disp, LV_COLOR_FORMAT_I8);
 #endif
 }

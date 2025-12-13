@@ -145,21 +145,29 @@ uint16_t get_offscreen_counter() {
 // #define CONFIG_FULL_REFRESH_ON_THIRD_FLUSH
 
 static uint32_t _ui_screen_draw() {
-    FUNC_ENTRY_ARGS(TAG, "update_count: %ld", display_priv.self->buf_update_count);
+    FUNC_ENTRY(TAG);
     DMEAS_START();
     display_drv_lock(0);
     display_drv_unlock();
 #if defined(CONFIG_LCD_IS_EPD)
+    FUNC_ENTRY_ARGSD(TAG, "update_count=%lu first_flush_done=%hhu task_not_paused=%d epd_flush_count=%lu start_task_pause_seq=%hhu", display_priv.self->buf_update_count, display_priv.self->first_flush_done, display_priv.task_not_paused, display_drv_epd_get_flush_count(), display_priv.start_task_pause_seq);
     if(display_priv.start_task_pause_seq > 1) {
         display_task_pause();
         display_priv.start_task_pause_seq = 0;
     }
-    if(display_priv.self->first_flush_done || display_drv_epd_get_flush_count()) {
-        if(!display_priv.self->first_flush_done) {
+    if(display_priv.self->first_flush_done == 0) {
+        if(display_drv_epd_get_flush_count() > 0) {
             display_priv.self->first_flush_done = 1;
 #if defined(CONFIG_FULL_REFRESH_ON_SECOND_FLUSH)
-    goto do_full_refresh;
+            goto do_full_refresh;
 #endif
+        }
+    }
+    else if(display_priv.self->first_flush_done == 1) {
+        if(display_drv_epd_get_flush_count() > 2) {
+            DLOG(TAG, "** start pause seq after first flush done **");
+            display_task_pause();
+            display_priv.self->first_flush_done = 2;
         }
     }
 #if !defined(CONFIG_FULL_REFRESH_ON_FIRST_FLUSH)
@@ -167,27 +175,27 @@ static uint32_t _ui_screen_draw() {
 #endif
     {
 #if defined(CONFIG_FULL_REFRESH_ON_THIRD_FLUSH)
-    if(display_drv_epd_get_flush_count() == 2) {
-        goto do_full_refresh;
-    }
+        if(display_drv_epd_get_flush_count() == 2) {
+            goto do_full_refresh;
+        }
 #endif
-    if(display_priv.self->buf_update_count && display_priv.self->task_full_refresh_on_time == display_priv.self->buf_update_count) {
+        if(display_priv.self->buf_update_count && display_priv.self->task_full_refresh_on_time == display_priv.self->buf_update_count) {
 #if defined(CONFIG_FULL_REFRESH_ON_SECOND_FLUSH) || defined(CONFIG_FULL_REFRESH_ON_THIRD_FLUSH)
-        do_full_refresh:
+            do_full_refresh:
 #endif
-        DLOG(TAG, "[%s] Full ... count: %lu", __func__, display_priv.self->buf_update_count);
-        display_request_full_refresh(display_priv.self->task_full_refresh_on_time_force);
-        display_task_cancel_req_fast_refresh();
-    }
-    else if(display_priv.self->task_fast_refresh_on_time == display_priv.self->buf_update_count) {
-        DLOG(TAG, "[%s] Fast ... count: %lu", __func__, display_priv.self->buf_update_count);
-        display_request_fast_refresh();
-        display_task_cancel_req_full_refresh();
-    }
-    else {
-        DLOG(TAG, "[%s] Partial ... count: %lu", __func__, display_priv.self->buf_update_count);
-        display_drv_epd_request_partial_update();
-    }
+            DLOG(TAG, "[%s] Full ... count: %lu", __func__, display_priv.self->buf_update_count);
+            display_request_full_refresh(display_priv.self->task_full_refresh_on_time_force);
+            display_task_cancel_req_fast_refresh();
+        }
+        else if(display_priv.self->task_fast_refresh_on_time == display_priv.self->buf_update_count) {
+            DLOG(TAG, "[%s] Fast ... count: %lu", __func__, display_priv.self->buf_update_count);
+            display_request_fast_refresh();
+            display_task_cancel_req_full_refresh();
+        }
+        else {
+            DLOG(TAG, "[%s] Partial ... count: %lu", __func__, display_priv.self->buf_update_count);
+            display_drv_epd_request_partial_update();
+        }
     }
 #endif
     uint32_t task_delay_ms = display_priv.self->op->screen_cb(0);
@@ -456,7 +464,7 @@ void display_task_pause() {
 
 void display_start_task_pause_seq() {
     FUNC_ENTRY_ARGS(TAG, " pause state: %hhu", display_priv.start_task_pause_seq);
-    ++display_priv.start_task_pause_seq;
+    if(display_priv.task_not_paused) ++display_priv.start_task_pause_seq;
 }
 
 void display_cancel_task_pause_seq() {
@@ -507,7 +515,7 @@ static void _timer_cb(void*arg) {
 void display_task_start() {
     FUNC_ENTRY(TAG);
     if(display_priv.task_is_running && display_priv.task_handle && display_priv.display_initialized) return;
-    xTaskCreate(_ui_task, "lcd_ui_task", CONFIG_DISPLAY_TASK_STACK_SIZE, NULL, 5, &display_priv.task_handle);
+    xTaskCreatePinnedToCore(_ui_task, "lcd_ui_task", CONFIG_DISPLAY_TASK_STACK_SIZE, NULL, 5, &display_priv.task_handle, 1);
 }
 
 #if defined(CONFIG_LCD_IS_EPD)
