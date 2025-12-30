@@ -59,6 +59,10 @@ uint32_t display_get_buf_update_count();
 uint32_t display_get_flush_count();
 void display_shut_down();
 
+void display_request_alert(void);
+void display_request_mandatory(void);
+void display_request_optional(void);
+
 #ifdef __cplusplus
 }
 #endif
