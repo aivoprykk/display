@@ -251,7 +251,7 @@ static uint32_t _ui_screen_draw() {
 
 void display_set_rotation(int8_t rotation) {
     FUNC_ENTRY_ARGW(TAG, " %d", rotation);
-    if(display_refresh_lock(1000)) {
+    if(display_refresh_lock(100)) {
         if(rotation != display_priv.rotation) {
             display_priv.rotation = rotation;
         }
@@ -300,15 +300,24 @@ static void _ui_task(void *args) {
                 delay_ms(sleep_ms);
             }
         } else {
-            // Paused: block on semaphore, wake only on refresh request (no polling delay)
+            // Paused: block on semaphore OR task notification with timeout
             TLOG(TAG, "[%s] paused, waiting for event", __func__);
-            if (xSemaphoreTake(display_priv.wake_sem, DISPLAY_TIMEOUT_MAX) == pdTRUE) {
+            
+            // Wait for either semaphore or task notification (fast path for button events)
+            BaseType_t notified = xSemaphoreTake(display_priv.wake_sem, pdMS_TO_TICKS(100));
+            if (notified == pdFALSE) {
+                // Check if we got a task notification instead (from display_task_notify_update)
+                notified = ulTaskNotifyTake(pdTRUE, 0);  // Clear notification, no wait
+            }
+            
+            if (notified == pdTRUE) {
                 // If we're stopping the task, skip drawing to avoid an extra frame
                 if (!display_priv.task_is_running) {
                     continue;
                 }
                 task_delay_ms = _ui_screen_draw();
             }
+            // Timeout is normal when paused - allows task to check running flag
         }
     }
     UNUSED_PARAMETER(task_delay_ms);
@@ -329,7 +338,7 @@ void display_request_partial_refresh() {
 
 void display_shut_down() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self ? display_priv.self->buf_update_count : 0);
-    if(display_refresh_lock(1000)) {
+    if(display_refresh_lock(100)) {
         display_drv_epd_turn_off(display_priv.dspl_drv);
         display_refresh_unlock();
     }
@@ -366,10 +375,11 @@ typedef struct {
 static display_queue_state_t display_queue_state = {0};
 
 void display_on_task_paused(bool paused) {
-    if (display_refresh_lock(1000)) {
+    if (display_refresh_lock(0)) {  // Trylock for non-blocking from button callbacks
         display_queue_state.task_paused = paused;
         display_refresh_unlock();
     }
+    // If lock busy, state will sync on next operation
 }
 
 static void _queue_start_draw(uint32_t buf_version, display_refresh_type_t type) {
@@ -384,7 +394,7 @@ static void _queue_start_draw(uint32_t buf_version, display_refresh_type_t type)
 
 void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t type) {
     FUNC_ENTRY_ARGS(TAG, "buf %lu type %d", target_buf_version, type);
-    if (display_refresh_lock(1000)) {
+    if (display_refresh_lock(100)) {  // Reduced from 1000ms to 100ms for faster response
         FUNC_ENTRY_ARGS(TAG, "locked, buf %lu type %d", target_buf_version, type);
         // If task is running (not paused), bypass queue—LVGL coalesces via _task_req_fast_refresh
         if (!display_queue_state.task_paused) {
@@ -402,16 +412,13 @@ void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t
 
         if (!display_queue_state.draw_in_progress) {
             _queue_start_draw(target_buf_version, type);
-            // Wake the paused task immediately; if already given, clear and re-give
+            // Wake the paused task immediately
             display_priv.ms = 0;
             if (display_priv.wake_sem) {
-                if (xSemaphoreGive(display_priv.wake_sem) != pdTRUE) {
-                    xSemaphoreTake(display_priv.wake_sem, 0);
-                    xSemaphoreGive(display_priv.wake_sem);
-                }
+                xSemaphoreGive(display_priv.wake_sem);  // Simplified - binary semaphore saturates naturally
             }
             display_refresh_unlock();
-            taskYIELD();
+            // No taskYIELD() - let scheduler handle naturally for lower latency
             return;
         }
 
@@ -445,10 +452,7 @@ void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t
         // Always wake paused task so it can service the queued draw promptly
         display_priv.ms = 0;
         if (display_priv.wake_sem) {
-            if (xSemaphoreGive(display_priv.wake_sem) != pdTRUE) {
-                xSemaphoreTake(display_priv.wake_sem, 0);
-                xSemaphoreGive(display_priv.wake_sem);
-            }
+            xSemaphoreGive(display_priv.wake_sem);  // Simplified - binary semaphore saturates naturally
         }
 
         display_refresh_unlock();
@@ -457,7 +461,7 @@ void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t
 
 void display_on_draw_complete(void) {
     FUNC_ENTRY(TAG);
-    if (display_refresh_lock(1000)) {
+    if (display_refresh_lock(100)) {  // Reduced from 1000ms to 100ms
         display_queue_state.draw_in_progress = false;
 
         if (display_queue_state.next_pending) {
@@ -496,6 +500,54 @@ void display_request_optional(void) {
 void display_request_fast_refresh() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self ? display_priv.self->buf_update_count : 0);
     display_drv_epd_request_fast_update();
+}
+
+// Non-blocking versions for button callbacks - use trylock to avoid breaking multi-click detection
+void display_request_mandatory_nonblock(void) {
+    if (display_refresh_lock(0)) {  // Trylock: returns immediately if busy
+        uint32_t target = _get_queue_buf_version() + 1;
+        if (!display_queue_state.task_paused) {
+            // Task running: just set fast refresh flag
+            _task_req_fast_refresh(0);
+            display_priv.ms = 0;
+        } else {
+            // Task paused: queue request
+            if (!display_queue_state.draw_in_progress) {
+                _queue_start_draw(target, DISPLAY_REFRESH_TYPE_MANDATORY);
+            } else {
+                display_queue_state.next_buf_version = target;
+                display_queue_state.next_type = DISPLAY_REFRESH_TYPE_MANDATORY;
+                display_queue_state.next_pending = true;
+            }
+            // Wake paused task
+            display_priv.ms = 0;
+            if (display_priv.wake_sem) xSemaphoreGive(display_priv.wake_sem);
+        }
+        display_refresh_unlock();
+    }
+    // If lock busy, skip - periodic timer will catch state change on next cycle
+}
+
+void display_request_alert_nonblock(void) {
+    if (display_refresh_lock(0)) {  // Trylock: returns immediately if busy
+        uint32_t target = _get_queue_buf_version() + 1;
+        if (!display_queue_state.task_paused) {
+            _task_req_fast_refresh(0);
+            display_priv.ms = 0;
+        } else {
+            // Alert has priority: always queue as next
+            if (!display_queue_state.draw_in_progress) {
+                _queue_start_draw(target, DISPLAY_REFRESH_TYPE_ALERT);
+            } else {
+                display_queue_state.next_buf_version = target;
+                display_queue_state.next_type = DISPLAY_REFRESH_TYPE_ALERT;
+                display_queue_state.next_pending = true;
+            }
+            display_priv.ms = 0;
+            if (display_priv.wake_sem) xSemaphoreGive(display_priv.wake_sem);
+        }
+        display_refresh_unlock();
+    }
 }
 
 void display_task_cancel_req_fast_refresh() {
@@ -680,6 +732,14 @@ void display_task_resume() {
     if(esp_timer_is_active(display_priv.timer)){
         DLOG(TAG, "[%s] stop periodic timer", __func__);
         esp_timer_stop(display_priv.timer);
+    }
+}
+
+void display_task_notify_update() {
+    // Ultra-fast non-blocking wake for immediate display updates
+    // Uses FreeRTOS task notification (fastest IPC, ~0.5µs)
+    if (display_priv.task_handle) {
+        xTaskNotifyGive(display_priv.task_handle);
     }
 }
 

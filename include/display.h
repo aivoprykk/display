@@ -40,6 +40,9 @@ bool display_task_is_paused();
 void display_task_pause();
 void display_task_resume();
 void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force);
+void display_task_notify_update();  // Fast non-blocking wake for immediate updates
+void display_request_mandatory_nonblock();  // Non-blocking version (trylock) for button callbacks
+void display_request_alert_nonblock();      // Non-blocking version (trylock) for button callbacks
 void display_wait_for_task();
 void display_cancel_delay();
 void display_request_full_refresh(bool force);
