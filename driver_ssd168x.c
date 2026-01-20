@@ -131,12 +131,12 @@ static esp_err_t _turn_on(esp_lcd_panel_handle_t panel_handle) {
         if(esp_lcd_panel_reset(panel_handle)) {
             return ESP_FAIL;
         }
-        delay_ms(50);
+        vTaskDelay(pdMS_TO_TICKS(20));
         if(epaper_panel_init_screen_ssd168x(panel_handle, init_mode, 0)) {
             return ESP_FAIL;
         }
         init_mode = INIT_MODE_FULL_2;
-        delay_ms(50);
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
     if(esp_lcd_panel_disp_on_off(panel_handle, true)) {
         return ESP_FAIL;

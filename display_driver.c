@@ -31,6 +31,7 @@ typedef struct {
 } driver_capabilities_t;
 
 static driver_capabilities_t capabilities = {0};
+static volatile bool driver_alive = false;
 
 display_driver_t drv = {
 #ifdef CONFIG_DISPLAY_USE_LVGL
@@ -73,10 +74,13 @@ esp_lcd_panel_handle_t display_drv_new() {
     capabilities.set_rotation = (drv.op->set_rotation != NULL);
     capabilities.d_init = (drv.op->d_init != NULL);
     
-    return drv.op->new();
+    esp_lcd_panel_handle_t h = drv.op->new();
+    driver_alive = (h != NULL);
+    return h;
 }
 
 void display_drv_del() {
+    driver_alive = false;
     if(drv.op->del)
         drv.op->del();
     if(drv.sem) {
@@ -196,6 +200,7 @@ static esp_err_t _set_rotation(int r) {
 }
 
 esp_err_t display_drv_set_rotation(int r) {
+    if(!driver_alive) return ESP_ERR_INVALID_STATE;
     int prev = display_drv_get_rotation();
     int ret = _set_rotation(r);
     if(prev != r && capabilities.set_rotation) ret = drv.op->set_rotation(r);
@@ -204,6 +209,7 @@ esp_err_t display_drv_set_rotation(int r) {
 
 int display_drv_get_rotation() {
     FUNC_ENTRY(TAG);
+    if(!driver_alive) return 0;
 #ifdef CONFIG_DISPLAY_USE_LVGL
     return DISPLAY_GET_ROTATION();
 #else
@@ -228,18 +234,33 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
     esp_err_t ret = ESP_OK;
     for (uint8_t i=0, j=lvbuf_num + convbuf_num; i < j; i++) {
         bufsz = i < lvbuf_num ? lvbuf : convbuf;
-        WLOG(TAG, "Allocate %dKb memory for buf %d" , (bufsz>>10), i);
-		// Allocate from DMA-capable internal DRAM memory for SPI transfers
-		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
-		if(drv.lv_mem_buf[i] == NULL) {
+
+        // Calculate allocation size in BYTES. For color displays (non-EPD), LVGL uses
+        // RGB565 (16bpp), so each pixel requires 2 bytes. EPD buffers are already
+        // provided in bytes (aligned bitmaps), so don't multiply for EPD.
+        size_t alloc_bytes = bufsz;
+#if !defined(CONFIG_LCD_IS_EPD)
+#if (LVGL_VERSION_MAJOR < 9)
+        // LVGL v8: sizeof(lv_color_t) corresponds to pixel size (typically 2 for RGB565)
+        alloc_bytes = bufsz * sizeof(lv_color_t);
+#else
+        // LVGL v9+: default color format for ST7789 is RGB565 => 2 bytes per pixel
+        alloc_bytes = bufsz * 2;
+#endif
+#endif
+
+        WLOG(TAG, "Allocate %dKb memory for buf %d" , (alloc_bytes>>10), i);
+        // Allocate from DMA-capable internal DRAM memory for I80/SPI transfers
+        drv.lv_mem_buf[i] = heap_caps_malloc(alloc_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+        if(drv.lv_mem_buf[i] == NULL) {
             drv.lv_mem_buf_size[i] = 0;
             ELOG(TAG, "[%s] Failed to allocate memory for buffer %d", __func__, i);
             ret = ESP_ERR_NO_MEM;
         }
         else {
-            drv.lv_mem_buf_size[i] = bufsz;
+            drv.lv_mem_buf_size[i] = alloc_bytes;
         }
-	}
+    }
     return ret;
 }
 
@@ -253,15 +274,23 @@ void init_lv_screen(void (*cb)(void *)) {
     uint8_t *buf[2] = {drv.lv_mem_buf[0], (LV_DRAW_BUF_SZ > 1 ? drv.lv_mem_buf[1] : NULL)};
     ILOG(TAG, "Register display driver / create display to LVGL");
 #if (LVGL_VERSION_MAJOR < 9)
+    // LVGL v8 expects buffer size in PIXELS
     lv_disp_draw_buf_init(&drv.disp_buf, buf[0], buf[1], bufsz);
     lv_disp_drv_init(&drv.disp_drv);
     drv.disp_drv.draw_buf = &drv.disp_buf;
     cb(&drv.disp_drv);
     drv.lv_disp = lv_disp_drv_register(&drv.disp_drv);
 #else
+    // LVGL v9 expects buffer size in BYTES
     drv.lv_disp = lv_display_create(LCD_H_RES, LCD_V_RES);
     cb(drv.lv_disp);
-    lv_display_set_buffers(drv.lv_disp, buf[0], buf[1], bufsz, LV_DISPLAY_RENDER_MODE_FULL);
+    lv_display_set_buffers(
+        drv.lv_disp,
+        buf[0],
+        buf[1],
+        drv.lv_mem_buf_size[0],
+        LV_DISPLAY_RENDER_MODE_FULL
+    );
 #endif
     drv.is_initialized_lvgl = true;
 

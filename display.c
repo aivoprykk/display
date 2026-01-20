@@ -57,8 +57,9 @@ typedef struct display_priv_s {
     uint16_t shutdown_counter_running;
     SemaphoreHandle_t refreshing_sem;
     SemaphoreHandle_t wake_sem;  // Event-driven wake for paused mode
+    SemaphoreHandle_t lifecycle_mutex; // Serialize init/uninit/task start
     TaskHandle_t task_handle;
-    esp_timer_handle_t timer;
+    TimerHandle_t timer;  // FreeRTOS periodic timer for paused mode
     uint8_t start_task_pause_seq;
     uint16_t periodic_timer_period;
 } display_priv_t;
@@ -86,6 +87,7 @@ typedef struct display_priv_s {
     .shutdown_counter_running = 0, \
     .refreshing_sem = NULL, \
     .wake_sem = NULL,\
+    .lifecycle_mutex = NULL, \
     .task_handle = 0, \
     .timer = 0, \
     .start_task_pause_seq = 0, \
@@ -98,6 +100,34 @@ struct display_priv_s display_priv = DISPLAY_PRIV_DEFAULTS();
 static inline TickType_t _timeout_to_ticks(int timeout) {
     return (timeout == -1) ? DISPLAY_TIMEOUT_MAX : 
            (timeout == 0) ? DISPLAY_TIMEOUT_IMMEDIATE : pdMS_TO_TICKS(timeout);
+}
+
+// Serialize lifecycle operations to prevent init/uninit races
+static inline void _lifecycle_lock(void) {
+    if (!display_priv.lifecycle_mutex) {
+        display_priv.lifecycle_mutex = xSemaphoreCreateMutex();
+    }
+    if (display_priv.lifecycle_mutex) {
+        xSemaphoreTake(display_priv.lifecycle_mutex, portMAX_DELAY);
+    }
+}
+
+static inline void _lifecycle_unlock(void) {
+    if (display_priv.lifecycle_mutex) {
+        xSemaphoreGive(display_priv.lifecycle_mutex);
+    }
+}
+
+// Reset display_priv to a safe baseline while preserving lifecycle mutex
+static inline void _display_priv_reset_preserve_mutex(void) {
+    SemaphoreHandle_t mtx = display_priv.lifecycle_mutex;
+    memset(&display_priv, 0, sizeof(struct display_priv_s));
+    display_priv.lifecycle_mutex = mtx;
+#if defined(CONFIG_LCD_IS_EPD)
+    display_priv.rotation = ROTATION_DEFAULT;
+#else
+    display_priv.rotation = ROTATION_DEFAULT;
+#endif
 }
 
 static uint32_t _get_buf_update_count(void) {
@@ -167,7 +197,7 @@ uint16_t get_offscreen_counter() {
 // #define CONFIG_FULL_REFRESH_ON_THIRD_FLUSH
 
 static uint32_t _ui_screen_draw() {
-    FUNC_ENTRY(TAG);
+    FUNC_ENTRYD(TAG);
     if(!display_priv.self || !display_priv.self->op || !display_priv.self->op->screen_cb) {
         ELOG(TAG, "Display not initialized properly");
         return 1000; // Retry after 1 second
@@ -243,7 +273,9 @@ static uint32_t _ui_screen_draw() {
     display_priv.ms = get_millis() + task_delay_ms;
 
     // Notify queue logic that this draw finished (may trigger next queued request)
+#if defined(CONFIG_LCD_IS_EPD)
     display_on_draw_complete();
+#endif
 
     DMEAS_END_ARGS(TAG, "... done. %ld (delay %lu)", display_priv.self->buf_update_count, task_delay_ms);
     return task_delay_ms;
@@ -251,6 +283,10 @@ static uint32_t _ui_screen_draw() {
 
 void display_set_rotation(int8_t rotation) {
     FUNC_ENTRY_ARGW(TAG, " %d", rotation);
+    // Skip if driver not initialized or already torn down
+    if (!display_priv.display_initialized || display_priv.dspl_drv == NULL) {
+        return;
+    }
     if(display_refresh_lock(100)) {
         if(rotation != display_priv.rotation) {
             display_priv.rotation = rotation;
@@ -265,8 +301,14 @@ void display_set_rotation(int8_t rotation) {
 static void _ui_start(int8_t rotation) {
     if(display_priv.task_is_running) return;
     FUNC_ENTRY(TAG);
-    display_drv_init();
-    display_set_rotation(rotation);
+    // Prevent driver delete during init by holding driver lock
+    if (display_drv_lock(-1)) {
+        display_drv_init();
+        display_set_rotation(rotation);
+        display_drv_unlock();
+    } else {
+        return;
+    }
     display_priv.self->op->ui_init();
 #if defined(CONFIG_LCD_IS_EPD)
     /// delete default display refr timer
@@ -279,7 +321,7 @@ static void _ui_start(int8_t rotation) {
 #endif
 #endif
     display_priv.task_is_running = true;
-    delay_ms(200);
+    delay_ms(100);
 }
 
 static void _ui_task(void *args) {
@@ -294,17 +336,24 @@ static void _ui_task(void *args) {
             if(now >= display_priv.ms) {
                 task_delay_ms = _ui_screen_draw();
             } else {
-                // Sleep precisely until next refresh time
+                // Sleep precisely until next refresh time, but allow fast wake via task notification
                 uint32_t sleep_ms = display_priv.ms - now;
                 if (sleep_ms > task_delay_ms) sleep_ms = task_delay_ms;
-                delay_ms(sleep_ms);
+                BaseType_t notified = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(sleep_ms));
+                if (notified) {
+                    // Immediate update requested while running; draw on next loop iteration
+                    display_priv.ms = 0;
+                }
             }
-        } else {
+        }
+#if (defined(CONFIG_LCD_IS_EPD))
+        else {
             // Paused: block on semaphore OR task notification with timeout
+            // Use 10ms timeout for responsive UI; >10ms becomes perceptible to users
             TLOG(TAG, "[%s] paused, waiting for event", __func__);
             
             // Wait for either semaphore or task notification (fast path for button events)
-            BaseType_t notified = xSemaphoreTake(display_priv.wake_sem, pdMS_TO_TICKS(100));
+            BaseType_t notified = xSemaphoreTake(display_priv.wake_sem, pdMS_TO_TICKS(10));
             if (notified == pdFALSE) {
                 // Check if we got a task notification instead (from display_task_notify_update)
                 notified = ulTaskNotifyTake(pdTRUE, 0);  // Clear notification, no wait
@@ -317,8 +366,9 @@ static void _ui_task(void *args) {
                 }
                 task_delay_ms = _ui_screen_draw();
             }
-            // Timeout is normal when paused - allows task to check running flag
+            // Timeout is normal when paused - allows task to check running flag every 10ms
         }
+#endif
     }
     UNUSED_PARAMETER(task_delay_ms);
 #if defined(CONFIG_LCD_IS_EPD)
@@ -382,6 +432,17 @@ void display_on_task_paused(bool paused) {
     // If lock busy, state will sync on next operation
 }
 
+// Wake paused task and reset timer period (common pattern extracted)
+static inline void _wake_paused_task_and_reset_timer(void) {
+    display_priv.ms = 0;
+    if (display_priv.wake_sem) {
+        xSemaphoreGive(display_priv.wake_sem);
+    }
+    if (display_priv.timer_created && xTimerIsTimerActive(display_priv.timer)) {
+        xTimerReset(display_priv.timer, 0);
+    }
+}
+
 static void _queue_start_draw(uint32_t buf_version, display_refresh_type_t type) {
     FUNC_ENTRY(TAG);
     display_queue_state.current_buf_version = buf_version;
@@ -412,17 +473,36 @@ void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t
 
         if (!display_queue_state.draw_in_progress) {
             _queue_start_draw(target_buf_version, type);
-            // Wake the paused task immediately
-            display_priv.ms = 0;
-            if (display_priv.wake_sem) {
-                xSemaphoreGive(display_priv.wake_sem);  // Simplified - binary semaphore saturates naturally
-            }
+            // Wake the paused task immediately and reset timer period
+            _wake_paused_task_and_reset_timer();
             display_refresh_unlock();
             // No taskYIELD() - let scheduler handle naturally for lower latency
             return;
         }
 
         // Draw in progress
+        
+        // Deduplicate: only skip if queued buffer is LATER than target (stale request)
+        // Don't skip if queued buffer == target, as screen content may have changed (push→alert, etc.)
+        if (display_queue_state.next_pending && display_queue_state.next_buf_version > target_buf_version) {
+            DLOG(TAG, "  → skipped stale (pending buf %lu > target %lu)", display_queue_state.next_buf_version, target_buf_version);
+            display_refresh_unlock();
+            return;
+        }
+        
+        // If queued buffer == target, allow override based on priority
+        if (display_queue_state.next_pending && display_queue_state.next_buf_version == target_buf_version) {
+            // Upgrade priority if new request is higher, otherwise replace (content may differ)
+            if (type >= display_queue_state.next_type) {
+                display_queue_state.next_type = type;
+                DLOG(TAG, "  → replaced/upgraded pending queue to type %d (same buf, different content)", type);
+            } else {
+                DLOG(TAG, "  → kept higher priority pending (type %d > %d)", display_queue_state.next_type, type);
+            }
+            display_refresh_unlock();
+            return;
+        }
+        
         if (display_queue_state.current_type == DISPLAY_REFRESH_TYPE_ALERT) {
             // Never interrupt an alert; schedule as next
             display_queue_state.next_buf_version = target_buf_version;
@@ -450,10 +530,7 @@ void display_request_refresh(uint32_t target_buf_version, display_refresh_type_t
         }
 
         // Always wake paused task so it can service the queued draw promptly
-        display_priv.ms = 0;
-        if (display_priv.wake_sem) {
-            xSemaphoreGive(display_priv.wake_sem);  // Simplified - binary semaphore saturates naturally
-        }
+        _wake_paused_task_and_reset_timer();
 
         display_refresh_unlock();
     }
@@ -466,9 +543,18 @@ void display_on_draw_complete(void) {
 
         if (display_queue_state.next_pending) {
             uint32_t buf = display_queue_state.next_buf_version;
+            uint32_t current_buf = _get_queue_buf_version();
             display_refresh_type_t type = display_queue_state.next_type;
+            
+            // Validate: skip if buffer already at or past target (stale request)
+            if (buf <= current_buf) {
+                DLOG(TAG, "[%s] skipping stale queued refresh buf %lu (current %lu)", __func__, buf, current_buf);
+                display_queue_state.next_pending = false;
+                display_refresh_unlock();
+                return;
+            }
+            
             display_queue_state.next_pending = false;
-
             DLOG(TAG, "[%s] starting queued refresh buf %lu type %d", __func__, buf, type);
             _queue_start_draw(buf, type);
             // Wake task for next draw
@@ -502,8 +588,8 @@ void display_request_fast_refresh() {
     display_drv_epd_request_fast_update();
 }
 
-// Non-blocking versions for button callbacks - use trylock to avoid breaking multi-click detection
-void display_request_mandatory_nonblock(void) {
+// Shared implementation for non-blocking refresh requests
+static void _display_request_refresh_nonblock(display_refresh_type_t type) {
     if (display_refresh_lock(0)) {  // Trylock: returns immediately if busy
         uint32_t target = _get_queue_buf_version() + 1;
         if (!display_queue_state.task_paused) {
@@ -513,10 +599,10 @@ void display_request_mandatory_nonblock(void) {
         } else {
             // Task paused: queue request
             if (!display_queue_state.draw_in_progress) {
-                _queue_start_draw(target, DISPLAY_REFRESH_TYPE_MANDATORY);
+                _queue_start_draw(target, type);
             } else {
                 display_queue_state.next_buf_version = target;
-                display_queue_state.next_type = DISPLAY_REFRESH_TYPE_MANDATORY;
+                display_queue_state.next_type = type;
                 display_queue_state.next_pending = true;
             }
             // Wake paused task
@@ -528,26 +614,13 @@ void display_request_mandatory_nonblock(void) {
     // If lock busy, skip - periodic timer will catch state change on next cycle
 }
 
+// Non-blocking versions for button callbacks - use trylock to avoid breaking multi-click detection
+void display_request_mandatory_nonblock(void) {
+    _display_request_refresh_nonblock(DISPLAY_REFRESH_TYPE_MANDATORY);
+}
+
 void display_request_alert_nonblock(void) {
-    if (display_refresh_lock(0)) {  // Trylock: returns immediately if busy
-        uint32_t target = _get_queue_buf_version() + 1;
-        if (!display_queue_state.task_paused) {
-            _task_req_fast_refresh(0);
-            display_priv.ms = 0;
-        } else {
-            // Alert has priority: always queue as next
-            if (!display_queue_state.draw_in_progress) {
-                _queue_start_draw(target, DISPLAY_REFRESH_TYPE_ALERT);
-            } else {
-                display_queue_state.next_buf_version = target;
-                display_queue_state.next_type = DISPLAY_REFRESH_TYPE_ALERT;
-                display_queue_state.next_pending = true;
-            }
-            display_priv.ms = 0;
-            if (display_priv.wake_sem) xSemaphoreGive(display_priv.wake_sem);
-        }
-        display_refresh_unlock();
-    }
+    _display_request_refresh_nonblock(DISPLAY_REFRESH_TYPE_ALERT);
 }
 
 void display_task_cancel_req_fast_refresh() {
@@ -584,79 +657,42 @@ void display_task_cancel_req_full_refresh() {
 static void _periodic_timer_stop() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self ? display_priv.self->buf_update_count : 0);
     if (display_priv.timer_created) {
-        if(esp_timer_is_active(display_priv.timer)) {
+        if(xTimerIsTimerActive(display_priv.timer)) {
             FUNC_ENTRY_ARGSD(TAG, " stop periodic timer");
-            if(esp_timer_stop(display_priv.timer)) {
+            if(xTimerStop(display_priv.timer, 0) != pdPASS) {
                 WLOG(TAG, "[%s] failed to stop periodic timer", __func__);
             }
         }
     }
 }
 
-static void _timer_cb(void*arg);
+static void _timer_cb(TimerHandle_t xTimer);
 
 static void _periodic_timer_start() {
     FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld", display_priv.self ? display_priv.self->buf_update_count : 0);
 #if defined(CONFIG_LCD_IS_EPD)
     if(!display_priv.timer_created) {
-        const esp_timer_create_args_t lcd_periodic_timer_args = {
-            .callback = &_timer_cb,
-            .name = "lcd_periodic",
-        };
-        if(esp_timer_create(&lcd_periodic_timer_args, &display_priv.timer)){
+        uint16_t period_sec = display_priv.periodic_timer_period ? display_priv.periodic_timer_period : LCD_UI_TIMER_PERIOD_S;
+        display_priv.timer = xTimerCreate(
+            "lcd_periodic",
+            pdMS_TO_TICKS(period_sec * 1000),
+            pdTRUE,  // auto-reload
+            NULL,
+            _timer_cb
+        );
+        if(!display_priv.timer) {
             WLOG(TAG, "[%s] failed to create periodic timer.", __func__);
             return;
         }
-     display_priv.timer_created = 1;
+        display_priv.timer_created = 1;
     }
 #endif
     if(display_priv.timer_created) {
-        if(!esp_timer_is_active(display_priv.timer)) {
+        if(!xTimerIsTimerActive(display_priv.timer)) {
             DLOG(TAG, "[%s] start periodic timer.", __func__);
-            esp_timer_start_periodic(display_priv.timer, SEC_TO_US(display_priv.periodic_timer_period ? display_priv.periodic_timer_period : LCD_UI_TIMER_PERIOD_S));
+            xTimerStart(display_priv.timer, 0);
         }
     }
-}
-
-void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force) {
-    if(!display_priv.self) return;
-    FUNC_ENTRY_ARGS(TAG, " buf_update_count: %ld times: %hhu, fast_refresh_time: %hhd, full_refresh_time: %hhd, full_refresh_force: %d", display_priv.self->buf_update_count, times, fast_refresh_time, full_refresh_time, full_refresh_force);
-    
-    // If already running, no need to resume
-    if(display_priv.task_not_paused) {
-        DLOG(TAG, "[%s] already running, skipping resume", __func__);
-        return;
-    }
-    
-    DMEAS_START();
-    
-    // Resume task: trigger 'times' refresh requests via event-driven queue
-    // Cache version outside loop to avoid repeated driver queries
-    uint32_t base_version = _get_queue_buf_version();
-    
-    for(uint8_t i = 0; i < times; i++) {
-        display_refresh_type_t type = DISPLAY_REFRESH_TYPE_OPTIONAL;
-        
-        // First request may be full refresh if requested
-        if(i == 0 && full_refresh_time >= 0) {
-            if(full_refresh_force || display_priv.self->buf_update_count < 5 || 
-               display_priv.count_last_full_refresh + 5 < display_priv.self->buf_update_count) {
-                display_drv_epd_request_full_update();
-                type = DISPLAY_REFRESH_TYPE_MANDATORY;
-            }
-        }
-        
-        // Queue the refresh request
-        display_request_refresh(base_version + i + 1, type);
-        
-        DLOG(TAG, "[%s] queued refresh %hhu/%hhu type=%d", __func__, i+1, times, type);
-    }
-
-    // Restart periodic timer to apply any interval changes while paused
-    _periodic_timer_stop();
-    _periodic_timer_start();
-    
-    DMEAS_END(TAG);
 }
 
 #endif
@@ -704,11 +740,16 @@ void display_cancel_task_pause_seq() {
 }
 
 void display_timer_set_period(uint16_t period) {
-    display_priv.periodic_timer_period = period;
-    if(esp_timer_is_active(display_priv.timer)) {
-    FUNC_ENTRY_ARGS(TAG, " restart timers for run every %hu sec.", period);
-        _periodic_timer_stop();
-        _periodic_timer_start();
+    // Period 0 means "reset to default" without caller needing to know default value
+    uint16_t actual_period = (period == 0) ? LCD_UI_TIMER_PERIOD_S : period;
+    
+    if (actual_period == display_priv.periodic_timer_period) {
+        return;  // No change, skip update
+    }
+    display_priv.periodic_timer_period = actual_period;
+    if(display_priv.timer_created && xTimerIsTimerActive(display_priv.timer)) {
+        FUNC_ENTRY_ARGS(TAG, " change timer period to %hu sec.", actual_period);
+        xTimerChangePeriod(display_priv.timer, pdMS_TO_TICKS(actual_period * 1000), 0);
     }
 }
 
@@ -729,11 +770,25 @@ void display_task_resume() {
     }
     display_on_task_paused(false);
     display_priv.ms = 0;
-    if(esp_timer_is_active(display_priv.timer)){
+    if(display_priv.timer_created && xTimerIsTimerActive(display_priv.timer)){
         DLOG(TAG, "[%s] stop periodic timer", __func__);
-        esp_timer_stop(display_priv.timer);
+        xTimerStop(display_priv.timer, 0);
     }
 }
+
+bool display_task_is_paused() {
+    return display_priv.task_not_paused == 0;
+}
+
+static void _timer_cb(TimerHandle_t xTimer) {
+    FUNC_ENTRY(TAG);
+    // Periodic timer wakes paused task for one optional refresh
+    // FreeRTOS timer runs in timer daemon context, not ISR - use regular calls
+    if (display_queue_state.task_paused && display_priv.wake_sem) {
+        xSemaphoreGive(display_priv.wake_sem);
+    }
+}
+#endif
 
 void display_task_notify_update() {
     // Ultra-fast non-blocking wake for immediate display updates
@@ -743,30 +798,19 @@ void display_task_notify_update() {
     }
 }
 
-bool display_task_is_paused() {
-    return display_priv.task_not_paused == 0;
-}
-
-static void _timer_cb(void*arg) {
-    FUNC_ENTRY(TAG);
-    // Periodic timer wakes paused task for one optional refresh
-    // Use ISR-safe semaphore give - queue state updated in task context
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    
-    if (display_queue_state.task_paused && display_priv.wake_sem) {
-        xSemaphoreGiveFromISR(display_priv.wake_sem, &xHigherPriorityTaskWoken);
-    }
-    
-    if (xHigherPriorityTaskWoken) {
-        portYIELD_FROM_ISR();
-    }
-}
-#endif
-
 void display_task_start() {
     FUNC_ENTRY(TAG);
-    if(display_priv.task_is_running && display_priv.task_handle) return;
+    _lifecycle_lock();
+    if(display_priv.task_is_running && display_priv.task_handle) {
+        _lifecycle_unlock();
+        return;
+    }
+    if (!display_priv.display_initialized) {
+        _lifecycle_unlock();
+        return;
+    }
     xTaskCreatePinnedToCore(_ui_task, "lcd_ui_task", CONFIG_DISPLAY_TASK_STACK_SIZE, NULL, 5, &display_priv.task_handle, 1);
+    _lifecycle_unlock();
 }
 
 #if defined(CONFIG_LCD_IS_EPD)
@@ -834,7 +878,20 @@ static void _ui_stop() {
     FUNC_ENTRY(TAG);
     DMEAS_START();
 #if defined(CONFIG_LCD_IS_EPD)
-    display_wait_for_task();
+//     display_wait_for_task();
+#else
+    // Ensure one final draw on LCD before stopping
+    display_priv.ms = 0; // trigger immediate draw
+    uint32_t target_buf = _get_buf_update_count() + 1;
+    uint16_t tries = 10U; // ~500ms total
+    while (tries--) {
+        if (_get_buf_update_count() >= target_buf) {
+            break;
+        }
+        // Nudge the running task to wake immediately
+        display_task_notify_update();
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
 #endif
     // Unblock paused task to allow clean exit without extra draw
     if (display_priv.wake_sem)
@@ -861,8 +918,9 @@ static void _ui_stop() {
     if(display_priv.timer){
         DLOG(TAG, "[%s] stop and delete periodic timer", __func__);
         _periodic_timer_stop();
-        ESP_ERROR_CHECK(esp_timer_delete(display_priv.timer));
-        display_priv.timer = 0;
+        xTimerDelete(display_priv.timer, 0);
+        display_priv.timer = NULL;
+        display_priv.timer_created = 0;
     }
 #endif
     if(display_priv.self && display_priv.self->op && display_priv.self->op->ui_deinit)
@@ -872,7 +930,11 @@ static void _ui_stop() {
 
 struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
     FUNC_ENTRY(TAG);
-   if (display_priv.display_initialized) return me;
+    _lifecycle_lock();
+    if (display_priv.display_initialized) {
+        _lifecycle_unlock();
+        return me;
+    }
 #if defined(LOG_LOCAL_LEVEL)
     esp_log_level_set(TAG, LOG_LOCAL_LEVEL);
 #endif
@@ -889,27 +951,49 @@ struct display_s *display_init(struct display_s *me, struct display_op_s *op) {
     display_refresh_unlock();
     if(!display_priv.wake_sem)
         display_priv.wake_sem = xSemaphoreCreateBinary();
-
+    _lifecycle_unlock();
     return me;
 }
 
 void display_uninit(struct display_s *me) {
     FUNC_ENTRY(TAG);
-    if (display_priv.display_initialized) {
+    // Always lock lifecycle to serialize against init/start
+    _lifecycle_lock();
+
+    // Stop UI task if running
+    if (display_priv.task_is_running) {
         _ui_stop();
-        display_drv_del();
-        if (display_priv.refreshing_sem != NULL){
-            vSemaphoreDelete(display_priv.refreshing_sem);
-            display_priv.refreshing_sem = NULL;
-        }
-        if (display_priv.wake_sem != NULL){
-            vSemaphoreDelete(display_priv.wake_sem);
-            display_priv.wake_sem = NULL;
-        }
-        memset(&display_priv, 0, sizeof(struct display_priv_s));
-        memset(me, 0, sizeof(struct display_s));
     }
+
+    // Delete driver if created (take driver lock and hold it through delete)
+    if (display_priv.dspl_drv) {
+        if (display_drv_lock(-1)) {
+            // Hold the lock while deleting; semaphore will be deleted inside
+            display_drv_del();
+        } else {
+            // Fallback: delete without lock (should not happen with -1 timeout)
+            display_drv_del();
+        }
+        display_priv.dspl_drv = NULL;
+    }
+
+    // Delete semaphores if they exist
+    if (display_priv.refreshing_sem != NULL){
+        vSemaphoreDelete(display_priv.refreshing_sem);
+        display_priv.refreshing_sem = NULL;
+    }
+    if (display_priv.wake_sem != NULL){
+        vSemaphoreDelete(display_priv.wake_sem);
+        display_priv.wake_sem = NULL;
+    }
+
+    // Reset state but preserve lifecycle mutex
+    _display_priv_reset_preserve_mutex();
+
+    if (me) memset(me, 0, sizeof(struct display_s));
+
     display_priv.display_initialized = false;
+    _lifecycle_unlock();
 }
 
 #endif

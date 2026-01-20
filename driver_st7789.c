@@ -158,6 +158,7 @@ static lv_disp_t *lv_get() {
 }
 
 static esp_err_t _set_hw_rotation(int r) {
+    FUNC_ENTRY_ARGS(TAG, " %d", r);
     if(!panel_handle)
         return ESP_ERR_INVALID_STATE;
     if(r == DISP_ROT_90 || r == DISP_ROT_270) {
@@ -279,7 +280,8 @@ static esp_lcd_panel_handle_t _new() {
     esp_lcd_panel_io_i80_config_t io_config = {
         .cs_gpio_num = CONFIG_DISPLAY_SPI_CS,
         .pclk_hz = LCD_PIXEL_CLOCK_HZ, // LCD_PIXEL_CLOCK_HZ,
-        .trans_queue_depth = 20,
+        // Reduce queue depth to lower SRAM usage on ESP32-S3
+        .trans_queue_depth = 8,
         .on_color_trans_done = notify_lvgl_flush_ready,
         .user_ctx = &drv.disp_drv,
         .lcd_cmd_bits = 8,
@@ -313,40 +315,21 @@ static esp_lcd_panel_handle_t _new() {
         WLOG(TAG, "%s reset panel", msg[0]);
     }
     // --- Initialize panel
-    ILOG(TAG, "Initializing st7789 display...");
-    //#define LCD_CMD_SLPOUT          0x11
-    esp_lcd_panel_io_tx_param(io_handle, 0x11, NULL, 0);
-    //vTaskDelay(pdMS_TO_TICKS(100));
-    // flush color before turn on the display
-    // uint16_t image[800];
-    // uint32_t sz = sizeof(image)/sizeof(image[0]);
-    // for (uint16_t x = 0; x < sz; ++x) {
-    //         image[x] = (15 << 11) | (31 << 5) | 15;
-    // }
-    // for (uint16_t i = 0; i < LCD_H_RES; i++) {
-    //     //#define LCD_CMD_RAMWRC          0x3c
-    //     esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
-    // }
-    //esp_lcd_panel_init(panel_handle);
-    //delay_ms(100);
-    // --- Configurate the screen
+    ILOG(TAG, "Initializing st7789 display (%d x %d)...", LCD_H_RES, LCD_V_RES);
+    // Use vendor init to set MADCTL and default orientation correctly
+    if(esp_lcd_panel_init(panel_handle)) {
+        WLOG(TAG, "%s panel init", msg[0]);
+    }
+    // --- Configure the screen
     // NOTE: the configurations below are all FALSE by default
+    // Color inversion can lead to odd colors on some panels; keep disabled
     esp_lcd_panel_invert_color(panel_handle, true);
     // esp_lcd_panel_swap_xy(panel_handle, true);
     // esp_lcd_panel_mirror(panel_handle, true, false);
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
     //  the gap is LCD panel specific, even panels with the same driver IC, can
     //  have different gap value
-    esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
-#endif
-#if defined(LCD_MODULE_CMD_1)
-    // send panel init commands
-    for (uint8_t i = 0; i < (sizeof(lcd_st7789v) / sizeof(lcd_cmd_t)); i++) {
-        esp_lcd_panel_io_tx_param(io_handle, lcd_st7789v[i].cmd, lcd_st7789v[i].data, lcd_st7789v[i].len & 0x7f);
-        if (lcd_st7789v[i].len & 0x80)
-            delay_ms(120);
-    }
-    //delay_ms(100);
+    // esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif
         // --- Turn on display
     ILOG(TAG, "Turning st7789 display on...");
@@ -355,7 +338,8 @@ static esp_lcd_panel_handle_t _new() {
      
     //delay_ms(100);
     // display_lv_init();
-    
+    _set_hw_rotation(DISP_ROT_90);
+
     return panel_handle;
 }
 
