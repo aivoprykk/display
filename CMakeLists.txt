@@ -14,7 +14,8 @@ set(LV_CONF_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h)
 idf_component_register(SRCS ${SRCS}
     INCLUDE_DIRS ${INCS}
     PRIV_INCLUDE_DIRS ${PRIVINCS}
-    PRIV_REQUIRES driver esp_timer logger_common
+    REQUIRES lvgl
+    PRIV_REQUIRES driver esp_lcd esp_timer logger_common
 )
 
 # set_target_properties(${COMPONENT_LIB} PROPERTIES COMPILE_FLAGS "-save-temps=obj")

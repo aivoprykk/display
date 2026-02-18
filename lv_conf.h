@@ -129,7 +129,11 @@
 
 /*Enable complex draw engine.
  *Required to draw shadow, gradient, rounded corners, circles, arc, skew lines, image transformations or any masks*/
+#if !defined(CONFIG_LCD_IS_EPD)
 #define LV_DRAW_COMPLEX 1
+#else
+#define LV_DRAW_COMPLEX 0
+#endif
 #if LV_DRAW_COMPLEX != 0
 
     /*Allow buffering some shadow calculation.

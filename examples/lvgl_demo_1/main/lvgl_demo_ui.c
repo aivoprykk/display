@@ -187,7 +187,7 @@ static void load_screen(int noinc) {
     lv_obj_t * lscr = scr;
     if(button_down)
         return;
-    
+
     if(!noinc){
         if (count++ > MAX_SCREENS-2)
             count = 0;

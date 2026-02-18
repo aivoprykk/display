@@ -120,7 +120,14 @@ esp_err_t driver_qemu_set_rotation(int r) {
         disp_drv.rotated = r;
         if(lv_disp){
             lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-            lv_obj_invalidate(lv_scr_act());
+#if (LVGL_VERSION_MAJOR >= 9)
+            lv_obj_t *scr = lv_screen_active();
+#else
+            lv_obj_t *scr = lv_scr_act();
+#endif
+            if(scr) {
+                lv_obj_invalidate(scr);
+            }
                 DLOG(TAG, "New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r", \
             (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
@@ -147,7 +154,7 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
     if (is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
         assert(disp_driver);
-        lv_disp_flush_ready(disp_driver);
+        FLUSH_READY_CB(disp_driver);
     }
     return false;
 }
@@ -247,7 +254,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     lv_disp = lv_disp_drv_register(&disp_drv);
 
     driver_qemu_set_rotation(DISP_ROT_180);
-    
+
     is_initialized_lvgl = true;
 
     // init lvgl tick
@@ -288,7 +295,7 @@ esp_lcd_panel_handle_t display_qemu_new() {
     //vTaskDelay(pdMS_TO_TICKS(100));
     // flush color before turn on the display
     // esp_lcd_panel_invert_color(panel_handle, true);
-     
+
     // delay_ms(100);
     // display_lv_init();
 

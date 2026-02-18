@@ -60,6 +60,7 @@ static SemaphoreHandle_t panel_refreshing_sem = NULL;
 static lv_disp_draw_buf_t disp_buf = {0};  // contains internal graphic buffer(s) called draw buffer(s)
 static lv_disp_drv_t disp_drv = {0};       // contains callback functions
 static lv_disp_t *lv_disp = NULL;
+static uint32_t flush_count = 0;
 
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_panel_io_handle_t io_handle = NULL;
@@ -114,11 +115,11 @@ static const uint8_t bl_steps = 16;
 static void _bl_set(uint8_t brightness_percent) {
 #if defined(BL_IS_PWM)
     uint32_t duty_cycle = (BIT(8)) / (100 / brightness_percent); // 8-bit resolution
-    ILOG(TAG, "[%s] backlight brightness to %hhu eq duty %lu", __func__, brightness_percent, duty_cycle);
+    ILOG(TAG, "[%s] backlight brightness to %" PRIu8 " eq duty %" PRIu32 "", __func__, brightness_percent, duty_cycle);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_cycle);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 #else
-    ILOG(TAG, "[%s] backlight brightness to %hhu %%, cur level %hhu of %hhu", __func__, brightness_percent, bl_level, bl_steps);
+    ILOG(TAG, "[%s] backlight brightness to %" PRIu8 " %%, cur level %" PRIu8 " of %" PRIu8 "", __func__, brightness_percent, bl_level, bl_steps);
     uint16_t level;
     if (brightness_percent == 0) {
         gpio_set_level(CONFIG_DISPLAY_BL, 0);
@@ -199,7 +200,14 @@ static esp_err_t _set_rotation(int r) {
         disp_drv.rotated = r;
         if(lv_disp) {
         lv_disp_drv_update(lv_disp, &disp_drv); //this is critical!
-        lv_obj_invalidate(lv_scr_act());
+#if (LVGL_VERSION_MAJOR >= 9)
+        lv_obj_t *scr = lv_screen_active();
+#else
+        lv_obj_t *scr = lv_scr_act();
+#endif
+        if(scr) {
+            lv_obj_invalidate(scr);
+        }
             DLOG(TAG, "[%s] New orientation is %d:, rotated flag is :%d, hor_res is: %d, ver_res is: %d\r", __func__, \
         (int)r, swap, lv_disp_get_hor_res(lv_disp), lv_disp_get_ver_res(lv_disp));
         }
@@ -225,12 +233,12 @@ static int _get_rotation(void) {
 static bool IRAM_ATTR color_trans_done(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
 	lv_display_t *disp = (lv_display_t*)user_ctx;
-	lv_display_flush_ready(disp);
+	FLUSH_READY_CB(disp);
 	// Whether a high priority task has been waken up by this function
 	return false; 
 }
 static void disp_flush(lv_display_t *disp_drv, const lv_area_t *area, uint8_t *px_map) {
-	esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t)lv_display_get_user_data(disp_drv);
+	esp_lcd_panel_handle_t panel_handle = GET_USER_DATA(disp_drv);
 	ESP_ERROR_CHECK(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, (uint16_t *) px_map));
 }
 #else
@@ -238,7 +246,7 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
     if (is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
         if(disp_driver)
-            lv_disp_flush_ready(disp_driver);
+            FLUSH_READY_CB(disp_driver);
     }
     return false;
 }
@@ -319,7 +327,7 @@ static void init_screen(void (*cb)(lv_disp_drv_t *)) {
     lv_disp = lv_disp_drv_register(&disp_drv);
 
     //_set_rotation(DISP_ROT_180);
-    
+
     is_initialized_lvgl = true;
 
     // init lvgl tick
@@ -406,7 +414,7 @@ static esp_lcd_panel_handle_t _new() {
     ESP_LOGI(TAG, "Resetting rm67162 display...");
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     // --- Initialize panel
-    
+
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
     //delay_ms(100);
     // --- Configurate the screen
@@ -416,10 +424,10 @@ static esp_lcd_panel_handle_t _new() {
 	// Rotate 90 degrees clockwise:
 	// ESP_ERROR_CHECK(esp_lcd_panel_swap_xy(panel_handle, true));
 	// ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
-     
+
     ILOG(TAG, "[%s] Turn on backlight", __func__);
 	ESP_ERROR_CHECK(gpio_set_level(CONFIG_DISPLAY_BL, 1));
-    
+
     return panel_handle;
 }
 
@@ -432,7 +440,10 @@ static void _del() {
     vSemaphoreDelete(panel_refreshing_sem);
     panel_refreshing_sem = NULL;
 }
-
+static uint32_t _flush_count(void) {
+    TLOG(TAG, "[%s]", __func__);
+    return flush_count;
+}
 display_driver_op_t display_driver_rm67162_op = {
     .new = _new,
     .del = _del,
@@ -441,9 +452,9 @@ display_driver_op_t display_driver_rm67162_op = {
     .epd_request_fast_update = 0,
     .epd_request_full_update = 0,
     .epd_refresh_and_turn_off = 0,
-    .epd_turn_on = 0,
+    // .epd_turn_on = 0,
     .epd_turn_off = 0,
-    .epd_flush_count = 0,
+    .flush_count = _flush_count,
     .lock = lock,
     .unlock = unlock,
     .bl_set = _bl_set,

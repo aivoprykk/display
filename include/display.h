@@ -17,7 +17,6 @@ typedef struct display_op_s {
 
 typedef struct display_s {
     display_op_t *op;
-    uint32_t buf_update_count;
     uint32_t count_last_full_refresh; 
 #if defined(CONFIG_LCD_IS_EPD)
     uint8_t task_resumed_for_times;
@@ -35,11 +34,15 @@ void display_uninit(struct display_s *me);
 void display_task_start();
 bool display_refresh_lock(int timeout);
 void display_refresh_unlock();
+
 #if defined(CONFIG_LCD_IS_EPD)
 bool display_task_is_paused();
 void display_task_pause();
 void display_task_resume();
-void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force);
+//void display_task_resume_for_times(uint8_t times, int8_t fast_refresh_time, int8_t full_refresh_time, bool full_refresh_force);
+void display_task_notify_update();  // Fast non-blocking wake for immediate updates
+void display_request_mandatory_nonblock(const char *reason);  // Non-blocking version (trylock) for button callbacks
+void display_request_alert_nonblock(const char *reason);      // Non-blocking version (trylock) for button callbacks
 void display_wait_for_task();
 void display_cancel_delay();
 void display_request_full_refresh(bool force);
@@ -52,12 +55,23 @@ void display_cancel_task_pause_seq();
 void display_timer_set_period(uint16_t period);
 uint16_t get_display_timer_period();
 uint16_t display_get_offscreen_counter();
+#else
+void display_bl_set(uint8_t brightness_percent);
 #endif
+
 void display_set_rotation(int8_t rotation);
-void display_incr_buf_update_count();
-uint32_t display_get_buf_update_count();
+// void display_incr_buf_update_count();
 uint32_t display_get_flush_count();
 void display_shut_down();
+
+void display_request_alert(void);
+void display_request_mandatory(void);
+void display_request_optional(void);
+
+// Deferred refresh API - lock-free, non-blocking (for event handlers)
+void display_post_alert(const char *reason);
+void display_post_mandatory(const char *reason);
+void display_post_optional(const char *reason);
 
 #ifdef __cplusplus
 }

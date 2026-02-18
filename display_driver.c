@@ -2,7 +2,7 @@
 #if defined(CONFIG_DISPLAY_ENABLED)
 #include "driver_vendor.h"
 #include "esp_err.h"
-#include "esp_lcd_panel_ops.h"
+// #include "esp_lcd_panel_ops.h"
 #include "esp_heap_caps.h"
 #ifdef CONFIG_DISPLAY_USE_LVGL
 #include "lvgl.h"
@@ -20,27 +20,36 @@ typedef struct {
     bool epd_request_full_update;
     bool epd_request_fast_update; 
     bool epd_request_partial_update;
-    bool epd_flush_count;
     bool epd_refresh_and_turn_off;
-    bool epd_turn_on;
+    // bool epd_turn_on;
     bool epd_turn_off;
-#endif
+#else
     bool bl_set;
+#endif
+    bool flush_count;
     bool set_rotation;
     bool d_init;
 } driver_capabilities_t;
 
 static driver_capabilities_t capabilities = {0};
+static volatile bool driver_alive = false;
 
 display_driver_t drv = {
 #ifdef CONFIG_DISPLAY_USE_LVGL
     .lv_mem_buf = {0},
     .is_initialized_lvgl = false,
     .lv_disp = NULL,
+#if (LVGL_VERSION_MAJOR >= 9)
+    .color_format = LV_COLOR_FORMAT_I1,
+    .render_mode = LV_DISPLAY_RENDER_MODE_FULL,
+    .render_buf_size = 0,
+#endif
 #else
     .rotated = DISP_ROT_90,
 #endif
-    .sem = 0,
+    .lock_mtx = NULL,
+    .flush_sem = NULL,
+    .flush_complete_sem = NULL,
 #if defined(CONFIG_DISPLAY_DRIVER_ST7789)
     .op = &display_driver_st7789_op
 #elif defined(CONFIG_DISPLAY_DRIVER_RM67162)
@@ -54,34 +63,55 @@ display_driver_t drv = {
 
 esp_lcd_panel_handle_t display_drv_new() {
     if(!drv.op->new) return NULL;
-    if(!drv.sem)
-        drv.sem = xSemaphoreCreateBinary();
-    xSemaphoreGive(drv.sem);
-    
+    if(!drv.lock_mtx)
+        drv.lock_mtx = xSemaphoreCreateMutex();
+    if(!drv.flush_sem) {
+        drv.flush_sem = xSemaphoreCreateBinary();
+        if(drv.flush_sem) {
+            xSemaphoreGive(drv.flush_sem);
+        }
+    }
+    if(!drv.flush_complete_sem) {
+        drv.flush_complete_sem = xSemaphoreCreateBinary();
+        if(drv.flush_complete_sem) {
+            xSemaphoreGive(drv.flush_complete_sem);
+        }
+    }
+
     // Cache function capabilities at initialization to avoid repeated null checks
 #if defined(CONFIG_LCD_IS_EPD)
     capabilities.epd_request_full_update = (drv.op->epd_request_full_update != NULL);
     capabilities.epd_request_fast_update = (drv.op->epd_request_fast_update != NULL);
     capabilities.epd_request_partial_update = (drv.op->epd_request_partial_update != NULL);
-    capabilities.epd_flush_count = (drv.op->epd_flush_count != NULL);
     capabilities.epd_refresh_and_turn_off = (drv.op->epd_refresh_and_turn_off != NULL);
-    capabilities.epd_turn_on = (drv.op->epd_turn_on != NULL);
     capabilities.epd_turn_off = (drv.op->epd_turn_off != NULL);
 #else
     capabilities.bl_set = (drv.op->bl_set != NULL);
 #endif
+    capabilities.flush_count = (drv.op->flush_count != NULL);
     capabilities.set_rotation = (drv.op->set_rotation != NULL);
     capabilities.d_init = (drv.op->d_init != NULL);
-    
-    return drv.op->new();
+
+    esp_lcd_panel_handle_t h = drv.op->new();
+    driver_alive = (h != NULL);
+    return h;
 }
 
 void display_drv_del() {
+    driver_alive = false;
     if(drv.op->del)
         drv.op->del();
-    if(drv.sem) {
-        vSemaphoreDelete(drv.sem);
-        drv.sem = NULL;
+    if(drv.flush_complete_sem) {
+        vSemaphoreDelete(drv.flush_complete_sem);
+        drv.flush_complete_sem = NULL;
+    }
+    if(drv.lock_mtx) {
+        vSemaphoreDelete(drv.lock_mtx);
+        drv.lock_mtx = NULL;
+    }
+    if(drv.flush_sem) {
+        vSemaphoreDelete(drv.flush_sem);
+        drv.flush_sem = NULL;
     }
 }
 
@@ -89,9 +119,9 @@ static bool lock(int timeout_ms) {
     FUNC_ENTRYD(TAG);
     // Convert timeout in milliseconds to FreeRTOS ticks
     // If `timeout_ms` is set to -1, the program will block until the condition is met
-    if(!drv.sem)
+    if(!drv.lock_mtx)
         return true;
-        
+
     TickType_t timeout_ticks;
     // Optimize common timeout values
     if (timeout_ms == -1) {
@@ -101,14 +131,14 @@ static bool lock(int timeout_ms) {
     } else {
         timeout_ticks = pdMS_TO_TICKS(timeout_ms);
     }
-    
-    return xSemaphoreTake(drv.sem, timeout_ticks) == pdTRUE;
+
+    return xSemaphoreTake(drv.lock_mtx, timeout_ticks) == pdTRUE;
 }
 
 static void unlock(void) {
     FUNC_ENTRYD(TAG);
-    if(drv.sem)
-        xSemaphoreGive(drv.sem);
+    if(drv.lock_mtx)
+        xSemaphoreGive(drv.lock_mtx);
 }
 
 bool display_drv_lock(int timeout_ms) {
@@ -136,23 +166,15 @@ esp_err_t display_drv_epd_request_partial_update() {
            drv.op->epd_request_partial_update() : ESP_ERR_NOT_SUPPORTED;
 }
 
-uint32_t display_drv_epd_get_flush_count() {
-#if defined(CONFIG_LCD_IS_EPD)
-    return capabilities.epd_flush_count ? drv.op->epd_flush_count() : 0;
-#else
-    return 0;
-#endif
-}
-
 esp_err_t display_drv_epd_refresh_and_turn_off(esp_lcd_panel_handle_t panel_handle, int rotated, m_area_t *area, uint8_t *color_map) {
     return capabilities.epd_refresh_and_turn_off ? 
            drv.op->epd_refresh_and_turn_off(panel_handle, rotated, area, color_map) : ESP_ERR_NOT_SUPPORTED;
 }
 
-esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle) {
-    return capabilities.epd_turn_on ? 
-           drv.op->epd_turn_on(panel_handle) : ESP_ERR_NOT_SUPPORTED;
-}
+// esp_err_t display_drv_epd_turn_on(esp_lcd_panel_handle_t panel_handle) {
+//     return capabilities.epd_turn_on ? 
+//            drv.op->epd_turn_on(panel_handle) : ESP_ERR_NOT_SUPPORTED;
+// }
 
 esp_err_t display_drv_epd_turn_off(esp_lcd_panel_handle_t panel_handle) {
     return capabilities.epd_turn_off ? 
@@ -168,15 +190,25 @@ void display_drv_bl_set(uint8_t brightness_percent) {
 
 #endif
 
+uint32_t display_drv_get_flush_count() {
+    // Inlined in display logic, so better not log here
+    return capabilities.flush_count ? drv.op->flush_count() : 0;
+}
+
 static esp_err_t _set_rotation(int r) {
     FUNC_ENTRY_ARGS(TAG, " %d", r);
     if(r > DISP_ROT_270)
         return ESP_ERR_INVALID_ARG;
-        
+
 #ifdef CONFIG_DISPLAY_USE_LVGL
     DISPLAY_SET_ROTATION(drv.lv_disp, r);
-    if(lv_scr_act()) {
-        lv_obj_invalidate(lv_scr_act());
+#if (LVGL_VERSION_MAJOR >= 9)
+    lv_obj_t *scr = lv_screen_active();
+#else
+    lv_obj_t *scr = lv_scr_act();
+#endif
+    if(scr) {
+        lv_obj_invalidate(scr);
     }
 
 #if (C_LOG_LEVEL <= LOG_DEBUG_NUM)
@@ -196,6 +228,7 @@ static esp_err_t _set_rotation(int r) {
 }
 
 esp_err_t display_drv_set_rotation(int r) {
+    if(!driver_alive) return ESP_ERR_INVALID_STATE;
     int prev = display_drv_get_rotation();
     int ret = _set_rotation(r);
     if(prev != r && capabilities.set_rotation) ret = drv.op->set_rotation(r);
@@ -204,6 +237,7 @@ esp_err_t display_drv_set_rotation(int r) {
 
 int display_drv_get_rotation() {
     FUNC_ENTRY(TAG);
+    if(!driver_alive) return 0;
 #ifdef CONFIG_DISPLAY_USE_LVGL
     return DISPLAY_GET_ROTATION();
 #else
@@ -228,18 +262,33 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
     esp_err_t ret = ESP_OK;
     for (uint8_t i=0, j=lvbuf_num + convbuf_num; i < j; i++) {
         bufsz = i < lvbuf_num ? lvbuf : convbuf;
-        WLOG(TAG, "Allocate %dKb memory for buf %d" , (bufsz>>10), i);
-		// Allocate from DMA-capable internal DRAM memory for SPI transfers
-		drv.lv_mem_buf[i] = heap_caps_malloc(bufsz, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
-		if(drv.lv_mem_buf[i] == NULL) {
+
+        // Calculate allocation size in BYTES. For color displays (non-EPD), LVGL uses
+        // RGB565 (16bpp), so each pixel requires 2 bytes. EPD buffers are already
+        // provided in bytes (aligned bitmaps), so don't multiply for EPD.
+        size_t alloc_bytes = bufsz;
+#if !defined(CONFIG_LCD_IS_EPD)
+#if (LVGL_VERSION_MAJOR < 9)
+        // LVGL v8: sizeof(lv_color_t) corresponds to pixel size (typically 2 for RGB565)
+        alloc_bytes = bufsz * sizeof(lv_color_t);
+#else
+        // LVGL v9+: default color format for ST7789 is RGB565 => 2 bytes per pixel
+        alloc_bytes = bufsz * 2;
+#endif
+#endif
+
+        WLOG(TAG, "Allocate %zuKb memory for buf %" PRIu8 "" , (alloc_bytes>>10), i);
+        // Allocate from DMA-capable internal DRAM memory for I80/SPI transfers
+        drv.lv_mem_buf[i] = heap_caps_malloc(alloc_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+        if(drv.lv_mem_buf[i] == NULL) {
             drv.lv_mem_buf_size[i] = 0;
-            ELOG(TAG, "[%s] Failed to allocate memory for buffer %d", __func__, i);
+            FUNC_ENTRY_ARGE(TAG, "Failed to allocate memory for buffer %" PRIu8 "", i);
             ret = ESP_ERR_NO_MEM;
         }
         else {
-            drv.lv_mem_buf_size[i] = bufsz;
+            drv.lv_mem_buf_size[i] = alloc_bytes;
         }
-	}
+    }
     return ret;
 }
 
@@ -249,19 +298,35 @@ void init_lv_screen(void (*cb)(void *)) {
     ILOG(TAG, "Initialize LVGL library");
     lv_init();
     size_t bufsz = LBUFSZ;
-    init_draw_buffers(LBUFSZ, LV_DRAW_BUF_SZ, LCD_PIXELS_MEM_ALIGNED, CONV_BUF_SZ);
+    init_draw_buffers(LBUFSZ, LV_DRAW_BUF_SZ, LBUFSZ, CONV_BUF_SZ);
     uint8_t *buf[2] = {drv.lv_mem_buf[0], (LV_DRAW_BUF_SZ > 1 ? drv.lv_mem_buf[1] : NULL)};
     ILOG(TAG, "Register display driver / create display to LVGL");
 #if (LVGL_VERSION_MAJOR < 9)
+    // LVGL v8 expects buffer size in PIXELS
     lv_disp_draw_buf_init(&drv.disp_buf, buf[0], buf[1], bufsz);
     lv_disp_drv_init(&drv.disp_drv);
     drv.disp_drv.draw_buf = &drv.disp_buf;
     cb(&drv.disp_drv);
     drv.lv_disp = lv_disp_drv_register(&drv.disp_drv);
 #else
+    // LVGL v9 expects buffer size in BYTES
     drv.lv_disp = lv_display_create(LCD_H_RES, LCD_V_RES);
     cb(drv.lv_disp);
-    lv_display_set_buffers(drv.lv_disp, buf[0], buf[1], bufsz, LV_DISPLAY_RENDER_MODE_FULL);
+#if defined(CONFIG_LCD_IS_EPD)
+    drv.color_format = LV_COLOR_FORMAT_I1;
+#else
+    drv.color_format = LV_COLOR_FORMAT_RGB565;
+#endif
+    drv.render_mode = LV_DISPLAY_RENDER_MODE_FULL;
+    drv.render_buf_size = drv.lv_mem_buf_size[0];
+    lv_display_set_color_format(drv.lv_disp, drv.color_format);
+    lv_display_set_buffers(
+        drv.lv_disp,
+        buf[0],
+        buf[1],
+        drv.render_buf_size,
+        drv.render_mode
+    );
 #endif
     drv.is_initialized_lvgl = true;
 

@@ -49,6 +49,7 @@ static const char *TAG = "display_drv.st7789";
 static esp_lcd_panel_handle_t panel_handle = NULL;
 static esp_lcd_panel_io_handle_t io_handle = NULL;
 static esp_lcd_i80_bus_handle_t bus_handle = NULL;
+static uint32_t flush_count = 0;
 
 #if !defined(BL_IS_PWM)
 static uint8_t bl_level = 0;
@@ -78,6 +79,11 @@ static const lcd_cmd_t lcd_st7789v[] = {
     {0xE1, {0XF0, 0X08, 0X0C, 0X0B, 0X09, 0X24, 0X2B, 0X22, 0X43, 0X38, 0X15, 0X16, 0X2F, 0X37}, 14},
 
 };
+
+static uint32_t _flush_count() {
+    FUNC_ENTRYT(TAG);
+    return flush_count;
+}
 
 static void bl_init() {
     FUNC_ENTRY(TAG);
@@ -116,11 +122,11 @@ static void bl_init() {
 static void _bl_set(uint8_t brightness_percent) {
 #if defined(BL_IS_PWM)
     uint32_t duty_cycle = BIT(8) / (100 / brightness_percent); // 8-bit resolution
-    ILOG(TAG, "[%s] backlight brightness to %hhu eq duty %lu", __func__, brightness_percent, duty_cycle);
+    ILOG(TAG, "[%s] backlight brightness to %" PRIu8 " eq duty %" PRIu32 "", __func__, brightness_percent, duty_cycle);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty_cycle);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
 #else
-    ILOG(TAG, "[%s] backlight brightness to %hhu %%, cur level %hhu of %hhu", __func__, brightness_percent, bl_level, bl_steps);
+    ILOG(TAG, "[%s] backlight brightness to %" PRIu8 " %%, cur level %" PRIu8 " of %" PRIu8 "", __func__, brightness_percent, bl_level, bl_steps);
     uint16_t level;
     if (brightness_percent == 0) {
         gpio_set_level(CONFIG_DISPLAY_BL, 0);
@@ -158,6 +164,7 @@ static lv_disp_t *lv_get() {
 }
 
 static esp_err_t _set_hw_rotation(int r) {
+    FUNC_ENTRY_ARGS(TAG, " %d", r);
     if(!panel_handle)
         return ESP_ERR_INVALID_STATE;
     if(r == DISP_ROT_90 || r == DISP_ROT_270) {
@@ -191,7 +198,7 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
     if (drv.is_initialized_lvgl) {
         lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
         assert(disp_driver);
-        lv_disp_flush_ready(disp_driver);
+        FLUSH_READY_CB(disp_driver);
     }
     return false;
 }
@@ -209,6 +216,7 @@ static void lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t 
     if(esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_map)){
         ELOG(TAG, "[%s] draw bitmap failed", __func__);
     }
+    ++flush_count;
 }
 
 static void display_init_cb(void *dsp) {
@@ -246,7 +254,7 @@ static esp_lcd_panel_handle_t _new() {
         ELOG(TAG, "%s set GPIO level", msg[0]);
         return NULL;
     }
-    
+
     gpio_set_direction(CONFIG_DISPLAY_SPI_RD, GPIO_MODE_OUTPUT);
     gpio_set_level(CONFIG_DISPLAY_SPI_RD, 1);
     bl_init();
@@ -279,7 +287,8 @@ static esp_lcd_panel_handle_t _new() {
     esp_lcd_panel_io_i80_config_t io_config = {
         .cs_gpio_num = CONFIG_DISPLAY_SPI_CS,
         .pclk_hz = LCD_PIXEL_CLOCK_HZ, // LCD_PIXEL_CLOCK_HZ,
-        .trans_queue_depth = 20,
+        // Reduce queue depth to lower SRAM usage on ESP32-S3
+        .trans_queue_depth = 8,
         .on_color_trans_done = notify_lvgl_flush_ready,
         .user_ctx = &drv.disp_drv,
         .lcd_cmd_bits = 8,
@@ -313,49 +322,31 @@ static esp_lcd_panel_handle_t _new() {
         WLOG(TAG, "%s reset panel", msg[0]);
     }
     // --- Initialize panel
-    ILOG(TAG, "Initializing st7789 display...");
-    //#define LCD_CMD_SLPOUT          0x11
-    esp_lcd_panel_io_tx_param(io_handle, 0x11, NULL, 0);
-    //vTaskDelay(pdMS_TO_TICKS(100));
-    // flush color before turn on the display
-    // uint16_t image[800];
-    // uint32_t sz = sizeof(image)/sizeof(image[0]);
-    // for (uint16_t x = 0; x < sz; ++x) {
-    //         image[x] = (15 << 11) | (31 << 5) | 15;
-    // }
-    // for (uint16_t i = 0; i < LCD_H_RES; i++) {
-    //     //#define LCD_CMD_RAMWRC          0x3c
-    //     esp_lcd_panel_io_tx_color(io_handle, 0x3c, image, sz);
-    // }
-    //esp_lcd_panel_init(panel_handle);
-    //delay_ms(100);
-    // --- Configurate the screen
+    ILOG(TAG, "Initializing st7789 display (%d x %d)...", LCD_H_RES, LCD_V_RES);
+    // Use vendor init to set MADCTL and default orientation correctly
+    if(esp_lcd_panel_init(panel_handle)) {
+        WLOG(TAG, "%s panel init", msg[0]);
+    }
+    // --- Configure the screen
     // NOTE: the configurations below are all FALSE by default
+    // Color inversion can lead to odd colors on some panels; keep disabled
     esp_lcd_panel_invert_color(panel_handle, true);
     // esp_lcd_panel_swap_xy(panel_handle, true);
     // esp_lcd_panel_mirror(panel_handle, true, false);
 #if (LCD_H_GAP>0) || (LCD_V_GAP>0)
     //  the gap is LCD panel specific, even panels with the same driver IC, can
     //  have different gap value
-    esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
-#endif
-#if defined(LCD_MODULE_CMD_1)
-    // send panel init commands
-    for (uint8_t i = 0; i < (sizeof(lcd_st7789v) / sizeof(lcd_cmd_t)); i++) {
-        esp_lcd_panel_io_tx_param(io_handle, lcd_st7789v[i].cmd, lcd_st7789v[i].data, lcd_st7789v[i].len & 0x7f);
-        if (lcd_st7789v[i].len & 0x80)
-            delay_ms(120);
-    }
-    //delay_ms(100);
+    // esp_lcd_panel_set_gap(panel_handle, LCD_H_GAP, LCD_V_GAP);
 #endif
         // --- Turn on display
     ILOG(TAG, "Turning st7789 display on...");
     // #define LCD_CMD_DISPON          0x29
     esp_lcd_panel_io_tx_param(io_handle, 0x29, NULL, 0);
-     
+
     //delay_ms(100);
     // display_lv_init();
-    
+    _set_hw_rotation(DISP_ROT_90);
+
     return panel_handle;
 }
 
@@ -378,6 +369,7 @@ display_driver_op_t display_driver_st7789_op = {
     .set_rotation = _set_hw_rotation,
     .d_init = _d_init,
     .bl_set = _bl_set,
+    .flush_count = _flush_count,
 };
 
 #endif

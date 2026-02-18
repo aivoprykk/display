@@ -184,6 +184,14 @@ menu "Logger Display Module Options"
             default 17 if DISPLAY_DRIVER_RM67162
             default 16
     endmenu
+    if DISPLAY_DRIVER_SSD168X
+        config EPD_USE_CUSTOM_LUT
+            bool "Use custom LUT for SSD168X"
+            default n
+            help
+                If enabled, the driver will use a custom LUT for the SSD168X display. 
+                This is EXPERIMENTAL and may not work correctly. Use with caution.
+    endif
     choice
         bool "Display Log verbosity"
         default DISPLAY_LOG_LEVEL_ERROR
