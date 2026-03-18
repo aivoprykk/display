@@ -612,7 +612,7 @@ static void _flush_cb(display_lvgl_flush_ctx_t *dspl, const lv_area_t *area,
             update_flush_count();
             // Refresh started successfully, callback will signal completion
             FUNC_ENTRY_ARGSD(TAG, "flush done count: %" PRIu32 "", flush_ctx.flush_count);
-            esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, pdMS_TO_TICKS(500));
+            esp_event_post(UI_EVENT, UI_EVENT_FLUSH_DONE, 0, 0, pdMS_TO_TICKS(100));
         } else {
             // If not last, we are done with this chunk immediately
             // But we must signal flush ready to LVGL

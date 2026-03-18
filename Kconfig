@@ -187,6 +187,7 @@ menu "Logger Display Module Options"
     if DISPLAY_DRIVER_SSD168X
         config EPD_USE_CUSTOM_LUT
             bool "Use custom LUT for SSD168X"
+            default y if SSD168X_SCREEN_DEPG0213BN
             default n
             help
                 If enabled, the driver will use a custom LUT for the SSD168X display. 

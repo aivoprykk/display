@@ -277,9 +277,11 @@ esp_err_t init_draw_buffers(size_t lvbuf, uint8_t lvbuf_num, size_t convbuf, uin
 #endif
 #endif
 
-        WLOG(TAG, "Allocate %zuKb memory for buf %" PRIu8 "" , (alloc_bytes>>10), i);
-        // Allocate from DMA-capable internal DRAM memory for I80/SPI transfers
-        drv.lv_mem_buf[i] = heap_caps_malloc(alloc_bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA);
+        WLOG(TAG, "Allocate %zuKb DMA memory for buf %" PRIu8 "" , (alloc_bytes>>10), i);
+        // MALLOC_CAP_DMA alone: on ESP32 this is implicitly internal (SPI DMA cannot reach PSRAM);
+        // on ESP32-S3 GDMA can reach PSRAM, so this allows PSRAM fallback when internal is tight.
+        // Do NOT add MALLOC_CAP_INTERNAL here — it causes OOM crash on ESP32 with low internal heap.
+        drv.lv_mem_buf[i] = heap_caps_malloc(alloc_bytes, MALLOC_CAP_DMA);
         if(drv.lv_mem_buf[i] == NULL) {
             drv.lv_mem_buf_size[i] = 0;
             FUNC_ENTRY_ARGE(TAG, "Failed to allocate memory for buffer %" PRIu8 "", i);
