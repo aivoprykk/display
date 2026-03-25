@@ -258,7 +258,7 @@ static uint32_t _ui_screen_draw() {
 #if defined(CONFIG_LCD_IS_EPD)
 #if (LVGL_VERSION_MAJOR > 8)
 #include "lvgl.h"
-#include "../components/lvgl/src/core/lv_refr.h"
+#include "core/lv_refr.h"
 #endif
     /*Call this anywhere you want to refresh the dirty areas*/
     display_drv_epd_reset_flush_requested();

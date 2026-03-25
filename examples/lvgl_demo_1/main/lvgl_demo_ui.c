@@ -11,7 +11,7 @@
 #include "button.h"
 #include "ui_common.h"
 #if LVGL_VERSION_MAJOR >= 9
-#include "../managed_components/lvgl__lvgl/src/core/lv_refr_private.h"
+#include "core/lv_refr_private.h"
 #endif
 
 static const char *TAG = "lvgl_demo_ui";

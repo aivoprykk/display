@@ -1,12 +1,11 @@
 dependencies:
   idf: ">=5.0"
+  lvgl/lvgl: "~8.4.0"
   display:
     path: "../../../../display"
   esp_lcd_panel_ssd1680:
     path: "../../../../esp_lcd_panel_ssd1680"
   logger_common:
     path: "../../../../logger_common"
-  lvgl:
-    path: "../../../../lvgl"
   strutil:
     path: "../../../../strutil"
